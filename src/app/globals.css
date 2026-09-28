@@ -1,0 +1,338 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════════════
+   JAMS design tokens — ember · graphite · paper (Giga-inspired rebrand)
+   One warm accent, everything else neutral. Components consume semantic
+   tokens only; the palette lives here + the @theme mapping below.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* brand hues — warm single-accent family */
+  --ember: 22 92% 52%;
+  --gold: 40 90% 55%;
+  --rust: 14 76% 46%;
+
+  /* neutrals + semantics (light = warm paper) */
+  --ink: 24 30% 10%;
+  --muted: 30 14% 93%;
+  --line: 30 14% 88%;
+  --background: 40 33% 98%;
+  --foreground: 24 30% 10%;
+  --surface: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 24 30% 10%;
+  --primary: 20 90% 44%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 14% 93%;
+  --secondary-foreground: 24 30% 10%;
+  --highlight: 20 90% 44%;
+  --highlight-foreground: 0 0% 100%;
+  --muted-foreground: 26 8% 46%;
+  --border: 30 14% 88%;
+  --input: 30 12% 85%;
+  --ring: 20 90% 44%;
+  --success: 150 45% 38%;
+  --warning: 35 90% 45%;
+  --danger: 355 72% 50%;
+  --destructive: 355 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* charts — warm ramp, deliberately un-rainbow */
+  --chart-1: 22 92% 52%;
+  --chart-2: 40 90% 55%;
+  --chart-3: 14 76% 46%;
+  --chart-4: 30 14% 52%;
+  --chart-5: 150 26% 42%;
+  --chart-6: 215 10% 55%;
+
+  --radius: 16px;
+  --shadow-card: 0 10px 30px -12px rgb(46 34 24 / 0.16);
+  --gradient-brand: linear-gradient(120deg, hsl(22 92% 52%), hsl(38 90% 55%), hsl(14 76% 46%));
+  --gradient-brand-soft: linear-gradient(120deg, hsl(22 92% 52% / 0.14), hsl(38 90% 55% / 0.13), hsl(14 76% 46% / 0.12));
+
+  color-scheme: light;
+}
+
+.dark {
+  --ink: 40 15% 94%;
+  --muted: 26 8% 15%;
+  --line: 26 8% 21%;
+  --background: 24 12% 6%;
+  --foreground: 36 18% 95%;
+  --surface: 24 10% 9%;
+  --card: 24 10% 10%;
+  --card-foreground: 36 18% 95%;
+  --primary: 26 96% 57%;
+  --primary-foreground: 24 24% 8%;
+  --secondary: 26 8% 16%;
+  --secondary-foreground: 36 18% 95%;
+  --highlight: 26 96% 57%;
+  --highlight-foreground: 24 24% 8%;
+  --muted-foreground: 26 8% 62%;
+  --border: 26 8% 19%;
+  --input: 26 8% 23%;
+  --ring: 26 96% 57%;
+  --success: 150 42% 46%;
+  --warning: 38 92% 52%;
+  --danger: 355 78% 58%;
+  --destructive: 355 78% 58%;
+  --background-rgb: 15 14 13;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-surface: hsl(var(--surface));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-ink: hsl(var(--ink));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-accent: hsl(var(--ember));
+  --color-highlight: hsl(var(--highlight));
+  --color-highlight-foreground: hsl(var(--highlight-foreground));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-danger: hsl(var(--danger));
+  --color-destructive: hsl(var(--destructive));
+  --color-mint: hsl(var(--success));
+  --color-azure: hsl(var(--ink));
+  --color-orchid: hsl(var(--rust));
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-chart-6: hsl(var(--chart-6));
+  --radius-card: var(--radius);
+  --font-display: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Glass vocabulary (§14.1) — named, brand-aware, blur-budgeted
+   ══════════════════════════════════════════════════════════════════════ */
+.glass-sheet {
+  backdrop-filter: blur(12px);
+  background: rgb(255 255 255 / 0.72);
+  border: 1px solid rgb(46 34 24 / 0.07);
+  box-shadow: 0 10px 30px -12px rgb(46 34 24 / 0.16);
+}
+.dark .glass-sheet {
+  background: rgb(16 15 14 / 0.78);
+  border-color: rgb(255 255 255 / 0.07);
+}
+.glass-card {
+  backdrop-filter: blur(8px);
+  background: rgb(255 255 255 / 0.66);
+  border: 1px solid rgb(46 34 24 / 0.08);
+  box-shadow: 0 10px 30px -12px rgb(46 34 24 / 0.16);
+}
+.dark .glass-card {
+  background: rgb(24 22 20 / 0.66);
+  border-color: rgb(255 255 255 / 0.07);
+}
+.glass-panel {
+  backdrop-filter: blur(24px);
+  background: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(46 34 24 / 0.08);
+  box-shadow: 0 25px 50px -12px rgb(46 34 24 / 0.22);
+}
+.dark .glass-panel {
+  background: rgb(20 18 17 / 0.86);
+  border-color: rgb(255 255 255 / 0.12);
+}
+.glass-rail {
+  backdrop-filter: blur(24px);
+  background: rgb(255 255 255 / 0.7);
+  border-right: 1px solid rgb(46 34 24 / 0.08);
+}
+.dark .glass-rail {
+  background: rgb(14 13 12 / 0.82);
+  border-right-color: rgb(255 255 255 / 0.07);
+}
+.glass-tab {
+  backdrop-filter: blur(8px);
+  background: rgb(255 255 255 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.4);
+}
+.dark .glass-tab {
+  background: rgb(255 255 255 / 0.05);
+  border-color: rgb(255 255 255 / 0.08);
+}
+.glass-input {
+  backdrop-filter: blur(8px);
+  background: rgb(255 255 255 / 0.7);
+  border: 1px solid hsl(var(--line));
+}
+.dark .glass-input {
+  background: rgb(255 255 255 / 0.04);
+  border-color: hsl(var(--border));
+}
+.glass-mint { background: hsl(var(--success) / 0.1); border: 1px solid hsl(var(--success) / 0.28); backdrop-filter: blur(8px); }
+.glass-azure { background: hsl(var(--ink) / 0.06); border: 1px solid hsl(var(--ink) / 0.16); backdrop-filter: blur(8px); }
+.dark .glass-azure { background: rgb(255 255 255 / 0.05); border-color: rgb(255 255 255 / 0.1); }
+.glass-orchid { background: hsl(var(--rust) / 0.1); border: 1px solid hsl(var(--rust) / 0.3); backdrop-filter: blur(8px); }
+.glass-amber { background: hsl(var(--gold) / 0.12); border: 1px solid hsl(var(--gold) / 0.34); backdrop-filter: blur(8px); }
+.glass-rose { background: hsl(var(--danger) / 0.1); border: 1px solid hsl(var(--danger) / 0.3); backdrop-filter: blur(8px); }
+.glass-hover { transition: background-color 300ms, border-color 300ms, transform 300ms; }
+.glass-hover:hover { background: rgb(255 255 255 / 0.9); border-color: rgb(46 34 24 / 0.16); transform: translateY(-2px); }
+.dark .glass-hover:hover { background: rgb(34 31 28 / 0.8); border-color: rgb(255 255 255 / 0.14); }
+/* safety net — solid fallback if backdrop-filter unsupported */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-sheet, .glass-card, .glass-panel, .glass-rail, .glass-tab, .glass-input { background: hsl(var(--surface)); }
+}
+
+/* static ember backdrop so blur has something to blur (§13.3) — static = free */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(56rem 34rem at 50% -18%, hsl(var(--ember) / 0.16), transparent 65%),
+    radial-gradient(42rem 30rem at 104% 104%, hsl(var(--rust) / 0.1), transparent 62%),
+    hsl(var(--background));
+}
+.dark .mesh-bg {
+  background:
+    radial-gradient(58rem 36rem at 50% -20%, hsl(var(--ember) / 0.14), transparent 65%),
+    radial-gradient(40rem 30rem at 104% 106%, hsl(var(--rust) / 0.08), transparent 60%),
+    hsl(var(--background));
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Animation suite (§15 / Appendix B) — compositor-only unless noted
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes staggerFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fadeInUp 0.4s cubic-bezier(0.23, 1, 0.32, 1) both; }
+.animate-stagger { animation: staggerFadeIn 0.3s cubic-bezier(0.23, 1, 0.32, 1) both; animation-delay: calc(var(--i, 0) * 60ms); }
+
+/* skeleton shimmer (spec 16) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: hsl(var(--line));
+  border-radius: 12px;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: shimmer 1.2s linear infinite;
+}
+.dark .skeleton::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.07), transparent); }
+@keyframes shimmer { to { transform: translateX(100%); } }
+
+/* Shutter (spec 1) — pre-painted ink panels, transform only, no colour show */
+.prism-top { animation: prismUp 0.9s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.prism-bottom { animation: prismDown 0.9s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.prism-loader { animation: prismFade 0.9s ease-out forwards; }
+.prism-bar { animation: prismBar 1.1s ease-in-out infinite; transform-origin: center; }
+@keyframes prismUp { 0%, 45% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+@keyframes prismDown { 0%, 45% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+@keyframes prismFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes prismBar { 0%, 100% { transform: scaleY(0.08); } 20% { transform: scaleY(1); } }
+
+/* Funnel bloom (spec 6): bands grow from the left with overshoot, staggered */
+@keyframes funnelBloom {
+  0% { transform: scaleX(0); opacity: 0.4; }
+  70% { transform: scaleX(1.015); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+.funnel-band { transform-origin: left center; animation: funnelBloom 0.9s cubic-bezier(0.23, 1, 0.32, 1) both; animation-delay: calc(var(--i, 0) * 90ms); }
+
+/* Heatmap ripple (spec 8): diagonal cascade, runs once */
+@keyframes heatPop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.heat-cell { animation: heatPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--c, 0) * 15ms); }
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--ember) / 0.5); } 50% { box-shadow: 0 0 0 4px hsl(var(--ember) / 0); } }
+.today-ring { animation: breathe 2.4s ease-in-out infinite; }
+
+/* Rain cloud (spec 3) */
+@keyframes rainDrop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(120px); opacity: 0; } }
+.rain-drop { animation: rainDrop 0.9s ease-in both; animation-delay: calc(180ms + var(--i, 0) * 90ms); }
+@keyframes cloudDrift { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.rain-cloud { animation: cloudDrift 0.6s ease-out both; }
+
+/* Reply pulse (spec 14) + particle rise */
+@keyframes pulseBadge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.06); } }
+.pulse-once { animation: pulseBadge 1.2s ease-out 1; }
+@keyframes particleRise { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-96px) scale(1.05); opacity: 0; } }
+.particle { animation: particleRise 1.5s cubic-bezier(0.23, 1, 0.32, 1) both; }
+
+/* radar sweep (spec 4) — only while a request is in flight */
+@keyframes radarSweep { to { transform: rotate(360deg); } }
+.radar-sweep { background: conic-gradient(from 0deg, transparent 0deg, hsl(var(--ember) / 0.4) 60deg, transparent 120deg); animation: radarSweep 1.6s linear infinite; }
+
+/* route/content fade (spec 16) */
+@keyframes routeFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.route-fade { animation: routeFade 0.18s ease-out both; }
+
+/* gradient text + hairline */
+.text-gradient-brand {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hairline-brand { position: relative; }
+.hairline-brand::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--gradient-brand);
+  opacity: 0.6;
+}
+
+/* custom scrollbar (§7.2) */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--line)); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.6); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* tabular numbers for stats */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* responsive floor: grid/flex children default to min-width:auto, which makes any wide
+   child (charts, tables, kanban) blow the page sideways. Let them shrink instead. */
+@layer base {
+  .grid > * { min-width: 0; }
+  .flex > * { min-width: 0; }
+}
+
+/* reduced motion — three layers (§16.2): this is layer 1 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-stagger { opacity: 1; }
+  .rain-drop, .particle, .radar-sweep { display: none; }
+  .funnel-band { animation: none; opacity: 1; transform: none; }
+  .heat-cell { animation: none; opacity: 1; transform: none; }
+}
