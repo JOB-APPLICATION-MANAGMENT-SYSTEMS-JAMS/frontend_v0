@@ -4,9 +4,10 @@
  * Unwraps the envelope, parses FastAPI-style errors, exposes machine-readable error.code.
  */
 import { APIRequestError, throwApiError, type ErrorShape } from "./error-utils";
+import { API_BASE } from "./base";
 
 const isServer = typeof window === "undefined";
-export const SERVER_BASE = process.env.API_BASE_URL ?? "http://localhost:8000";
+export const SERVER_BASE = API_BASE;
 const CLIENT_BASE = "/api/proxy";
 
 export type AppFetchOptions = {

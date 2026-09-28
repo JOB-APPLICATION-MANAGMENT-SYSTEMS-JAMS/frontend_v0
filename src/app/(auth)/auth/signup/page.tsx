@@ -7,20 +7,20 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { UserPlus, MailCheck } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
-import { Button, Input, Label } from "@/components/ui/base";
+import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
 import { InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [form, setForm] = React.useState({ email: "", password: "", confirm: "" });
+  const [form, setForm] = React.useState({ firstName: "", lastName: "", email: "", password: "", confirm: "" });
   const [done, setDone] = React.useState(false);
 
   const signup = useMutation({
     mutationFn: () =>
       appFetch<any>("/auth/register", {
         method: "POST",
-        body: { email: form.email, password: form.password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        body: { first_name: form.firstName.trim(), last_name: form.lastName.trim(), email: form.email, password: form.password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         _auth: false,
       }),
     onSuccess: async (data) => {
@@ -71,17 +71,27 @@ export default function SignupPage() {
           signup.mutate();
         }}
       >
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="first_name">First name</Label>
+            <Input id="first_name" autoComplete="given-name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Ada" />
+          </div>
+          <div>
+            <Label htmlFor="last_name">Last name</Label>
+            <Input id="last_name" autoComplete="family-name" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} placeholder="Lovelace" />
+          </div>
+        </div>
         <div>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" required minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <PasswordInput id="password" autoComplete="new-password" required minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </div>
         <div>
           <Label htmlFor="confirm">Confirm password</Label>
-          <Input id="confirm" type="password" required value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
+          <PasswordInput id="confirm" autoComplete="new-password" required value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
         </div>
         <Button type="submit" className="w-full" disabled={signup.isPending}>
           <UserPlus className="h-4 w-4" />

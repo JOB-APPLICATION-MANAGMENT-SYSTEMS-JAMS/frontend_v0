@@ -5,9 +5,9 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { LogIn, MailCheck, ShieldAlert } from "lucide-react";
+import { LogIn, ShieldAlert } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
-import { Button, Input, Label } from "@/components/ui/base";
+import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
 import { InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 
@@ -93,20 +93,13 @@ function LoginPageInner() {
         </div>
         <div>
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <PasswordInput id="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
         </div>
         <Button type="submit" className="w-full" disabled={login.isPending}>
           <LogIn className="h-4 w-4" />
           {login.isPending ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-      <div className="glass-mint flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs">
-        <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-        <span>
-          Demo account: <span className="font-mono font-semibold">demo@jams.local</span> / <span className="font-mono font-semibold">demo1234</span>
-        </span>
-      </div>
 
       <p className="text-sm text-muted-foreground">
         No account?{" "}

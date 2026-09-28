@@ -6,8 +6,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-
-const API_BASE = process.env.API_BASE_URL ?? "http://localhost:8000";
+import { API_BASE } from "@/lib/api/base";
 const MAX_REDIRECTS = 10;
 
 export const runtime = "nodejs";
