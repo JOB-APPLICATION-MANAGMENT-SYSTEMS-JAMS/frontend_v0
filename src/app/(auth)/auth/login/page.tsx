@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { LogIn, ShieldAlert } from "lucide-react";
+import { LogIn, MailCheck, ShieldAlert } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
 import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
 import { InlineBanner } from "@/components/ui/feedback";
@@ -35,6 +35,7 @@ function LoginPageInner() {
   const [password, setPassword] = React.useState("");
   const [needsVerify, setNeedsVerify] = React.useState(false);
   const [suspended, setSuspended] = React.useState(false);
+  const [verifyToken, setVerifyToken] = React.useState("");
 
   const login = useMutation({
     mutationFn: () => appFetch<any>("/auth/login", { method: "POST", body: { email, password }, _auth: false }),
@@ -53,9 +54,24 @@ function LoginPageInner() {
     },
   });
 
+  const verify = useMutation({
+    mutationFn: () => appFetch<any>("/auth/verify-email", { method: "POST", body: { token: verifyToken }, _auth: false }),
+    onSuccess: () => {
+      toast("Email verified — sign in now", "success");
+      setNeedsVerify(false);
+      setVerifyToken("");
+    },
+    onError: (err) => toast(err instanceof APIRequestError ? err.message : "Verification failed", "error"),
+  });
+
   const resend = useMutation({
     mutationFn: () => appFetch<any>("/auth/resend-verification", { method: "POST", body: { email }, _auth: false }),
-    onSuccess: () => toast("New verification link sent (local mode: check the API console)", "success"),
+    onSuccess: (data: any) => {
+      // no SMTP — the API hands the fresh token straight back, so pre-fill it
+      if (data?.verification_token) setVerifyToken(data.verification_token);
+      toast("New verification code sent", "success");
+    },
+    onError: () => toast("Couldn’t resend — try again", "error"),
   });
 
   return (
@@ -67,11 +83,19 @@ function LoginPageInner() {
 
       {needsVerify && (
         <InlineBanner tone="warn" title="Email not verified yet">
-          We sent a link to <span className="font-mono">{email}</span>. Local mode prints the link in the API console — or{" "}
-          <button className="underline" onClick={() => resend.mutate()}>
-            resend it
-          </button>
-          .
+          <p className="mb-2">
+            Enter the verification code for <span className="font-mono">{email}</span>. This deployment sends no email —{" "}
+            <button className="underline" onClick={() => resend.mutate()} disabled={resend.isPending}>
+              {resend.isPending ? "sending…" : "get a new code"}
+            </button>{" "}
+            returns it straight to the API.
+          </p>
+          <div className="flex gap-2">
+            <Input value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} placeholder="paste verification token" aria-label="Verification token" />
+            <Button variant="azure" onClick={() => verify.mutate()} disabled={!verifyToken || verify.isPending}>
+              <MailCheck className="h-4 w-4" /> Verify
+            </Button>
+          </div>
         </InlineBanner>
       )}
       {suspended && (

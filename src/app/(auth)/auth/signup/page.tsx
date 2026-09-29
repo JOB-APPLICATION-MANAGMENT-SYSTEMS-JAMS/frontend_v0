@@ -15,6 +15,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [form, setForm] = React.useState({ firstName: "", lastName: "", email: "", password: "", confirm: "" });
   const [done, setDone] = React.useState(false);
+  const [verifyToken, setVerifyToken] = React.useState("");
 
   const signup = useMutation({
     mutationFn: () =>
@@ -30,6 +31,8 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token }),
       });
+      // no SMTP anywhere we deploy — the API returns the token, so pre-fill it
+      setVerifyToken(data.verification_token ?? "");
       setDone(true);
     },
     onError: (err) => {
@@ -48,10 +51,10 @@ export default function SignupPage() {
           <h1 className="font-display text-2xl font-extrabold">Check your inbox</h1>
           <p className="mt-1 text-sm text-muted-foreground">We sent a verification link to {form.email}.</p>
         </div>
-        <InlineBanner tone="success" title="Local mode">
-          No SMTP here — the API console prints your verification link (like MailPit). Paste the token below or open it directly.
+        <InlineBanner tone="success" title="Verify your email">
+          This deployment sends no email, so the API returned your verification code — it’s pre-filled below (the server log also prints the link).
         </InlineBanner>
-        <VerifyBox onDone={() => router.replace("/onboarding")} />
+        <VerifyBox initialToken={verifyToken} onDone={() => router.replace("/onboarding")} />
       </div>
     );
   }
@@ -109,8 +112,8 @@ export default function SignupPage() {
   );
 }
 
-function VerifyBox({ onDone }: { onDone: () => void }) {
-  const [token, setToken] = React.useState("");
+function VerifyBox({ initialToken = "", onDone }: { initialToken?: string; onDone: () => void }) {
+  const [token, setToken] = React.useState(initialToken);
   const verify = useMutation({
     mutationFn: () => appFetch<any>("/auth/verify-email", { method: "POST", body: { token }, _auth: false }),
     onSuccess: () => {
