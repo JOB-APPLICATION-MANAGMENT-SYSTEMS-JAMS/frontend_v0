@@ -1,6 +1,6 @@
 "use client";
 
-/** Onboarding (§6): three quick steps after signup — identity, goal, first hunt. */
+/** Onboarding (§6): three quick steps after signup, identity, goal, first hunt. */
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
                 <Flag className="h-5 w-5" />
               </span>
               <h1 className="font-display mt-4 text-2xl font-extrabold">Set a daily goal</h1>
-              <p className="mt-1 text-sm text-muted-foreground">The streak ring tracks it every local day. 20 is honest for an active hunt — change it anytime.</p>
+              <p className="mt-1 text-sm text-muted-foreground">The streak ring tracks it every local day. 20 is honest for an active hunt, change it anytime.</p>
               <div className="mt-5">
                 <Label>Applications per day</Label>
                 <Input type="number" min={1} max={500} value={goal} onChange={(e) => setGoal(e.target.value)} className="w-32" />
@@ -98,18 +98,18 @@ export default function OnboardingPage() {
               </span>
               <h1 className="font-display mt-4 text-2xl font-extrabold">You’re ready</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Free boards (Arbeitnow, Remotive, RemoteOK, HN, Greenhouse/Lever/Ashby) are indexed, your profile is set — the dashboard is
+                Free boards (Arbeitnow, Remotive, RemoteOK, HN, Greenhouse/Lever/Ashby) are indexed, your profile is set, the dashboard is
                 waiting.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <span className="font-semibold text-foreground">/discover</span> — search & score live postings
+                  <span className="font-semibold text-foreground">/discover</span>, search & score live postings
                 </li>
                 <li>
-                  <span className="font-semibold text-foreground">c</span> — quick-add an application
+                  <span className="font-semibold text-foreground">c</span>, quick-add an application
                 </li>
                 <li>
-                  <span className="font-semibold text-foreground">⌘K</span> — anything, instantly
+                  <span className="font-semibold text-foreground">⌘K</span>, anything, instantly
                 </li>
               </ul>
             </>

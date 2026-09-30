@@ -3,7 +3,7 @@
 /**
  * Query client with the reference's invalidation-by-meta pattern (§11.1):
  * mutations declare `meta: { invalidates: [...] }`, the global MutationCache matches
- * and invalidates — write the intent once, every dependent view refreshes.
+ * and invalidates, write the intent once, every dependent view refreshes.
  */
 import { QueryClient, MutationCache } from "@tanstack/react-query";
 import { handleMutationError } from "@/lib/api/error-utils";

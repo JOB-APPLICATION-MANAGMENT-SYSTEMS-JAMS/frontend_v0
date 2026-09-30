@@ -1,6 +1,6 @@
 "use client";
 
-/** Login (§40.2) — rich-403 branches (verify / suspended), redirect param preserved (§4.2). */
+/** Login (§40.2), rich-403 branches (verify / suspended), redirect param preserved (§4.2). */
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,14 +50,14 @@ function LoginPageInner() {
         if (err.code === "SUSPENDED") return setSuspended(true);
         return toast(err.message, "error");
       }
-      toast("Network error — is the backend running?", "error");
+      toast("Network error, is the backend running?", "error");
     },
   });
 
   const verify = useMutation({
     mutationFn: () => appFetch<any>("/auth/verify-email", { method: "POST", body: { token: verifyToken }, _auth: false }),
     onSuccess: () => {
-      toast("Email verified — sign in now", "success");
+      toast("Email verified, sign in now", "success");
       setNeedsVerify(false);
       setVerifyToken("");
     },
@@ -67,11 +67,11 @@ function LoginPageInner() {
   const resend = useMutation({
     mutationFn: () => appFetch<any>("/auth/resend-verification", { method: "POST", body: { email }, _auth: false }),
     onSuccess: (data: any) => {
-      // no SMTP — the API hands the fresh token straight back, so pre-fill it
+      // no SMTP, the API hands the fresh token straight back, so pre-fill it
       if (data?.verification_token) setVerifyToken(data.verification_token);
       toast("New verification code sent", "success");
     },
-    onError: () => toast("Couldn’t resend — try again", "error"),
+    onError: () => toast("Couldn’t resend, try again", "error"),
   });
 
   return (
@@ -84,7 +84,7 @@ function LoginPageInner() {
       {needsVerify && (
         <InlineBanner tone="warn" title="Email not verified yet">
           <p className="mb-2">
-            Enter the verification code for <span className="font-mono">{email}</span>. This deployment sends no email —{" "}
+            Enter the verification code for <span className="font-mono">{email}</span>. This deployment sends no email,{" "}
             <button className="underline" onClick={() => resend.mutate()} disabled={resend.isPending}>
               {resend.isPending ? "sending…" : "get a new code"}
             </button>{" "}

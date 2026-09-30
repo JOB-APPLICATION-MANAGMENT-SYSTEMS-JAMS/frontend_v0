@@ -9,8 +9,9 @@ import { Columns3, List, Plus, X, Building2, CalendarClock, ExternalLink } from 
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { AppStatus, Application, Paged } from "@/types";
-import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
+import { Badge, Button, Card, Input, Label, Pager, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { Modal, InfoButton } from "@/components/ui/modal";
 import { BOARD_COLUMNS, STATUS_META, cn, fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -27,12 +28,14 @@ function TrackerPageInner() {
   const router = useRouter();
   const view = params.get("view") ?? "board";
   const statusFilter = params.get("status");
+  const page = Math.max(1, Number(params.get("page") ?? 1) || 1);
+  const pageSize = view === "list" ? 25 : 100;
   const newOpen = params.get("new") === "1";
   const [selected, setSelected] = React.useState<string[]>([]);
   const [dragId, setDragId] = React.useState<string | null>(null);
   const [dropCol, setDropCol] = React.useState<string | null>(null);
 
-  const listParams = { status: statusFilter ?? undefined, page_size: 100, sort: "recent" };
+  const listParams = { status: statusFilter ?? undefined, page, page_size: pageSize, sort: "recent" };
   const list = useQuery<Paged<Application>>({
     queryKey: qk.applicationList(listParams),
     queryFn: () => appFetch("/applications", { params: listParams as any, _auth: true }),
@@ -70,6 +73,15 @@ function TrackerPageInner() {
     router.replace(`/tracker?${sp.toString()}`, { scroll: false });
   };
 
+  /** Changing the status filter must restart at page 1 or you land past the end of the result. */
+  const setStatus = (v?: string) => {
+    const sp = new URLSearchParams(params.toString());
+    if (v) sp.set("status", v);
+    else sp.delete("status");
+    sp.delete("page");
+    router.replace(`/tracker?${sp.toString()}`, { scroll: false });
+  };
+
   return (
     <div className="space-y-4">
       {/* toolbar */}
@@ -82,13 +94,31 @@ function TrackerPageInner() {
             <List className="h-3.5 w-3.5" /> List
           </button>
         </div>
+        <InfoButton
+          title="Board vs list"
+          body={
+            <>
+              <p><b>Board</b> shows one column per status, 12 cards each; drag a card to another column to change its status.</p>
+              <p><b>List</b> is a dense table with checkboxes for bulk status changes, 25 rows per page.</p>
+            </>
+          }
+        />
 
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone={statusFilter ? "neutral" : "azure"} className="cursor-pointer" onClick={() => setParam("status", undefined)}>
+          <InfoButton
+            title="Status filters"
+            body={
+              <>
+                <p>Every application sits in exactly one status: saved, applied, replied, interview, offer, rejected or ghosted.</p>
+                <p>Click a chip to filter the view; counts reflect the current page. Ghosted flips automatically after 14 days of silence.</p>
+              </>
+            }
+          />
+          <Badge tone={statusFilter ? "neutral" : "azure"} className="cursor-pointer" onClick={() => setStatus(undefined)}>
             all
           </Badge>
           {BOARD_COLUMNS.map((s) => (
-            <Badge key={s} tone={statusFilter === s ? "azure" : "neutral"} className="cursor-pointer capitalize" onClick={() => setParam("status", statusFilter === s ? undefined : s)}>
+            <Badge key={s} tone={statusFilter === s ? "azure" : "neutral"} className="cursor-pointer capitalize" onClick={() => setStatus(statusFilter === s ? undefined : s)}>
               {STATUS_META[s].label} · {byStatus[s]?.length ?? 0}
             </Badge>
           ))}
@@ -129,7 +159,7 @@ function TrackerPageInner() {
       ) : (list.data?.items?.length ?? 0) === 0 ? (
         <EmptyState
           title="Nothing tracked yet"
-          description="Capture a posting by URL, track one from Discover, or log an application manually — every record gets a status, a date and a next action."
+          description="Capture a posting by URL, track one from Discover, or log an application manually, every record gets a status, a date and a next action."
           action={
             <div className="flex gap-2">
               <Button onClick={() => setParam("new", "1")}>
@@ -199,11 +229,21 @@ function TrackerPageInner() {
                     </Link>
                   </div>
                 ))}
-                {(byStatus[col] ?? []).length > 12 && <p className="text-center text-[11px] text-muted-foreground">+{(byStatus[col] ?? []).length - 12} more — use list view</p>}
+                {(byStatus[col] ?? []).length > 12 && <p className="text-center text-[11px] text-muted-foreground">+{(byStatus[col] ?? []).length - 12} more, use list view</p>}
               </div>
             </section>
           ))}
         </div>
+      )}
+
+      {list.data?.pagination && (
+        <Pager
+          page={page}
+          pageSize={pageSize}
+          totalCount={list.data.pagination.total_count ?? 0}
+          onPage={(p) => setParam("page", p > 1 ? String(p) : undefined)}
+          className="px-1"
+        />
       )}
 
       {newOpen && <NewApplicationModal onClose={() => setParam("new", undefined)} />}
@@ -245,9 +285,9 @@ function ListView({ items, selected, onToggle }: { items: Application[]; selecte
                   {STATUS_META[a.status]?.label ?? a.status}
                 </span>
               </td>
-              <td className="px-2 py-2.5 text-xs capitalize text-muted-foreground">{a.source ?? "—"}</td>
+              <td className="px-2 py-2.5 text-xs capitalize text-muted-foreground">{a.source ?? "n/a"}</td>
               <td className="tnum px-2 py-2.5 text-xs text-muted-foreground">{fmt.date(a.applied_at ?? a.created_at)}</td>
-              <td className="px-2 py-2.5 text-xs">{a.first_reply_days != null ? `${a.first_reply_days}d` : a.replied_at ? "✓" : "—"}</td>
+              <td className="px-2 py-2.5 text-xs">{a.first_reply_days != null ? `${a.first_reply_days}d` : a.replied_at ? "✓" : "n/a"}</td>
               <td className="px-4 py-2.5 text-right">
                 <Link href={`/applications/${a.id}`} className="text-xs font-semibold text-accent hover:underline">
                   open
@@ -278,8 +318,7 @@ function NewApplicationModal({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/45 p-4 backdrop-blur-sm" onClick={onClose}>
-      <Card className="glass-panel route-fade w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+    <Modal open onClose={onClose} label="Log an application" className="max-w-lg">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold">Log an application</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -311,8 +350,8 @@ function NewApplicationModal({ onClose }: { onClose: () => void }) {
           <div>
             <Label>Kind</Label>
             <Select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
-              <option value="application">Application — a posting exists</option>
-              <option value="pitch">Pitch — no opening (cold outreach)</option>
+              <option value="application">Application, a posting exists</option>
+              <option value="pitch">Pitch, no opening (cold outreach)</option>
             </Select>
           </div>
           <div>
@@ -328,7 +367,6 @@ function NewApplicationModal({ onClose }: { onClose: () => void }) {
             </Button>
           </div>
         </form>
-      </Card>
-    </div>
+    </Modal>
   );
 }

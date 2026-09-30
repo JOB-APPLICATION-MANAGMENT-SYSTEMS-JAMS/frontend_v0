@@ -1,5 +1,5 @@
 /**
- * Declarative route registry (§41.4) — same shape as the reference's route-config.
+ * Declarative route registry (§41.4), same shape as the reference's route-config.
  * proxy.ts (Next 16's middleware) reads these tables to guard routes.
  */
 export const publicRoutes = ["/", "/auth/login", "/auth/signup", "/auth/verify", "/legal"];

@@ -23,7 +23,7 @@ type Me = {
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  // next-themes only knows the stored theme after mount — server always renders "system",
+  // next-themes only knows the stored theme after mount, server always renders "system",
   // so the selected-button variant must stay "system" during hydration or the tree mismatches
   const [themeMounted, setThemeMounted] = React.useState(false);
   React.useEffect(() => setThemeMounted(true), []);
@@ -75,7 +75,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-5">
       <header>
         <h1 className="font-display text-2xl font-extrabold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Account, defaults, appearance, and your data — all exportable (§31).</p>
+        <p className="text-sm text-muted-foreground">Account, defaults, appearance, and your data, all exportable (§31).</p>
       </header>
 
       {/* account */}
@@ -157,7 +157,7 @@ export default function SettingsPage() {
           </Button>
         </div>
         <InlineBanner tone="info" className="mt-3" title="No lock-in">
-          Everything is one file away — profile, applications, events, CVs, templates, companies, outreach, streaks.
+          Everything is one file away, profile, applications, events, CVs, templates, companies, outreach, streaks.
         </InlineBanner>
       </Card>
 

@@ -79,9 +79,9 @@ export default function ApplicationDetailPage() {
 
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
             <Meta label="Applied" value={fmt.date(a.applied_at ?? a.created_at)} />
-            <Meta label="Replied" value={a.replied_at ? fmt.date(a.replied_at) : "—"} />
-            <Meta label="First reply" value={a.first_reply_days != null ? `${a.first_reply_days} days` : "—"} />
-            <Meta label="Source" value={a.source ?? "—"} />
+            <Meta label="Replied" value={a.replied_at ? fmt.date(a.replied_at) : "n/a"} />
+            <Meta label="First reply" value={a.first_reply_days != null ? `${a.first_reply_days} days` : "n/a"} />
+            <Meta label="Source" value={a.source ?? "n/a"} />
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">

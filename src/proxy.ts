@@ -1,5 +1,5 @@
 /**
- * Next 16's proxy (formerly middleware.ts) — auth guard with deep-link preservation:
+ * Next 16's proxy (formerly middleware.ts), auth guard with deep-link preservation:
  * unauthenticated access to a protected route → /auth/login?redirect=<full path+query>.
  */
 import { NextRequest, NextResponse } from "next/server";

@@ -1,5 +1,5 @@
 /**
- * appFetch — the only way features call the network (§41.2).
+ * appFetch, the only way features call the network (§41.2).
  * Browser → same-origin /api/proxy (single door) → FastAPI. Server → API_BASE_URL direct.
  * Unwraps the envelope, parses FastAPI-style errors, exposes machine-readable error.code.
  */
@@ -45,7 +45,7 @@ async function getResponseData(res: Response) {
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) return res.json();
   if (ct.includes("text/")) return res.text();
-  // binary (CV PDF exports, CSV downloads) — §12.2 blob sniffing
+  // binary (CV PDF exports, CSV downloads), §12.2 blob sniffing
   return res.blob();
 }
 

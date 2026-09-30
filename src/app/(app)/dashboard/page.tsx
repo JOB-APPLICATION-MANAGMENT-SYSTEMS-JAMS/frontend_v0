@@ -15,6 +15,7 @@ import { Heatmap } from "@/features/analytics/heatmap";
 import { ChartCard, BreakdownTable, DualSeries } from "@/features/analytics/charts";
 import { Card, Button, Badge, Skeleton } from "@/components/ui/base";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
+import { InfoButton } from "@/components/ui/modal";
 import { fireConfetti } from "@/lib/confetti";
 import { fmt } from "@/lib/utils";
 
@@ -72,7 +73,18 @@ function DashboardPageInner() {
       {/* hero strip */}
       <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Today</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Today</p>
+            <InfoButton
+              title="Today"
+              body={
+                <>
+                  <p>Your daily target for this day in your timezone: as many applications logged as your goal allows.</p>
+                  <p>Hitting it keeps your streak alive and triggers a small celebration. Goal and timezone are editable from Settings.</p>
+                </>
+              }
+            />
+          </div>
           <h2 className="font-display text-2xl font-extrabold">
             {streak?.hit ? (
               <>
@@ -80,7 +92,7 @@ function DashboardPageInner() {
               </>
             ) : streak ? (
               <>
-                <span className="tnum text-gradient-brand">{streak.count}/{streak.goal}</span> applications — {streak.remaining} to go
+                <span className="tnum text-gradient-brand">{streak.count}/{streak.goal}</span> applications, {streak.remaining} to go
               </>
             ) : (
               "Loading your day…"
@@ -94,24 +106,42 @@ function DashboardPageInner() {
           <Button variant="outline" onClick={() => router.push("/capture?new=1")}>
             <Sparkles className="h-4 w-4" /> Quick capture
           </Button>
-          {/* celebration entry point — kept reachable now that the rail is seven items */}
+          {/* celebration entry point, kept reachable now that the rail is seven items */}
           <Button variant="ghost" onClick={() => router.push("/victory")}>
             🎉 I got a job
           </Button>
         </div>
       </Card>
 
-      {/* KPI wall */}
-      <KpiWall summary={summary.data} isPending={summary.isPending} error={summary.error} onRetry={() => summary.refetch()} onDrill={(key) => router.push(`/analytics?focus=${key}`)} />
+      {/* KPI wall: dashboard shows the first four tiles; all eight live on the analytics page */}
+      <KpiWall summary={summary.data} isPending={summary.isPending} error={summary.error} onRetry={() => summary.refetch()} onDrill={(key) => router.push(`/analytics?focus=${key}`)} keys={["applications", "replies", "ghosted", "rejected"]} />
 
       {/* funnel + heatmap */}
       <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
         <FunnelField summary={summary.data} period={period} onPeriodChange={(p) => router.replace(`/dashboard?period=${p}`)} onDrill={(key) => router.push(`/tracker?status=${key}`)} />
         <div className="space-y-6">
-          <ChartCard title="Applied vs replied" subtitle={`${period} buckets · line = replies`}>
+          <ChartCard
+            title="Applied vs replied"
+            subtitle={`${period} buckets · line = replies`}
+            action={<InfoButton title="Applied vs replied" body="One bar per bucket for applications you sent, with a line tracking how many of them ever got answered. Buckets follow the period toggle above the funnel." />}
+          >
             {series.isPending ? <Skeleton className="h-44 w-full" /> : <DualSeries data={series.data?.items ?? []} />}
           </ChartCard>
-          <ChartCard title="What's working" subtitle="by source">
+          <ChartCard
+            title="What's working"
+            subtitle="by source"
+            action={
+              <InfoButton
+                title="What's working"
+                body={
+                  <>
+                    <p>Your applications broken down by where they came from: job boards, direct company sites, referrals, searches and manual logs.</p>
+                    <p>Compare reply behaviour per source to see which channel actually deserves your time.</p>
+                  </>
+                }
+              />
+            }
+          >
             {breakdown.isPending ? <Skeleton className="h-32 w-full" /> : <BreakdownTable items={(breakdown.data?.items ?? []).slice(0, 5)} />}
           </ChartCard>
         </div>
@@ -124,9 +154,20 @@ function DashboardPageInner() {
           title="Ghost alerts"
           subtitle="applications with no reply beyond the threshold"
           action={
-            <Button size="sm" variant="ghost" onClick={() => router.push("/tracker?status=ghosted")}>
-              Open tracker <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <InfoButton
+                title="Ghost alerts"
+                body={
+                  <>
+                    <p>Applications with no reply beyond your ghost threshold (14 days by default) flip to Ghosted automatically.</p>
+                    <p>They are here so you can follow up once more, mark them rejected, or let them age out of your pipeline.</p>
+                  </>
+                }
+              />
+              <Button size="sm" variant="ghost" onClick={() => router.push("/tracker?status=ghosted")}>
+                Open tracker <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           }
         >
           {ghosts.isPending ? (
@@ -160,7 +201,7 @@ function DashboardPageInner() {
       {!summary.isPending && summary.data && (
         <InlineBanner tone="info" title="Weekly digest preview">
           {(summary.data.kpis.applications as any)?.value ?? 0} applied · {(summary.data.kpis.replies as any)?.value ?? 0} replied ·{" "}
-          {(summary.data.kpis.interviews as any)?.value ?? 0} interviews this {period} — median first reply {fmt.days(summary.data.median_time_to_reply_days)},
+          {(summary.data.kpis.interviews as any)?.value ?? 0} interviews this {period}, median first reply {fmt.days(summary.data.median_time_to_reply_days)},
           p90 {fmt.days(summary.data.p90_time_to_reply_days)}. The identical card ships in Monday’s email.
         </InlineBanner>
       )}

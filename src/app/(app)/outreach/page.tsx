@@ -29,7 +29,7 @@ function OutreachPageInner() {
   const [templateId, setTemplateId] = React.useState("");
   const [subject, setSubject] = React.useState("Quick hello about {role} at {company}");
   const [body, setBody] = React.useState(
-    "Hi {contact_name},\n\nI’m applying for {role} at {company} — my background in {top_skills} lines up with what the posting asks for. Would love to compare notes.\n\nThanks,\n{my_name}"
+    "Hi {contact_name},\n\nI’m applying for {role} at {company}, my background in {top_skills} lines up with what the posting asks for. Would love to compare notes.\n\nThanks,\n{my_name}"
   );
 
   const applications = useQuery<Paged<Application>>({
@@ -74,14 +74,14 @@ function OutreachPageInner() {
         _auth: true,
       }),
     meta: { invalidates: [["outreach"]] },
-    onSuccess: (o) => toast(`Draft saved — step ${o.step_no}`, "success"),
+    onSuccess: (o) => toast(`Draft saved, step ${o.step_no}`, "success"),
   });
 
   const send = useMutation({
     mutationFn: (id: string) => appFetch<{ compose_url: string; sent_today: number; daily_cap: number }>(`/outreach/${id}/send`, { method: "POST", body: { via: "gmail_open", confirm: true }, _auth: true }),
     meta: { invalidates: [["outreach"], ["applications"], ["streaks"]] },
     onSuccess: (res) => {
-      toast(`Opening Gmail — ${res.sent_today}/${res.daily_cap} sends today`, "success");
+      toast(`Opening Gmail, ${res.sent_today}/${res.daily_cap} sends today`, "success");
       if (res.compose_url) window.open(res.compose_url, "_blank", "noopener");
     },
     onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not prepare send", "error"),
@@ -98,7 +98,7 @@ function OutreachPageInner() {
       <div className="space-y-5">
         <header>
           <h1 className="font-display text-2xl font-extrabold">Outreach</h1>
-          <p className="text-sm text-muted-foreground">Compose once, merge variables, hand off to Gmail — you press Send (§26.4).</p>
+          <p className="text-sm text-muted-foreground">Compose once, merge variables, hand off to Gmail, you press Send (§26.4).</p>
         </header>
 
         <Card className="space-y-4 p-5">
@@ -106,7 +106,7 @@ function OutreachPageInner() {
             <div>
               <Label>Linked application</Label>
               <Select value={appId} onChange={(e) => setAppId(e.target.value)}>
-                <option value="">— none (standalone pitch) —</option>
+                <option value=""> none (standalone pitch),</option>
                 {applications.data?.items.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.company_name} · {a.role_title}
@@ -117,7 +117,7 @@ function OutreachPageInner() {
             <div>
               <Label>Template</Label>
               <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                <option value="">— write from scratch —</option>
+                <option value=""> write from scratch,</option>
                 {templates.data?.items.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name} ({t.archetype})
@@ -133,7 +133,7 @@ function OutreachPageInner() {
           </div>
 
           <div>
-            <Label>Body — {'{{variables}}'} merge against profile + application</Label>
+            <Label>Body, {'{{variables}}'} merge against profile + application</Label>
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} className="min-h-[180px] font-mono text-[13px]" />
           </div>
 
@@ -156,7 +156,7 @@ function OutreachPageInner() {
           {messages.isPending ? (
             <Skeleton className="h-24 w-full" />
           ) : (messages.data?.items.length ?? 0) === 0 ? (
-            <EmptyState icon={<Send className="h-6 w-6" />} title="No outreach yet" description="Draft one above — or apply to a job and offer to follow up in 7 days." />
+            <EmptyState icon={<Send className="h-6 w-6" />} title="No outreach yet" description="Draft one above, or apply to a job and offer to follow up in 7 days." />
           ) : (
             <ul className="space-y-2">
               {messages.data!.items.map((o, i) => (
@@ -216,7 +216,7 @@ function OutreachPageInner() {
               <ProgressBar value={(cadence.data!.sent_today / Math.max(1, cadence.data!.daily_cap)) * 100} className="mt-2" />
               {cadence.data!.remaining <= 3 && (
                 <InlineBanner tone="warn" className="mt-3" title="Approaching the cap">
-                  The free-tier cap protects deliverability — the rest queues for tomorrow.
+                  The free-tier cap protects deliverability, the rest queues for tomorrow.
                 </InlineBanner>
               )}
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -250,7 +250,7 @@ function OutreachPageInner() {
           {threads.isPending ? (
             <Skeleton className="h-24 w-full" />
           ) : (threads.data?.items.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">No replies ingested yet — connect a mailbox in Inbox sync.</p>
+            <p className="text-sm text-muted-foreground">No replies ingested yet, connect a mailbox in Inbox sync.</p>
           ) : (
             <ul className="space-y-2">
               {threads.data!.items.slice(0, 6).map((t) => (
@@ -272,7 +272,7 @@ function OutreachPageInner() {
           <h2 className="font-display mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">How sending works</h2>
           <p className="text-xs leading-relaxed text-muted-foreground">
             No paid SMTP: JAMS prepares the message, opens Gmail pre-filled, and you press Send. Inbound replies are ingested through{" "}
-            <span className="font-semibold text-foreground">Inbox sync</span> and classified deterministically — interview invite, rejection, OOO, bounce.
+            <span className="font-semibold text-foreground">Inbox sync</span> and classified deterministically, interview invite, rejection, OOO, bounce.
           </p>
         </Card>
       </div>

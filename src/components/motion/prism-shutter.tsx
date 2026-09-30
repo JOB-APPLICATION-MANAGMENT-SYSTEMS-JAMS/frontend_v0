@@ -1,6 +1,6 @@
 "use client";
 
-/** Shutter (spec §15.1) — pre-painted ink panels + five-bar equaliser. Transform-only, no colour show. */
+/** Shutter (spec §15.1), pre-painted ink panels + five-bar equaliser. Transform-only, no colour show. */
 const BARS = ["#ff7a1a", "#ff8f3d", "#ffa65e", "#ffc489", "#ffe0c2"];
 
 export function PrismShutter({ active }: { active: boolean }) {

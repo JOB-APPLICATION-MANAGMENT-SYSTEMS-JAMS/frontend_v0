@@ -1,8 +1,9 @@
 "use client";
 
-/** Heatmap calendar (§22.3) — 52×7 GitHub-style grid, diagonal ripple cascade, today's breathing ring. */
+/** Heatmap calendar (§22.3), 52×7 GitHub-style grid, diagonal ripple cascade, today's breathing ring. */
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { InfoButton } from "@/components/ui/modal";
 
 type Day = { day: string; count: number; goal: number; hit: boolean; streak: number };
 
@@ -16,7 +17,18 @@ export function Heatmap({ days, year, onPick, className }: { days?: Day[]; year:
     <section className={cn("glass-card rounded-2xl p-4 md:p-5", className)}>
       <header className="mb-3 flex items-center justify-between">
         <div>
+        <div className="flex items-center gap-1.5">
           <h3 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Consistency</h3>
+          <InfoButton
+            title="Consistency heatmap"
+            body={
+              <>
+                <p>A GitHub-style grid of {year}: one square per day, darker orange means more applications logged that day.</p>
+                <p>Days where you hit your daily goal get the boldest shade, and the ring marks today. Click any day to jump to your streaks.</p>
+              </>
+            }
+          />
+        </div>
           <p className="text-[11px] text-muted-foreground">{year} · intensity = applications per day</p>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">

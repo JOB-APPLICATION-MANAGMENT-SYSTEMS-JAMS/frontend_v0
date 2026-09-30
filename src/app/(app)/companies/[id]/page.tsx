@@ -38,7 +38,7 @@ export default function CompanyDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl font-extrabold">{c.name}</h1>
-            <p className="text-sm text-muted-foreground">{c.domain ?? "—"}</p>
+            <p className="text-sm text-muted-foreground">{c.domain ?? "n/a"}</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge tone={c.tier === "dream" ? "orchid" : c.tier === "reach" ? "azure" : "mint"} className="capitalize">
@@ -69,7 +69,7 @@ export default function CompanyDetailPage() {
           <Users className="h-4 w-4" /> Contacts
         </h2>
         {c.contacts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No contacts yet — add them from an outreach thread once someone replies.</p>
+          <p className="text-sm text-muted-foreground">No contacts yet, add them from an outreach thread once someone replies.</p>
         ) : (
           <ul className="space-y-2">
             {c.contacts.map((p) => (

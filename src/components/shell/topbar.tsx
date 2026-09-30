@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Sticky topbar — rail toggle (every breakpoint), page title, daily-goal ring + count,
+ * Sticky topbar, rail toggle (every breakpoint), page title, daily-goal ring + count,
  * theme, first-letter avatar (links to Profile). Log out lives in the rail footer.
  */
 import * as React from "react";
@@ -81,7 +81,7 @@ export function Topbar({ railOpen, onToggleRail }: { railOpen: boolean; onToggle
             <h1 className="truncate font-display text-base font-bold leading-tight sm:text-lg">{title}</h1>
           </div>
 
-          {/* daily goal — 40px ring, dead-centre, count beside it */}
+          {/* daily goal, 40px ring, dead-centre, count beside it */}
           {today && (
             <button
               type="button"
@@ -102,7 +102,7 @@ export function Topbar({ railOpen, onToggleRail }: { railOpen: boolean; onToggle
             className="hidden h-9 w-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-muted sm:grid"
             aria-label="Toggle theme"
           >
-            {/* both icons rendered statically — visibility is CSS-driven via html.dark so server and
+            {/* both icons rendered statically, visibility is CSS-driven via html.dark so server and
                 client markup always match (resolvedTheme differs during hydration) */}
             <Sun className="hidden h-4.5 w-4.5 dark:block" />
             <Moon className="block h-4.5 w-4.5 dark:hidden" />

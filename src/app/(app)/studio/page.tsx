@@ -10,6 +10,7 @@ import { qk } from "@/lib/queries";
 import type { CV, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
+import { Portal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export default function StudioPage() {
       }),
     meta: { invalidates: [["cvs"]] },
     onSuccess: (cv) => {
-      toast("CV created — tailor it in the editor", "success");
+      toast("CV created, tailor it in the editor", "success");
       router.push(`/studio/cvs/${cv.id}`);
     },
   });
@@ -66,7 +67,7 @@ export default function StudioPage() {
     onSuccess: () => toast("CV deleted", "info"),
   });
 
-  // fullscreen A4 preview — openable straight from a CV card
+  // fullscreen A4 preview, openable straight from a CV card
   const [previewId, setPreviewId] = React.useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = React.useState("");
   const [previewBusy, setPreviewBusy] = React.useState(false);
@@ -105,7 +106,7 @@ export default function StudioPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold">CV Studio</h1>
           <p className="text-sm text-muted-foreground">
-            One CV per archetype, forked per application — never mutate the master (§24.1).
+            One CV per archetype, forked per application, never mutate the master (§24.1).
           </p>
         </div>
       </header>
@@ -116,7 +117,7 @@ export default function StudioPage() {
         <div className="grid gap-3 sm:grid-cols-[1.5fr_1fr_1fr_auto] sm:items-end">
           <div>
             <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Frontend — Series A SaaS" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Frontend, Series A SaaS" />
           </div>
           <div>
             <Label>Archetype</Label>
@@ -148,7 +149,7 @@ export default function StudioPage() {
         <EmptyState
           icon={<FileText className="h-6 w-6" />}
           title="No CVs yet"
-          description="Create your first one — profile blocks stay linked to the Profile page, local blocks are yours to tailor."
+          description="Create your first one, profile blocks stay linked to the Profile page, local blocks are yours to tailor."
           action={<Button onClick={() => create.mutate()}>Create from profile</Button>}
         />
       ) : (
@@ -202,7 +203,7 @@ export default function StudioPage() {
         {templates.isPending ? (
           <Skeleton className="h-20 w-full" />
         ) : (templates.data?.items?.length ?? 0) === 0 ? (
-          <p className="text-sm text-muted-foreground">No templates yet — seed one from Settings → Export or write your own in Outreach.</p>
+          <p className="text-sm text-muted-foreground">No templates yet, seed one from Settings → Export or write your own in Outreach.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {templates.data!.items.map((t) => (
@@ -221,8 +222,9 @@ export default function StudioPage() {
       </Card>
       </div>
 
-      {/* fullscreen A4 preview — opened from a CV card */}
+      {/* fullscreen A4 preview, opened from a CV card */}
       {previewId && (
+        <Portal>
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
           role="dialog"
@@ -232,7 +234,7 @@ export default function StudioPage() {
           <div className="flex h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 px-4 py-2.5">
               <span className="truncate font-display text-sm font-bold text-neutral-900">
-                A4 preview{cvs.data?.items.find((c) => c.id === previewId)?.name ? ` — ${cvs.data!.items.find((c) => c.id === previewId)!.name}` : ""}
+                A4 preview{cvs.data?.items.find((c) => c.id === previewId)?.name ? `, ${cvs.data!.items.find((c) => c.id === previewId)!.name}` : ""}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -262,6 +264,7 @@ export default function StudioPage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

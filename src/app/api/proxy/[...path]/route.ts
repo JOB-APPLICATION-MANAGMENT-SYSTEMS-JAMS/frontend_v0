@@ -1,5 +1,5 @@
 /**
- * The single door (§41.1) — copy of the reference's /api/proxy/[...path] pattern:
+ * The single door (§41.1), copy of the reference's /api/proxy/[...path] pattern:
  * strip prefix → re-root on API_BASE_URL/api/v1 → attach Bearer from cookie when the
  * client sets X-Use-Auth → stream the response back untouched (blobs, SSE, downloads).
  * Improvements over the reference: X-Request-Id injection + structured log line.
@@ -16,7 +16,7 @@ const isProd = process.env.NODE_ENV === "production";
 /**
  * Silent refresh (§38.1): access tokens live 15 min, refresh tokens 30 days.
  * On TOKEN_EXPIRED the proxy trades the refresh cookie for a new pair, sets the
- * cookies and retries once — app JS still never touches a token.
+ * cookies and retries once, app JS still never touches a token.
  */
 async function refreshSession(request: NextRequest): Promise<{ access: string; refresh?: string } | null> {
   const refreshToken = request.cookies.get("jams_refresh")?.value;
@@ -54,7 +54,7 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
   headers.set("X-Request-Id", requestId);
   headers.set("Accept", request.headers.get("accept") ?? "*/*");
 
-  // auth: the client merely says "I want auth" — the cookie never leaks to JS (§3.2)
+  // auth: the client merely says "I want auth", the cookie never leaks to JS (§3.2)
   if (request.headers.get("x-use-auth") === "true") {
     const token = request.cookies.get("jams_access")?.value;
     if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -83,12 +83,12 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
     try {
       code = JSON.parse(buf.toString("utf8"))?.error?.code ?? "";
     } catch {
-      /* not JSON — leave code empty */
+      /* not JSON, leave code empty */
     }
     if (code === "TOKEN_EXPIRED" || code === "UNAUTHENTICATED") {
       const fresh = await refreshSession(request);
       if (!fresh) {
-        // session is truly dead — bounce the cookies so the route guard sends them to login
+        // session is truly dead, bounce the cookies so the route guard sends them to login
         const dead = new NextResponse(buf, { status: 401, headers: { "content-type": "application/json", "X-Request-Id": requestId } });
         dead.cookies.delete("jams_access");
         dead.cookies.delete("jams_refresh");

@@ -4,6 +4,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Button, Card } from "./base";
+import { Modal } from "./modal";
 import { AlertTriangle, CheckCircle2, Inbox, Info, X } from "lucide-react";
 import { useToasts, type ToastItem } from "@/hooks/use-toast";
 
@@ -54,7 +55,7 @@ export function InlineBanner({ tone = "info", title, children, className }: { to
   );
 }
 
-/** Confirm modal — destructive actions only (sign-out, delete). Esc or backdrop cancels. */
+/** Confirm modal: destructive actions only (sign-out, delete). Esc or backdrop cancels. */
 export function ConfirmDialog({
   open,
   title,
@@ -72,37 +73,19 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
-
-  if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-[110] grid place-items-center bg-black/55 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-      onClick={onCancel}
-    >
-      <div className="glass-panel route-fade w-full max-w-sm rounded-2xl p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <p className="font-display text-base font-bold">{title}</p>
-        {description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{description}</p>}
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button variant="destructive" size="sm" onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </div>
+    <Modal open={open} onClose={onCancel} label={title} className="max-w-sm">
+      <p className="font-display text-base font-bold">{title}</p>
+      {description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{description}</p>}
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+        <Button variant="destructive" size="sm" onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "JAMS — Job Hunt OS", template: "%s | JAMS" },
+  title: { default: "JAMS, Job Hunt OS", template: "%s | JAMS" },
   description: "Personal, human-in-the-loop command centre for a high-volume job hunt: discovery, tracker, CV studio, cold email, streaks and honest analytics.",
   applicationName: "JAMS",
 };

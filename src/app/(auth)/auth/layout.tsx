@@ -1,6 +1,6 @@
 "use client";
 
-/** Auth layout (§40.2): split panel — form + animated brand panel. */
+/** Auth layout (§40.2): split panel, form + animated brand panel. */
 import * as React from "react";
 import Link from "next/link";
 
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               Stay consistent.
             </h2>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70">
-              Discovery with explainable scoring, a pipeline that never forgets, cold email you still send yourself, and an honest funnel — applied, replied,
+              Discovery with explainable scoring, a pipeline that never forgets, cold email you still send yourself, and an honest funnel, applied, replied,
               ghosted, rejected, interviewed, offered.
             </p>
             <div className="mt-6 flex flex-wrap gap-2 text-[11px]">

@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * Funnel field (§22.2) — the diagrammatic hero: layered horizontal bands with hand-drawn
+ * Funnel field (§22.2), the diagrammatic hero: layered horizontal bands with hand-drawn
  * wavy top edges, width ∝ count (min 8% so tiny statuses stay visible), giant right-aligned
  * counters, Funnel Bloom on mount (spec 6), hover lift + drill-down.
  */
 import * as React from "react";
 import { cn, fmt } from "@/lib/utils";
+import { InfoButton } from "@/components/ui/modal";
 import type { Summary } from "@/types";
 
 type Band = { key: string; label: string; from: string; to: string; text: string };
@@ -55,7 +56,20 @@ export function FunnelField({
     <section className={cn("glass-card rounded-2xl p-4 md:p-5", className)}>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
+        <div className="flex items-center gap-1.5">
           <h3 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Funnel</h3>
+          <InfoButton
+            title="Funnel"
+            body={
+              <>
+                <p>Each band is one stage of your pipeline this {period}, drawn with width proportional to how many applications reached that stage.</p>
+                <p>
+                  <b>Reached a human</b> is replies divided by applications sent in the same window, so it never passes 100%. Click a band to open the tracker filtered to that stage.
+                </p>
+              </>
+            }
+          />
+        </div>
           <p className="text-[11px] text-muted-foreground">
             {period.toUpperCase()} · <span className="font-semibold text-foreground">{reachedHuman}%</span> reached a human
           </p>
@@ -126,7 +140,7 @@ export function FunnelField({
                 >
                   {fmt.n(count)}
                 </text>
-                <title>{`${b.label}: ${count} — click to filter`}</title>
+                <title>{`${b.label}: ${count}, click to filter`}</title>
               </g>
             );
           })}

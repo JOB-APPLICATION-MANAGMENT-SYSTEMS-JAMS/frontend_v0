@@ -184,7 +184,7 @@ function DiscoverPageInner() {
 
       {search.data && search.data.sources_failed.length > 0 && (
         <InlineBanner tone="warn" title="Partial results">
-          {search.data.sources_failed.map((s) => s.source).join(", ")} didn’t respond — the rest of your results are complete.{" "}
+          {search.data.sources_failed.map((s) => s.source).join(", ")} didn’t respond, the rest of your results are complete.{" "}
           <Kbd className="ml-1">live sources retry on refresh</Kbd>
         </InlineBanner>
       )}
@@ -221,7 +221,7 @@ function DiscoverPageInner() {
           title="No roles matched"
           description={
             queryParams.q
-              ? `Nothing for “${queryParams.q}” under these filters. Try dropping a filter — or pitch the company anyway from /capture.`
+              ? `Nothing for “${queryParams.q}” under these filters. Try dropping a filter, or pitch the company anyway from /capture.`
               : "Hit Refresh to aggregate the free sources (Arbeitnow · Remotive · RemoteOK · HN · Greenhouse · Lever · Ashby), or paste a posting URL in Quick capture."
           }
           action={

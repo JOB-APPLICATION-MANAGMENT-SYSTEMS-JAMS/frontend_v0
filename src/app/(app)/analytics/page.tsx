@@ -13,6 +13,7 @@ import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
 import { BreakdownTable, ChartCard, Donut, DualSeries, Histogram } from "@/features/analytics/charts";
 import { Button, Card, Select, Skeleton } from "@/components/ui/base";
+import { InfoButton } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
 const PERIODS = ["day", "week", "month", "year"] as const;
@@ -69,7 +70,7 @@ function AnalyticsPageInner() {
       a.download = format === "csv" ? "jams-applications.csv" : "jams-export.json";
       a.click();
       URL.revokeObjectURL(url);
-      toast("Export downloaded — lock-in is immoral (§31)", "success");
+      toast("Export downloaded; lock-in is immoral (§31)", "success");
     } catch {
       toast("Export failed", "error");
     }
@@ -92,7 +93,18 @@ function AnalyticsPageInner() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
+        <div className="flex items-center gap-2">
           <h1 className="font-display text-2xl font-extrabold">Analytics</h1>
+          <InfoButton
+            title="Analytics"
+            body={
+              <>
+                <p>Honest numbers: every tile and chart compares the selected window against the one directly before it, so a dip can never hide behind a longer timeframe.</p>
+                <p>Click any tile to jump to the tracker filtered by that stat; export dumps every table you own in CSV or JSON.</p>
+              </>
+            }
+          />
+        </div>
           <p className="text-sm text-muted-foreground">Honest numbers, comparison against the previous window (§22).</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -119,11 +131,29 @@ function AnalyticsPageInner() {
       <KpiWall summary={summary.data} isPending={summary.isPending} error={summary.error} onRetry={() => summary.refetch()} onDrill={(k) => router.push(`/tracker?status=${k}`)} />
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-        <ChartCard title="Applied vs replied" subtitle={`${period} window · bars = applied, line = replied`}>
+        <ChartCard
+          title="Applied vs replied"
+          subtitle={`${period} window · bars = applied, line = replied`}
+          action={<InfoButton title="Applied vs replied" body={`Bars count applications sent per ${period}; the line counts how many of them have been answered so far. Two series on one axis so replies are never averaged away.`} />}
+        >
           {series.isPending ? <Skeleton className="h-48 w-full" /> : <DualSeries data={merged} />}
         </ChartCard>
 
-        <ChartCard title="Response mix" subtitle="replied vs silent · interview & offer tallies">
+        <ChartCard
+          title="Response mix"
+          subtitle="replied vs silent · interview & offer tallies"
+          action={
+            <InfoButton
+              title="Response mix"
+              body={
+                <>
+                  <p>The donut splits everything you sent into answered and silent; the centre shows the reply rate for the window.</p>
+                  <p>Interview and offer tallies count stage changes that happened inside this window, not lifetime totals.</p>
+                </>
+              }
+            />
+          }
+        >
           {summary.isPending ? (
             <Skeleton className="h-48 w-full" />
           ) : (
@@ -151,13 +181,16 @@ function AnalyticsPageInner() {
           title="What's working"
           subtitle={`broken down by ${breakdownBy}`}
           action={
-            <Select className="h-8 w-36 text-xs" value={breakdownBy} onChange={(e) => setBreakdownBy(e.target.value as any)}>
-              <option value="source">source</option>
-              <option value="company">company</option>
-              <option value="cv">CV</option>
-              <option value="template">template</option>
-              <option value="category">category</option>
-            </Select>
+            <div className="flex items-center gap-2">
+              <InfoButton title="What's working" body="Rank your applications by any dimension: where they came from, which company, or which CV / template / category you sent. Reply share per row shows which combination actually gets answers." />
+              <Select className="h-8 w-36 text-xs" value={breakdownBy} onChange={(e) => setBreakdownBy(e.target.value as any)}>
+                <option value="source">source</option>
+                <option value="company">company</option>
+                <option value="cv">CV</option>
+                <option value="template">template</option>
+                <option value="category">category</option>
+              </Select>
+            </div>
           }
         >
           {breakdown.isPending ? <Skeleton className="h-40 w-full" /> : <BreakdownTable items={breakdown.data?.items ?? []} />}
@@ -165,7 +198,21 @@ function AnalyticsPageInner() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <ChartCard title="Time to first reply" subtitle="distribution against the ghost threshold">
+        <ChartCard
+          title="Time to first reply"
+          subtitle="distribution against the ghost threshold"
+          action={
+            <InfoButton
+              title="Time to first reply"
+              body={
+                <>
+                  <p>How long you wait between applying and the first human reply, bucketed into a histogram.</p>
+                  <p>p50 is the median (half replied faster), p90 is the slow tail, and the marker shows where an application flips to Ghosted.</p>
+                </>
+              }
+            />
+          }
+        >
           {ttr.isPending ? (
             <Skeleton className="h-40 w-full" />
           ) : (
@@ -178,7 +225,7 @@ function AnalyticsPageInner() {
 
       <Card className="p-4">
         <p className="text-xs text-muted-foreground">
-          Export includes every table you own — profile, applications, events, CVs, templates, companies, outreach, streaks. No lock-in (§31).
+          Export includes every table you own: profile, applications, events, CVs, templates, companies, outreach, streaks. No lock-in (§31).
         </p>
       </Card>
     </div>

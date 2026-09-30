@@ -6,17 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const fmt = {
-  n: (v: number | null | undefined) => (v == null ? "—" : Number(v).toLocaleString()),
-  pct: (v: number | null | undefined) => (v == null ? "—" : `${Number(v).toFixed(1)}%`),
+  n: (v: number | null | undefined) => (v == null ? "n/a" : Number(v).toLocaleString()),
+  pct: (v: number | null | undefined) => (v == null ? "n/a" : `${Number(v).toFixed(1)}%`),
   delta: (v: number | null | undefined) => {
-    if (v == null) return "—";
+    if (v == null) return "n/a";
     if (v === 0) return "±0%";
     return `${v > 0 ? "▲" : "▼"} ${Math.abs(v).toFixed(1)}%`;
   },
-  date: (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"),
-  dateTime: (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"),
+  date: (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "n/a"),
+  dateTime: (iso?: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "n/a"),
   ago: (iso?: string | null) => {
-    if (!iso) return "—";
+    if (!iso) return "n/a";
     const diff = Date.now() - new Date(iso).getTime();
     const d = Math.floor(diff / 86_400_000);
     if (d <= 0) {
@@ -26,7 +26,7 @@ export const fmt = {
     }
     return `${d}d ago`;
   },
-  days: (n: number | null | undefined) => (n == null ? "—" : `${Math.round(n)}d`),
+  days: (n: number | null | undefined) => (n == null ? "n/a" : `${Math.round(n)}d`),
 };
 
 export const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {

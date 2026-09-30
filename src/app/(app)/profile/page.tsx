@@ -1,6 +1,6 @@
 "use client";
 
-/** Profile (§19.3): the master form — one save feeds CVs, autofill, templates and scoring. */
+/** Profile (§19.3): the master form, one save feeds CVs, autofill, templates and scoring. */
 import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Award, GraduationCap, Link2, Plus, Save, Sparkles, Trash2, UserRound } from "lucide-react";
@@ -37,7 +37,7 @@ export default function ProfilePage() {
     mutationFn: () => appFetch("/profile", { method: "PUT", body: draft, _auth: true }),
     meta: { invalidates: [["profile"], ["cvs"], ["jobs"], ["analytics"]] },
     onSuccess: () => {
-      toast("Profile saved — downstream CVs, autofill and scoring updated", "success");
+      toast("Profile saved, downstream CVs, autofill and scoring updated", "success");
       completeness.refetch();
     },
     onError: (e: any) => toast(e.message ?? "Save failed", "error"),
@@ -82,7 +82,7 @@ export default function ProfilePage() {
                   + {s.label}
                 </Badge>
               ))}
-              {(completeness.data?.suggestions ?? []).length === 0 && <Badge tone="mint">complete — nice</Badge>}
+              {(completeness.data?.suggestions ?? []).length === 0 && <Badge tone="mint">complete, nice</Badge>}
             </div>
           </div>
         </Card>
@@ -92,7 +92,7 @@ export default function ProfilePage() {
           <Section icon={<UserRound className="h-4 w-4" />} title="Identity & contacts" />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Full name"><Input value={id.name ?? ""} onChange={(e) => setId("name", e.target.value)} /></Field>
-            <Field label="Headline"><Input value={id.headline ?? ""} onChange={(e) => setId("headline", e.target.value)} placeholder="Full-Stack Engineer — TS, React, Node" /></Field>
+            <Field label="Headline"><Input value={id.headline ?? ""} onChange={(e) => setId("headline", e.target.value)} placeholder="Full-Stack Engineer, TS, React, Node" /></Field>
             <Field label="Email"><Input value={id.email ?? ""} onChange={(e) => setId("email", e.target.value)} /></Field>
             <Field label="Phone"><Input value={id.phone ?? ""} onChange={(e) => setId("phone", e.target.value)} /></Field>
             <Field label="Location"><Input value={id.location ?? ""} onChange={(e) => setId("location", e.target.value)} /></Field>
@@ -229,7 +229,7 @@ export default function ProfilePage() {
       {/* side rail */}
       <div className="space-y-5">
         <Card className="sticky top-24 p-5">
-          <p className="text-xs text-muted-foreground">Version {draft.version} · last saved {profile.data ? "recently" : "—"}</p>
+          <p className="text-xs text-muted-foreground">Version {draft.version} · last saved {profile.data ? "recently" : "n/a"}</p>
           <Button className="mt-3 w-full" onClick={() => save.mutate()} disabled={save.isPending}>
             <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save profile"}
           </Button>

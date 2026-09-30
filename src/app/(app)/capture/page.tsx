@@ -64,7 +64,7 @@ function CapturePageInner() {
       }),
     meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]] },
     onSuccess: (res) => {
-      toast(`Captured — scored ${res.score}`, "success");
+      toast(`Captured, scored ${res.score}`, "success");
       if (res.application_id) router.push(`/applications/${res.application_id}`);
       else router.push("/tracker");
     },
@@ -75,7 +75,7 @@ function CapturePageInner() {
     <div className="mx-auto max-w-3xl space-y-5">
       <header>
         <h1 className="font-display text-2xl font-extrabold">Quick capture</h1>
-        <p className="text-sm text-muted-foreground">Paste a posting URL — JSON-LD, OpenGraph and text patterns are parsed server-side (§19.2).</p>
+        <p className="text-sm text-muted-foreground">Paste a posting URL, JSON-LD, OpenGraph and text patterns are parsed server-side (§19.2).</p>
       </header>
 
       <Card className="space-y-4 p-5">
@@ -95,7 +95,7 @@ function CapturePageInner() {
           <Textarea
             value={pageText}
             onChange={(e) => setPageText(e.target.value)}
-            placeholder="Right-click → View source, or paste the posting text here. Respect robots.txt — the server refuses to fetch disallowed URLs."
+            placeholder="Right-click → View source, or paste the posting text here. Respect robots.txt, the server refuses to fetch disallowed URLs."
             className="min-h-[90px]"
           />
         </div>
@@ -120,7 +120,7 @@ function CapturePageInner() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <Field label="Salary" value={parsed.salary_min ? `${parsed.currency}${fmt.n(parsed.salary_min)}${parsed.salary_max ? `–${parsed.currency}${fmt.n(parsed.salary_max)}` : ""}` : "—"} />
+            <Field label="Salary" value={parsed.salary_min ? `${parsed.currency}${fmt.n(parsed.salary_min)}${parsed.salary_max ? `–${parsed.currency}${fmt.n(parsed.salary_max)}` : ""}` : "n/a"} />
             <Field label="Posted" value={fmt.date(parsed.posted_at)} />
             <Field label="Keywords" value={String(parsed.keywords.length)} />
             <Field label="Source" value="paste" />

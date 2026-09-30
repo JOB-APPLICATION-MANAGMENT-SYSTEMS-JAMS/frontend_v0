@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * GoalRing / StreakMeter (§14.3) — conic-gradient progress ring driven by a CSS
+ * GoalRing / StreakMeter (§14.3), conic-gradient progress ring driven by a CSS
  * variable (no 60fps React re-renders). States: cold · warming · burning · blazing.
  */
 import * as React from "react";

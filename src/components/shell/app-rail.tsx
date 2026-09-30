@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Left rail — one toggle drawer at every breakpoint (opened/closed from the navbar).
+ * Left rail, one toggle drawer at every breakpoint (opened/closed from the navbar).
  * Exactly seven destinations, no group labels; log out lives in the rail footer.
- * Navigation only auto-closes the drawer below md — laptops keep it open until the
+ * Navigation only auto-closes the drawer below md, laptops keep it open until the
  * toggle button (or Esc) closes it. Collapse is parked at the bottom as a comment.
  */
 import * as React from "react";
@@ -39,7 +39,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
   const [confirmOut, setConfirmOut] = React.useState(false);
 
   // phones/tablets close the drawer after a tap; laptop widths leave it open
-  // (tracked as an external store so hydration stays identical — no setState-in-effect)
+  // (tracked as an external store so hydration stays identical, no setState-in-effect)
   const isDesktop = React.useSyncExternalStore(
     (cb) => {
       const mq = window.matchMedia("(min-width: 768px)");
@@ -83,7 +83,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <>
-      {/* scrim — the rail overlays on small screens, pushes content from md up */}
+      {/* scrim, the rail overlays on small screens, pushes content from md up */}
       {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" />}
 
       <aside
@@ -103,7 +103,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
           {NAV.map((r) => item(r.href, r.label, r.icon, r.kbd))}
         </nav>
 
-        {/* account footer — log out lives here, not in the topbar */}
+        {/* account footer, log out lives here, not in the topbar */}
         <div className="mt-auto pt-4">
           <button
             type="button"
@@ -117,7 +117,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
 
-        {/* Collapse parked for now — the rail is a plain toggle drawer.
+        {/* Collapse parked for now, the rail is a plain toggle drawer.
         <div className="mt-auto pt-4">
           <button onClick={onToggle} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-white/50 dark:hover:bg-white/5">
             <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
@@ -130,7 +130,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
       <ConfirmDialog
         open={confirmOut}
         title="Are you sure you want to log out?"
-        description="Your tracker, CVs and outreach stay saved — you'll just need to sign in again."
+        description="Your tracker, CVs and outreach stay saved, you'll just need to sign in again."
         confirmLabel="Log out"
         onCancel={() => setConfirmOut(false)}
         onConfirm={() => {

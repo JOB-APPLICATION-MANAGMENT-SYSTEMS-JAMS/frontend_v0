@@ -1,5 +1,5 @@
 /**
- * fireConfetti — three-burst choreography with brand colours (§41.5), dynamically
+ * fireConfetti, three-burst choreography with brand colours (§41.5), dynamically
  * imported so it never burdens initial load. Called on: goal hit · offer · victory.
  */
 const BRAND = ["#ff7a1a", "#ffb020", "#ffe9d2", "#e2571f"];

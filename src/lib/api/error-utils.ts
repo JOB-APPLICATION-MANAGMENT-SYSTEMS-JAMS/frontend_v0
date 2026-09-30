@@ -1,5 +1,5 @@
 /**
- * Error normalisation (§12.2) — every backend failure dialect collapses into one
+ * Error normalisation (§12.2), every backend failure dialect collapses into one
  * APIRequestError(message, status, data) with a machine-readable `code`.
  */
 
@@ -100,7 +100,7 @@ export function throwApiError(status: number, data: any, fallback = "API request
 /** One toast policy for mutations (§9.2). */
 export function handleMutationError(err: unknown, fallback = "Something went wrong"): string {
   if (err instanceof APIRequestError) {
-    if (err.isRateLimited && err.retryAfter) return `Rate limited — retry in ${err.retryAfter}s`;
+    if (err.isRateLimited && err.retryAfter) return `Rate limited, retry in ${err.retryAfter}s`;
     if (err.code === "QUOTA_EXCEEDED") return err.message;
     if (err.code === "INVALID_TRANSITION") return err.detail ?? err.message;
     return err.message || fallback;

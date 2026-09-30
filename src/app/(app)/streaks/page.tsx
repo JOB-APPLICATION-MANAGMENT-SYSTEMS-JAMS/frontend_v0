@@ -9,6 +9,7 @@ import { qk } from "@/lib/queries";
 import type { Badge as BadgeT, Today } from "@/types";
 import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/base";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
+import { InfoButton } from "@/components/ui/modal";
 import { GoalRing } from "@/components/shell/goal-ring";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -47,7 +48,7 @@ export default function StreaksPage() {
   const logEffort = useMutation({
     mutationFn: () => appFetch("/streaks/log", { method: "POST", body: { weight: 1 }, _auth: true }),
     meta: { invalidates: [["streaks"]] },
-    onSuccess: () => toast("Effort logged — goal ring updated", "success"),
+    onSuccess: () => toast("Effort logged, goal ring updated", "success"),
   });
 
   const t = today.data;
@@ -61,7 +62,18 @@ export default function StreaksPage() {
           <div className="flex items-center gap-5">
             <GoalRing today={t} size={110} />
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t?.day ?? "today"}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t?.day ?? "today"}</p>
+                <InfoButton
+                  title="Your goal ring"
+                  body={
+                    <>
+                      <p>The ring fills as you log applications towards your daily goal. Hitting it flips the day green and keeps your streak alive.</p>
+                      <p>Any effort counts too: pitches and follow-ups feed an any-effort streak that never breaks on quiet days.</p>
+                    </>
+                  }
+                />
+              </div>
               <h1 className="font-display text-3xl font-extrabold">
                 {t?.hit ? (
                   <span className="text-gradient-brand">Goal smashed 🎯</span>
@@ -109,7 +121,7 @@ export default function StreaksPage() {
 
         {!t?.hit && t && (
           <InlineBanner tone="info" className="mt-4" title={`${t.remaining} to go`}>
-            Any effort counts — applications, pitches, and follow-ups all feed the ring.
+            Any effort counts, applications, pitches, and follow-ups all feed the ring.
           </InlineBanner>
         )}
       </Card>
@@ -118,6 +130,10 @@ export default function StreaksPage() {
       <Card className="p-5">
         <h2 className="font-display mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
           <Award className="h-4 w-4" /> Badges
+          <InfoButton
+            title="Badges"
+            body="Milestones you unlock automatically as you apply: first application, hundred applications, reply records, streak lengths. Locked badges stay greyed until the condition is met, so nothing here can be bought or grinded."
+          />
         </h2>
         {badges.isPending ? (
           <Skeleton className="h-24 w-full" />
@@ -143,7 +159,13 @@ export default function StreaksPage() {
       {/* history */}
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Last 120 days</h2>
+          <h2 className="font-display flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Last 120 days
+            <InfoButton
+              title="Day-by-day history"
+              body="One bar per day for the last 120 days; bar height is applications logged. Gold means the goal was hit, grey means a freeze covered the day, orange means partial progress."
+            />
+          </h2>
           <p className="text-[11px] text-muted-foreground">gold bar = goal hit · ringed = freeze used</p>
         </div>
         {history.isPending ? (
@@ -182,7 +204,7 @@ export default function StreaksPage() {
         <div>
           <p className="text-sm font-semibold">One freeze per week</p>
           <p className="text-xs text-muted-foreground">
-            Miss a day? Spend a freeze to keep the streak alive — earned again by hitting tomorrow’s goal. No paywalls, no energy mechanics.
+            Miss a day? Spend a freeze to keep the streak alive, earned again by hitting tomorrow’s goal. No paywalls, no energy mechanics.
           </p>
         </div>
         <Button size="sm" variant="outline" className="ml-auto" onClick={() => toast("Freezes are spent automatically when you miss a day", "info")}>

@@ -33,7 +33,7 @@ export default function JobDetailPage() {
     mutationFn: () =>
       appFetch<any>("/capture", {
         method: "POST",
-        body: { source: "manual", url: job.data!.url, page: { title: `${job.data!.title} — ${job.data!.company.name}`, company_guess: job.data!.company.name, text_excerpt: job.data!.description }, action: "create_draft" },
+        body: { source: "manual", url: job.data!.url, page: { title: `${job.data!.title}, ${job.data!.company.name}`, company_guess: job.data!.company.name, text_excerpt: job.data!.description }, action: "create_draft" },
         _auth: true,
       }),
     meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]] },
@@ -146,7 +146,7 @@ export default function JobDetailPage() {
         </Card>
       )}
 
-      {!j.description && <InlineBanner tone="info">The full JD wasn’t available from this source — open the original for the complete posting.</InlineBanner>}
+      {!j.description && <InlineBanner tone="info">The full JD wasn’t available from this source, open the original for the complete posting.</InlineBanner>}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { qk } from "@/lib/queries";
 import type { CV, CVBlock } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { Portal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
 const BLOCK_LABEL: Record<string, string> = {
@@ -41,7 +42,7 @@ function CVEditorPageInner() {
   const [previewBusy, setPreviewBusy] = React.useState(false);
   const [previewOpen, setPreviewOpen] = React.useState(false);
 
-  // fullscreen A4 preview overlay — Esc closes it
+  // fullscreen A4 preview overlay, Esc closes it
   React.useEffect(() => {
     if (!previewOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -118,7 +119,7 @@ function CVEditorPageInner() {
   });
 
   // print pipeline (§24.1): Chromium's own print → Save as PDF, no paid renderer.
-  // Must stay above the early returns below — hooks are unconditional (Rules of Hooks).
+  // Must stay above the early returns below, hooks are unconditional (Rules of Hooks).
   React.useEffect(() => {
     if (search.get("print") === "1" && preview) {
       const t = setTimeout(() => iframeRef.current?.contentWindow?.print(), 400);
@@ -140,7 +141,7 @@ function CVEditorPageInner() {
       blocks: [...draft.blocks, type === "skills" ? { type, groups: [] } : { type, title: BLOCK_LABEL[type], text: "" }],
     });
 
-  // print pipeline (§24.1) — hook lives above the early returns (see note next to its definition)
+  // print pipeline (§24.1), hook lives above the early returns (see note next to its definition)
   const printCv = () => {
     if (!preview) return void refreshPreview();
     iframeRef.current?.contentWindow?.print();
@@ -341,14 +342,15 @@ function CVEditorPageInner() {
             )}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Print/PDF uses the browser’s own pipeline — free, pixel-exact, no renderer service.
+            Print/PDF uses the browser’s own pipeline, free, pixel-exact, no renderer service.
           </p>
         </Card>
       </div>
       </div>
 
-      {/* fullscreen A4 preview — opened from the toolbar */}
+      {/* fullscreen A4 preview, opened from the toolbar */}
       {previewOpen && (
+        <Portal>
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
           role="dialog"
@@ -386,6 +388,7 @@ function CVEditorPageInner() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

@@ -1,7 +1,7 @@
 /**
  * Single source of truth for where server-side code talks to the API.
  *
- * The browser only ever hits same-origin `/api/proxy` — this module is for the proxy
+ * The browser only ever hits same-origin `/api/proxy`, this module is for the proxy
  * and other server code. In production it MUST default to the deployed backend:
  * falling back to localhost is exactly how a Vercel build ends up talking to itself.
  * Override any time with API_BASE_URL.

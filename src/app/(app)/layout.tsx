@@ -9,7 +9,7 @@ import { CommandPalette } from "@/components/shell/cmd-k";
 import { cn } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  // the rail starts open on laptop widths, closed on phones — tracked as an external store
+  // the rail starts open on laptop widths, closed on phones, tracked as an external store
   // so hydration stays identical on both sides (no setState-in-effect)
   const isDesktop = React.useSyncExternalStore(
     (cb) => {

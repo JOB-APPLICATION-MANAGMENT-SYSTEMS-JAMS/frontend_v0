@@ -37,7 +37,7 @@ export default function InboxSyncPage() {
   const connect = useMutation({
     mutationFn: () => appFetch("/mailboxes", { method: "POST", body: { kind: "imap", address }, _auth: true }),
     meta: { invalidates: [["inbox"]] },
-    onSuccess: () => toast("Mailbox recorded — local mode, ingestion below is the live path", "success"),
+    onSuccess: () => toast("Mailbox recorded, local mode, ingestion below is the live path", "success"),
   });
 
   const ingest = useMutation({
@@ -54,7 +54,7 @@ export default function InboxSyncPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <header>
         <h1 className="font-display text-2xl font-extrabold">Inbox sync</h1>
-        <p className="text-sm text-muted-foreground">Replies are classified deterministically — no paid email API (§36.2).</p>
+        <p className="text-sm text-muted-foreground">Replies are classified deterministically, no paid email API (§36.2).</p>
       </header>
 
       {/* mailbox */}
@@ -111,7 +111,7 @@ export default function InboxSyncPage() {
           <Textarea
             value={msg.body}
             onChange={(e) => setMsg({ ...msg, body: e.target.value })}
-            placeholder={"Hi! We'd love to schedule a 30-min screen…\n\n— or paste an OOO / rejection / bounce"}
+            placeholder={"Hi! We'd love to schedule a 30-min screen…\n\n or paste an OOO / rejection / bounce"}
             className="min-h-[110px]"
           />
         </div>
@@ -128,7 +128,7 @@ export default function InboxSyncPage() {
         {threads.isPending ? (
           <Skeleton className="h-24 w-full" />
         ) : (threads.data?.items.length ?? 0) === 0 ? (
-          <EmptyState title="No threads yet" description="Ingest a reply above — it will match to an application by subject and move the status." />
+          <EmptyState title="No threads yet" description="Ingest a reply above, it will match to an application by subject and move the status." />
         ) : (
           <ul className="space-y-2">
             {threads.data!.items.map((t) => (

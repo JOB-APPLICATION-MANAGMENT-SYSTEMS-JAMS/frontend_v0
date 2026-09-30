@@ -1,39 +1,45 @@
 "use client";
 
-/** Signup + email verification hand-off (local mode prints the token server-side). */
+/** Signup: create the account, verify it invisibly with the token the API returns, straight into the app. */
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { UserPlus, MailCheck } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
 import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
-import { InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const router = useRouter();
   const [form, setForm] = React.useState({ firstName: "", lastName: "", email: "", password: "", confirm: "" });
-  const [done, setDone] = React.useState(false);
-  const [verifyToken, setVerifyToken] = React.useState("");
 
   const signup = useMutation({
-    mutationFn: () =>
-      appFetch<any>("/auth/register", {
+    mutationFn: async () => {
+      const data = await appFetch<any>("/auth/register", {
         method: "POST",
         body: { first_name: form.firstName.trim(), last_name: form.lastName.trim(), email: form.email, password: form.password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         _auth: false,
-      }),
-    onSuccess: async (data) => {
-      // store session now; backend flags requires_verification until verified
+      });
+      // keep the session the API just handed us
       await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token }),
       });
-      // no SMTP anywhere we deploy — the API returns the token, so pre-fill it
-      setVerifyToken(data.verification_token ?? "");
-      setDone(true);
+      // no inbox step: the API returns the verification token, so verify right away and move on
+      if (data.verification_token) {
+        try {
+          await appFetch("/auth/verify-email", { method: "POST", body: { token: data.verification_token }, _auth: false });
+        } catch {
+          /* already verified, or a legacy account; login will tell us if anything is off */
+        }
+      }
+      return data;
+    },
+    onSuccess: () => {
+      toast("Account created. Welcome to JAMS!", "success");
+      router.replace("/dashboard");
     },
     onError: (err) => {
       if (err instanceof APIRequestError) {
@@ -43,21 +49,6 @@ export default function SignupPage() {
       toast("Network error", "error");
     },
   });
-
-  if (done) {
-    return (
-      <div className="space-y-5">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold">Check your inbox</h1>
-          <p className="mt-1 text-sm text-muted-foreground">We sent a verification link to {form.email}.</p>
-        </div>
-        <InlineBanner tone="success" title="Verify your email">
-          This deployment sends no email, so the API returned your verification code — it’s pre-filled below (the server log also prints the link).
-        </InlineBanner>
-        <VerifyBox initialToken={verifyToken} onDone={() => router.replace("/onboarding")} />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-5">
@@ -108,31 +99,6 @@ export default function SignupPage() {
           Sign in
         </Link>
       </p>
-    </div>
-  );
-}
-
-function VerifyBox({ initialToken = "", onDone }: { initialToken?: string; onDone: () => void }) {
-  const [token, setToken] = React.useState(initialToken);
-  const verify = useMutation({
-    mutationFn: () => appFetch<any>("/auth/verify-email", { method: "POST", body: { token }, _auth: false }),
-    onSuccess: () => {
-      toast("Email verified — welcome aboard", "success");
-      onDone();
-    },
-    onError: (err) => toast(err instanceof APIRequestError ? err.message : "Verification failed", "error"),
-  });
-  return (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        <Input value={token} onChange={(e) => setToken(e.target.value)} placeholder="paste verification token" />
-        <Button onClick={() => verify.mutate()} disabled={!token || verify.isPending} variant="azure">
-          <MailCheck className="h-4 w-4" /> Verify
-        </Button>
-      </div>
-      <Link href="/onboarding" className="block text-xs text-muted-foreground hover:underline">
-        Skip for now →
-      </Link>
     </div>
   );
 }

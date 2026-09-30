@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ⌘K command palette — "Palette Pop" (spec §13): the only blurred surface while open,
+ * ⌘K command palette, "Palette Pop" (spec §13): the only blurred surface while open,
  * panel springs .96→1, recent items cascade with 30ms stagger (§17: one heavy at a time).
  */
 import * as React from "react";
@@ -55,7 +55,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const filteredCmds = commands.filter((c) => c.label.toLowerCase().includes(q.toLowerCase()));
   const appCmds: Cmd[] = (appResults?.items ?? []).map((a) => ({
     id: `app-${a.id}`,
-    label: `${a.role_title} — ${a.company_name}`,
+    label: `${a.role_title}, ${a.company_name}`,
     hint: a.status,
     icon: Columns3,
     run: () => go(`/applications/${a.id}`),
@@ -110,7 +110,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           <Kbd>esc</Kbd>
         </div>
         <div className="max-h-[52vh] overflow-y-auto p-2 custom-scrollbar">
-          {items.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matches — try “capture” or a company name.</p>}
+          {items.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matches, try “capture” or a company name.</p>}
           {items.map((item, i) => {
             const header = item.group !== lastGroup ? item.group : null;
             lastGroup = item.group;

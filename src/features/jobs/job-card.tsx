@@ -20,7 +20,7 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
   });
 
   const capture = useMutation({
-    mutationFn: () => appFetch<any>("/capture", { method: "POST", body: { source: "paste", url: job.url, page: { title: `${job.title} — ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft" }, _auth: true }),
+    mutationFn: () => appFetch<any>("/capture", { method: "POST", body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft" }, _auth: true }),
     meta: { invalidates: [["applications"], ["jobs"], ["streaks"], ["analytics"]] },
     onSuccess: () => toast("Saved to tracker as a draft application", "success"),
   });

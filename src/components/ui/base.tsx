@@ -1,6 +1,6 @@
 "use client";
 
-/** Primitives (§14.2) — variants are semantic, not decorative (CVA-style map). */
+/** Primitives (§14.2), variants are semantic, not decorative (CVA-style map). */
 import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,7 +66,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
 );
 
 /* --------------------------- PasswordInput ----------------------------- */
-/** Password field with a show/hide eye toggle — the toggle is a real button so it
+/** Password field with a show/hide eye toggle, the toggle is a real button so it
  *  stays keyboard reachable and screen-reader announced, never an onClick on the input. */
 export function PasswordInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   const [visible, setVisible] = React.useState(false);
@@ -185,4 +185,55 @@ export function IconChip({ children, tone = "mint" }: { children: React.ReactNod
     slate: "bg-muted text-muted-foreground",
   };
   return <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl", tones[tone])}>{children}</span>;
+}
+
+/** Prev / numbered pages / next, plus a "showing x–y of z" line. Reused by every list view. */
+export function Pager({
+  page,
+  pageSize,
+  totalCount,
+  onPage,
+  className,
+}: {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  onPage: (page: number) => void;
+  className?: string;
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  if (totalPages <= 1) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(totalCount, page * pageSize);
+
+  // window of page numbers around the current one: 1 … 4 5 6 … 20
+  const pages: number[] = [];
+  for (const p of [1, page - 1, page, page + 1, totalPages]) {
+    if (p >= 1 && p <= totalPages && !pages.includes(p)) pages.push(p);
+  }
+  pages.sort((a, b) => a - b);
+
+  return (
+    <div className={cn("flex flex-wrap items-center justify-between gap-3", className)}>
+      <p className="text-xs text-muted-foreground">
+        Showing <span className="tnum font-semibold">{from}–{to}</span> of <span className="tnum font-semibold">{totalCount}</span>
+      </p>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          Prev
+        </Button>
+        {pages.map((p, i) => (
+          <React.Fragment key={p}>
+            {i > 0 && pages[i - 1] !== p - 1 && <span className="px-1 text-xs text-muted-foreground">…</span>}
+            <Button size="sm" variant={p === page ? "azure" : "ghost"} onClick={() => onPage(p)} className="tnum">
+              {p}
+            </Button>
+          </React.Fragment>
+        ))}
+        <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+          Next
+        </Button>
+      </div>
+    </div>
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Odometer (spec §5/#5) — digit columns roll expo-out over 600ms, changed digits only,
+ * Odometer (spec §5/#5), digit columns roll expo-out over 600ms, changed digits only,
  * transform/opacity only. Reduced-motion → instant final value (layer 2 gate).
  */
 import * as React from "react";

@@ -31,7 +31,7 @@ export function DualSeries({
   loading?: boolean;
 }) {
   if (loading) return <Skeleton className="h-48 w-full" />;
-  if (!data.length) return <p className="py-8 text-center text-sm text-muted-foreground">No data in this window yet — log a few applications.</p>;
+  if (!data.length) return <p className="py-8 text-center text-sm text-muted-foreground">No data in this window yet, log a few applications.</p>;
 
   const w = 640;
   const h = height;
@@ -126,8 +126,8 @@ export function Histogram({ labels, counts, p50, p90, threshold }: { labels: str
         ))}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        p50 <span className="tnum font-semibold text-foreground">{p50 ?? "—"}d</span> · p90{" "}
-        <span className="tnum font-semibold text-foreground">{p90 ?? "—"}d</span> · ghost threshold {threshold}d
+        p50 <span className="tnum font-semibold text-foreground">{p50 ?? "n/a"}d</span> · p90{" "}
+        <span className="tnum font-semibold text-foreground">{p90 ?? "n/a"}d</span> · ghost threshold {threshold}d
       </p>
     </div>
   );
