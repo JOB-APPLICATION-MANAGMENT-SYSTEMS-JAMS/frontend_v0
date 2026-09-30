@@ -8,7 +8,7 @@ import { Check, ClipboardPaste, Crosshair, Loader2, Rocket } from "lucide-react"
 import { appFetch } from "@/lib/api";
 import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { InlineBanner } from "@/components/ui/feedback";
-import { fmt } from "@/lib/utils";
+import { fmt, cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 type Parsed = {
@@ -40,6 +40,9 @@ function CapturePageInner() {
   const [pageText, setPageText] = React.useState("");
   const [parsed, setParsed] = React.useState<Parsed | null>(null);
   const [action, setAction] = React.useState<"log_only" | "create_draft" | "mark_submitted">("create_draft");
+  const [kind, setKind] = React.useState<"application" | "pitch">("application");
+  const [contactEmail, setContactEmail] = React.useState("");
+  const [foundEmails, setFoundEmails] = React.useState<string[]>([]);
 
   const preview = useMutation({
     mutationFn: () =>
@@ -48,9 +51,13 @@ function CapturePageInner() {
         body: { url: url.trim(), html_text: pageText.trim() || undefined },
         _auth: true,
       }),
-    onSuccess: (res) => {
+    onSuccess: (res: any) => {
       setParsed(res.parsed);
+      const found: string[] = res.emails ?? [];
+      setFoundEmails(found);
+      if (found[0]) setContactEmail((prev) => prev || found[0]);
       if (res.warnings.length) toast(res.warnings.join("; "), "info");
+      if (found.length) toast(`Found ${found.length} email${found.length > 1 ? "s" : ""} on that page`, "success");
     },
     onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not parse that URL", "error"),
   });
@@ -59,7 +66,7 @@ function CapturePageInner() {
     mutationFn: () =>
       appFetch<{ application_id: string | null; posting_id: string; score: number }>("/capture", {
         method: "POST",
-        body: { source: "paste", url: url.trim(), html_text: pageText.trim() || undefined, action },
+        body: { source: "paste", url: url.trim(), html_text: pageText.trim() || undefined, action, kind, contact_email: contactEmail.trim() || undefined },
         _auth: true,
       }),
     meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]] },
@@ -145,6 +152,33 @@ function CapturePageInner() {
               </ul>
             </InlineBanner>
           )}
+
+          <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+            <div>
+              <Label>What is this?</Label>
+              <Select value={kind} onChange={(e) => setKind(e.target.value as any)} className="w-full">
+                <option value="application">Application: replying to an open role</option>
+                <option value="pitch">Pitch: CV to a company, no opening</option>
+              </Select>
+              <p className="mt-1 text-[11px] text-muted-foreground">Tracker and analytics keep these apart from the first day.</p>
+            </div>
+            <div>
+              <Label htmlFor="contact_email">Email to send to</Label>
+              <Input id="contact_email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="info@company.com" />
+              {foundEmails.length > 0 ? (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <span className="text-[11px] text-muted-foreground">found on page:</span>
+                  {foundEmails.map((em) => (
+                    <button key={em} onClick={() => setContactEmail(em)} className={cn("rounded-full border px-2 py-0.5 text-[11px]", contactEmail === em ? "border-orange-600 text-orange-700" : "border-border text-muted-foreground hover:border-foreground/30")}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[11px] text-muted-foreground">Auto-apply sends here; leave empty to just open the posting.</p>
+              )}
+            </div>
+          </div>
 
           <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
             <div>

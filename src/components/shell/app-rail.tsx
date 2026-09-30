@@ -95,7 +95,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
         )}
       >
         <div className="mb-4 flex items-center gap-2 px-2">
-          <span className="h-7 w-7 shrink-0 rounded-lg bg-[image:var(--gradient-brand)] shadow-lg shadow-orange-900/20" />
+          <img src="/jams-logo.png" alt="" className="h-8 w-auto shrink-0" />
           <span className="font-display text-lg font-extrabold tracking-tight">JAMS</span>
         </div>
 

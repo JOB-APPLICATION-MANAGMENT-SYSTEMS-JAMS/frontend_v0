@@ -4,13 +4,16 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Radar, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { Briefcase, Building2, Radar, RefreshCw, Search, Share2, SlidersHorizontal } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { SearchResponse } from "@/types";
 import { JobCard } from "@/features/jobs/job-card";
-import { Badge, Button, Card, Input, Skeleton, Kbd } from "@/components/ui/base";
+import { PitchTargets } from "@/features/jobs/pitch-targets";
+import { SocialSearch } from "@/features/jobs/social-search";
+import { Card, Button, Badge, Input, Skeleton, Kbd } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { InfoButton } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,6 +40,7 @@ function DiscoverPageInner() {
   const params = useSearchParams();
   const [text, setText] = React.useState(params.get("q") ?? "");
   const [showFilters, setShowFilters] = React.useState(false);
+  const mode = (params.get("mode") ?? "jobs") as "jobs" | "pitch" | "social";
 
   const patch = React.useCallback(
     (next: Record<string, string | undefined>) => {
@@ -82,6 +86,53 @@ function DiscoverPageInner() {
 
   return (
     <div className="space-y-5">
+      {/* mode tabs: jobs (board searches) · pitch targets (companies with no opening) · social */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="glass-tab flex rounded-full p-0.5">
+          {([[
+            "jobs",
+            "Jobs",
+            Briefcase,
+          ], [
+            "pitch",
+            "Pitch targets",
+            Building2,
+          ], [
+            "social",
+            "Social",
+            Share2,
+          ]] as const).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              onClick={() => patch({ mode: key === "jobs" ? undefined : key })}
+              className={cn("flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold", mode === key ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground hover:text-foreground")}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+        <InfoButton
+          title="Three ways to find your next role"
+          body={
+            <>
+              <p>
+                <b>Jobs</b> aggregates the free boards, ranked for software engineering in Nigeria first.
+              </p>
+              <p>
+                <b>Pitch targets</b> finds Nigerian companies with no open role but an official email: send the pitch anyway.
+              </p>
+              <p>
+                <b>Social</b> hands you the exact search to run on X, LinkedIn, Facebook and the rest; bring results back through Capture.
+              </p>
+            </>
+          }
+        />
+      </div>
+
+      {mode === "pitch" && <PitchTargets />}
+      {mode === "social" && <SocialSearch />}
+      {mode === "jobs" && (
+        <>
       {/* query bar */}
       <div className="glass-sheet sticky top-20 z-20 rounded-2xl p-3">
         <div className="flex items-center gap-2">
@@ -140,6 +191,39 @@ function DiscoverPageInner() {
               </button>
             )}
           </span>
+        </div>
+
+        {/* Nigeria quick filters: the search scope, one click away */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground">Nigeria:</span>
+          {["Lagos", "Abuja", "Ogun", "Nigeria"].map((loc) => {
+            const active = (queryParams.location ?? "").toLowerCase() === loc.toLowerCase();
+            return (
+              <button
+                key={loc}
+                onClick={() => patch({ location: active ? undefined : loc })}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  active ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                )}
+              >
+                {loc}
+              </button>
+            );
+          })}
+          <span className="ml-1 text-[11px] text-muted-foreground">role:</span>
+          {["software engineer", "frontend", "backend", "full stack", "devops"].map((term) => (
+            <button
+              key={term}
+              onClick={() => patch({ q: (queryParams.q ?? "").toLowerCase() === term ? undefined : term })}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                (queryParams.q ?? "").toLowerCase() === term ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+              )}
+            >
+              {term}
+            </button>
+          ))}
         </div>
 
         {showFilters && (
@@ -250,6 +334,8 @@ function DiscoverPageInner() {
               Next
             </Button>
           </div>
+        </>
+      )}
         </>
       )}
     </div>

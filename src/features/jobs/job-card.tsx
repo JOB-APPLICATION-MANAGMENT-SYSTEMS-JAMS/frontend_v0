@@ -3,7 +3,7 @@
 /** Result card (§25.1): title · company · salary · posted-ago · source badge · explainable score. */
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Check, ExternalLink, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, ExternalLink, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button } from "@/components/ui/base";
@@ -23,6 +23,35 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
     mutationFn: () => appFetch<any>("/capture", { method: "POST", body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft" }, _auth: true }),
     meta: { invalidates: [["applications"], ["jobs"], ["streaks"], ["analytics"]] },
     onSuccess: () => toast("Saved to tracker as a draft application", "success"),
+  });
+
+  /**
+   * Auto-apply: track it, then send by email when SMTP is configured (Gmail
+   * compose hand-off otherwise). With no email for the company it opens the
+   * posting instead: the manual path is never taken away, and either way the
+   * attempt lands in the tracker.
+   */
+  const autoApply = useMutation({
+    mutationFn: async () => {
+      const cap = await appFetch<any>("/capture", {
+        method: "POST",
+        body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft", kind: "application" },
+        _auth: true,
+      });
+      return appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string; url?: string | null; reason?: string }>(`/applications/${cap.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
+    },
+    meta: { invalidates: [["applications"], ["jobs"], ["outreach"], ["streaks"], ["analytics"]] },
+    onSuccess: (res) => {
+      if (res.mode === "sent") toast(`Application sent to ${res.email}`, "success");
+      else if (res.mode === "compose" && res.compose_url) {
+        window.open(res.compose_url, "_blank", "noopener");
+        toast("Gmail compose opened; press Send there", "info");
+      } else {
+        if (res.url) window.open(res.url, "_blank", "noopener");
+        toast(res.reason ?? "Opened the posting so you can apply manually", "info");
+      }
+    },
+    onError: (e: any) => toast(e.detail ?? e.message ?? "Auto-apply failed", "error"),
   });
 
   const scoreTone = job.score >= 75 ? "mint" : job.score >= 50 ? "azure" : "amber";
@@ -105,6 +134,9 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
       <div className="mt-auto flex items-center gap-1.5 border-t border-border pt-2.5">
         <Button size="sm" variant={job.applied ? "success" : "azure"} onClick={() => capture.mutate()} disabled={capture.isPending || job.applied}>
           <Check className="h-3.5 w-3.5" /> {job.applied ? "In tracker" : "Track this"}
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => autoApply.mutate()} disabled={autoApply.isPending || job.applied} title="Track it and send my application by email (opens the posting when no email is known)">
+          <Send className="h-3.5 w-3.5" /> {autoApply.isPending ? "Sending…" : "Auto-apply"}
         </Button>
         <a href={job.url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted">
           <ExternalLink className="h-3.5 w-3.5" /> Open

@@ -54,7 +54,7 @@ export default function SplashPage() {
           ))}
         </div>
         <div className="mx-auto mt-3 h-1 w-56 rounded-full bg-[image:var(--gradient-brand)]" />
-        <p className="mt-4 font-mono text-sm tracking-wide text-white/70">Job Hunt Operating System</p>
+        <p className="mt-4 font-mono text-sm tracking-wide text-white/70">Job Application Management System</p>
         <p className="mt-1 font-mono text-[11px] text-white/45">{status === "checking" ? "restoring your session…" : "redirecting…"}</p>
       </div>
     </div>
