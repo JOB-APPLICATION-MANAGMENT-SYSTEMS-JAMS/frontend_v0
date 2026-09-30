@@ -44,6 +44,8 @@ export interface JobPosting {
   ignored: boolean;
   keywords: string[];
   description_snippet: string;
+  /** apply-by-email address published in the posting text, when there is one */
+  contact_email: string | null;
 }
 
 export interface SearchResponse extends Paged<JobPosting> {

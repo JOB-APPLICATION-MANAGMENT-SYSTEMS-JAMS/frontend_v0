@@ -35,7 +35,7 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
     mutationFn: async () => {
       const cap = await appFetch<any>("/capture", {
         method: "POST",
-        body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft", kind: "application" },
+        body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft", kind: "application", contact_email: job.contact_email ?? undefined },
         _auth: true,
       });
       return appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string; url?: string | null; reason?: string }>(`/applications/${cap.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
@@ -70,8 +70,13 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
             <button onClick={onOpen} className="truncate font-display text-[15px] font-bold hover:text-accent">
               {job.title}
             </button>
-            {job.applied && <Badge tone="mint">applied ✓</Badge>}
-            {job.company.tier && <Badge tone={job.company.tier === "dream" ? "orchid" : job.company.tier === "reach" ? "azure" : "amber"}>{job.company.tier}</Badge>}
+        {job.applied && <Badge tone="mint">applied ✓</Badge>}
+        {job.contact_email && (
+          <Badge tone="mint" title={`Apply address: ${job.contact_email}`}>
+            email ✓
+          </Badge>
+        )}
+        {job.company.tier && <Badge tone={job.company.tier === "dream" ? "orchid" : job.company.tier === "reach" ? "azure" : "amber"}>{job.company.tier}</Badge>}
           </div>
           <p className="truncate text-sm text-muted-foreground">
             {job.company.name} · {job.location ?? "Unspecified"} {job.remote && "· Remote"}

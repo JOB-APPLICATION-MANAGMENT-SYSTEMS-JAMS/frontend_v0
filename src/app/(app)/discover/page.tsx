@@ -4,13 +4,13 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Briefcase, Building2, Radar, RefreshCw, Search, Share2, SlidersHorizontal } from "lucide-react";
+import { Briefcase, Building2, Mail, Radar, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { SearchResponse } from "@/types";
 import { JobCard } from "@/features/jobs/job-card";
 import { PitchTargets } from "@/features/jobs/pitch-targets";
-import { SocialSearch } from "@/features/jobs/social-search";
+import { EmailJobs } from "@/features/jobs/email-jobs";
 import { Card, Button, Badge, Input, Skeleton, Kbd } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { InfoButton } from "@/components/ui/modal";
@@ -40,7 +40,7 @@ function DiscoverPageInner() {
   const params = useSearchParams();
   const [text, setText] = React.useState(params.get("q") ?? "");
   const [showFilters, setShowFilters] = React.useState(false);
-  const mode = (params.get("mode") ?? "jobs") as "jobs" | "pitch" | "social";
+  const mode = ((params.get("mode") ?? "jobs") === "social" ? "email" : (params.get("mode") ?? "jobs")) as "jobs" | "pitch" | "email";
 
   const patch = React.useCallback(
     (next: Record<string, string | undefined>) => {
@@ -86,7 +86,7 @@ function DiscoverPageInner() {
 
   return (
     <div className="space-y-5">
-      {/* mode tabs: jobs (board searches) · pitch targets (companies with no opening) · social */}
+      {/* mode tabs: jobs (free boards) · pitch targets (companies with no opening) · apply by email */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="glass-tab flex rounded-full p-0.5">
           {([[
@@ -98,9 +98,9 @@ function DiscoverPageInner() {
             "Pitch targets",
             Building2,
           ], [
-            "social",
-            "Social",
-            Share2,
+            "email",
+            "Apply by email",
+            Mail,
           ]] as const).map(([key, label, Icon]) => (
             <button
               key={key}
@@ -122,7 +122,8 @@ function DiscoverPageInner() {
                 <b>Pitch targets</b> finds Nigerian companies with no open role but an official email: send the pitch anyway.
               </p>
               <p>
-                <b>Social</b> hands you the exact search to run on X, LinkedIn, Facebook and the rest; bring results back through Capture.
+                <b>Apply by email</b> lists only the postings that publish an address — including the HN “Who is hiring” thread — so you can send your
+                application straight to a person.
               </p>
             </>
           }
@@ -130,7 +131,7 @@ function DiscoverPageInner() {
       </div>
 
       {mode === "pitch" && <PitchTargets />}
-      {mode === "social" && <SocialSearch />}
+      {mode === "email" && <EmailJobs />}
       {mode === "jobs" && (
         <>
       {/* query bar */}
