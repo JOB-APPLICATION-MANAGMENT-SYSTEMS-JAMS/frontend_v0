@@ -112,6 +112,23 @@ export function PitchTargets({ className }: { className?: string }) {
   });
   const running = rescanState.data?.progress.status === "running";
   const catalog = rescanState.data?.catalog;
+  const progress = rescanState.data?.progress;
+  const pagesLeft = (progress?.pages_total ?? 0) > (progress?.pages_done ?? 0);
+
+  /**
+   * Serverless functions stop shortly after the response, so a 693-page walk is
+   * several runs, not one. Once the user asks for it, keep re-triggering while
+   * pages remain: each run skips what last week's run already fetched.
+   */
+  const [rescanWanted, setRescanWanted] = React.useState(false);
+  React.useEffect(() => {
+    if (!rescanWanted || running || !progress) return;
+    if (progress.status !== "running" && !pagesLeft) return;
+    if (progress.pages_total === 0) return; // catalog discovery has not answered yet
+    const t = setTimeout(() => rescan.mutate({ scope: "all", enrich: false }), 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rescanWanted, running, progress?.status, progress?.pages_done, progress?.pages_total]);
 
   /** fill rows that only have a website: visit the site, take the published inbox. */
   const enrich = useMutation({
@@ -264,9 +281,12 @@ export function PitchTargets({ className }: { className?: string }) {
               <Button
                 variant="azure"
                 size="sm"
-                onClick={() => rescan.mutate({ scope: "all" })}
+                onClick={() => {
+                  setRescanWanted(true);
+                  rescan.mutate({ scope: "all", enrich: false });
+                }}
                 disabled={running || rescan.isPending}
-                title="Walk every contact list on lca.logcluster.org (about 1,200 pages across 188 countries) and store the companies"
+                title="Walk every contact list on lca.logcluster.org (about 693 pages across 97 countries) and store the companies; it continues automatically across runs"
               >
                 <Globe className={cn("h-3.5 w-3.5", running && "animate-pulse")} /> {running ? "Ingesting…" : "Ingest worldwide lists"}
               </Button>
@@ -293,7 +313,13 @@ export function PitchTargets({ className }: { className?: string }) {
         </p>
         {(running || (rescanState.data?.progress.pages_done ?? 0) > 0) && rescanState.data && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-            <Badge tone={running ? "azure" : "mint"}>{running ? `ingesting ${rescanState.data.progress.phase}` : "last ingest done"}</Badge>
+            <Badge tone={running ? "azure" : pagesLeft ? "amber" : "mint"}>
+              {running
+                ? `ingesting ${rescanState.data.progress.phase}`
+                : pagesLeft
+                  ? `${rescanState.data.progress.pages_total - rescanState.data.progress.pages_done} pages left`
+                  : "all pages ingested"}
+            </Badge>
             <span className="text-muted-foreground">
               {rescanState.data.progress.pages_done}/{rescanState.data.progress.pages_total} pages · {rescanState.data.progress.rows_found.toLocaleString()} companies ·{" "}
               {rescanState.data.progress.rows_with_email.toLocaleString()} with a published email
