@@ -2,18 +2,19 @@
 
 /**
  * Pitch targets (§19.1 mode 2): companies that probably have no software opening
- * but still need software help. Live from OpenStreetMap via /pitch-targets, with
- * the official email surfaced (published or derived) because that is what the
- * pitch is sent to. One click prepares the draft and auto-sends it (SMTP) or
- * opens the Gmail compose hand-off; the company site link stays for manual work.
+ * but still need software help. Live sources (OpenStreetMap, curated nationwide
+ * contact lists, optional Stargate) via /pitch-targets, with the official email
+ * surfaced (published or derived). One click opens a preview of the exact email:
+ * edit it, then send (SMTP when connected, Gmail compose hand-off otherwise);
+ * every pitch stays a tracked application.
  */
 import * as React from "react";
 import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Building2, Copy, Mail, MapPin, Phone, RefreshCw, Rocket, Search, Globe } from "lucide-react";
+import { Building2, Copy, Mail, MapPin, Phone, RefreshCw, Rocket, Search, Globe, Send, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
-import { Badge, Button, Card, Input, Select, Skeleton } from "@/components/ui/base";
+import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
-import { InfoButton } from "@/components/ui/modal";
+import { InfoButton, Modal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,16 @@ type Target = {
   email: string | null;
   email_derived: number;
   phone: string | null;
+};
+
+/** POST /pitch-targets/prepare answer: the draft email + everything needed to send it. */
+type Prepared = {
+  application_id: string;
+  outreach_id: string;
+  subject: string;
+  body: string;
+  smtp_ready: boolean;
+  contact: { email: string; email_derived: boolean };
 };
 
 export function PitchTargets({ className }: { className?: string }) {
@@ -41,7 +52,8 @@ export function PitchTargets({ className }: { className?: string }) {
 
   const meta = useQuery({
     queryKey: ["pitch", "meta"],
-    queryFn: () => appFetch<{ sectors: { key: string; label: string }[]; cities: { key: string; label: string }[] }>("/pitch-targets/meta", { _auth: true }),
+    queryFn: () =>
+      appFetch<{ sectors: { key: string; label: string; source: string; nationwide: boolean }[]; cities: { key: string; label: string }[] }>("/pitch-targets/meta", { _auth: true }),
     staleTime: 60 * 60 * 1000,
   });
 
@@ -62,23 +74,37 @@ export function PitchTargets({ className }: { className?: string }) {
     onError: (e: any) => toast(e.detail ?? e.message ?? "Refresh failed", "error"),
   });
 
-  /** prepare (company + contact + draft pitch) → auto-apply sends it or opens compose. */
-  const pitch = useMutation({
-    mutationFn: async (t: Target) => {
-      const prepared = await appFetch<{ application_id: string; contact: { email: string } }>("/pitch-targets/" + encodeURIComponent(t.external_id) + "/prepare", { method: "POST", body: {}, _auth: true });
-      const res = await appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string }>(`/applications/${prepared.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
-      return { ...res, company: t.name };
+  // preview/edit the exact email before anything leaves the building
+  const [draft, setDraft] = React.useState<(Prepared & { target: Target }) | null>(null);
+
+  /** prepare (company + contact + tracked draft) → open the preview modal. */
+  const prepare = useMutation({
+    mutationFn: (t: Target) =>
+      appFetch<Prepared>("/pitch-targets/prepare", { method: "POST", body: { external_id: t.external_id }, _auth: true }).then((p) => ({ ...p, target: t })),
+    onSuccess: (p) => setDraft(p),
+    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not prepare the pitch", "error"),
+  });
+
+  /** save the edited draft, then send: SMTP directly, or Gmail compose hand-off. */
+  const send = useMutation({
+    mutationFn: async (d: NonNullable<typeof draft>) => {
+      await appFetch(`/outreach/${d.outreach_id}`, { method: "PUT", body: { subject: d.subject, body: d.body }, _auth: true });
+      const res = await appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string }>(`/applications/${d.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
+      return { ...res, company: d.target.name };
     },
     meta: { invalidates: [["applications"], ["outreach"], ["streaks"], ["analytics"]] },
     onSuccess: (res) => {
+      setDraft(null);
       if (res.mode === "sent") toast(`Pitch sent to ${res.email}`, "success");
       else if (res.mode === "compose" && res.compose_url) {
         window.open(res.compose_url, "_blank", "noopener");
         toast("Gmail compose opened; press Send there", "info");
       } else toast("No email found; opened the company site", "info");
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not prepare the pitch", "error"),
+    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not send the pitch", "error"),
   });
+
+  const activeSector = meta.data?.sectors.find((s) => s.key === sector);
 
   const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -100,18 +126,20 @@ export function PitchTargets({ className }: { className?: string }) {
               </option>
             ))}
           </Select>
-          <Select value={city} onChange={(e) => setCity(e.target.value)}>
-            {(meta.data?.cities ?? [
-              { key: "lagos", label: "Lagos" },
-              { key: "abuja", label: "Abuja (FCT)" },
-              { key: "ogun", label: "Ogun" },
-            ]).map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-            <option value="all">All cities</option>
-          </Select>
+          {!activeSector?.nationwide && (
+            <Select value={city} onChange={(e) => setCity(e.target.value)}>
+              {(meta.data?.cities ?? [
+                { key: "lagos", label: "Lagos" },
+                { key: "abuja", label: "Abuja (FCT)" },
+                { key: "ogun", label: "Ogun" },
+              ]).map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+              <option value="all">All cities</option>
+            </Select>
+          )}
           <Button variant="outline" size="sm" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={cn("h-3.5 w-3.5", refresh.isPending && "animate-spin")} /> Rescan
           </Button>
@@ -121,14 +149,14 @@ export function PitchTargets({ className }: { className?: string }) {
               <>
                 <p>Companies that rarely post a software opening but still need software: supermarkets, airports, manufacturers and offices across Lagos, Abuja and Ogun.</p>
                 <p>
-                  Data is live from OpenStreetMap, refreshed daily. The email shown is the published contact when there is one, otherwise a derived <b>info@domain</b> guess flagged as such. Pitching creates a tracked application just like a normal one, and replies land in your Inbox.
+                  Data is live from OpenStreetMap plus nationwide contact lists (airlines, ports) and any connected company-data provider. The email shown is the published contact when there is one, otherwise a derived <b>info@domain</b> guess flagged as such. Pitching creates a tracked application just like a normal one, you preview and can edit the email before it goes out, and replies land in your Inbox.
                 </p>
               </>
             }
           />
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          {list.data ? `${list.data.pagination.total_count} companies to pitch` : "searching live sources…"} · source: OpenStreetMap Overpass
+          {list.data ? `${list.data.pagination.total_count} companies to pitch` : "searching live sources…"} · source: {activeSector?.source ?? "OpenStreetMap Overpass"}
         </p>
       </div>
 
@@ -197,7 +225,7 @@ export function PitchTargets({ className }: { className?: string }) {
               </div>
 
               <div className="mt-auto flex items-center gap-2 pt-1">
-                <Button size="sm" variant="azure" onClick={() => pitch.mutate(t)} disabled={!t.email || (pitch.isPending && pitch.variables?.external_id === t.external_id)} title={t.email ? "Send the pitch email now" : "No email known yet: use find email, then capture the page"}>
+                <Button size="sm" variant="azure" onClick={() => prepare.mutate(t)} disabled={!t.email || (prepare.isPending && prepare.variables?.external_id === t.external_id)} title={t.email ? "Preview the pitch email, edit it, then send" : "No email known yet: use find email, then capture the page"}>
                   <Rocket className="h-3.5 w-3.5" /> Pitch this company
                 </Button>
                 {t.website && (
@@ -207,9 +235,61 @@ export function PitchTargets({ className }: { className?: string }) {
                 )}
               </div>
             </Card>
-          ))}
+          )          )}
         </div>
       )}
+
+      <Modal open={!!draft} onClose={() => !send.isPending && setDraft(null)} label="Preview pitch email" className="max-w-2xl">
+        {draft && (
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-display text-base font-bold">Preview: pitch to {draft.target.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  To: {draft.contact.email} {draft.contact.email_derived ? "(derived guess, verify before sending)" : "(published contact)"}
+                </p>
+              </div>
+              <button onClick={() => setDraft(null)} aria-label="Close" className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="pitch-subject">Subject</Label>
+              <Input id="pitch-subject" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pitch-body">Body</Label>
+              <Textarea id="pitch-body" rows={12} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} className="resize-y font-mono text-xs leading-relaxed" />
+            </div>
+
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              {draft.smtp_ready ? (
+                <span>
+                  SMTP connected: the email is sent <b>automatically</b> when you press send, no other step.
+                </span>
+              ) : (
+                <span>
+                  Gmail hand-off: pressing send opens a prefilled Gmail compose tab. Connect Gmail (app password in Inbox & Sync) once and sends become fully automatic.
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              This pitch is tracked like any application: status, opens and replies show up in Tracker and Inbox.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button size="sm" variant="outline" onClick={() => setDraft(null)} disabled={send.isPending}>
+                Cancel
+              </Button>
+              <Button size="sm" variant="azure" onClick={() => send.mutate(draft)} disabled={send.isPending || !draft.subject.trim() || !draft.body.trim()}>
+                <Send className="h-3.5 w-3.5" /> {send.isPending ? "Sending…" : draft.smtp_ready ? "Send pitch now" : "Open Gmail compose"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -23,6 +23,7 @@ const CLASS_TONE: Record<string, "mint" | "rose" | "orchid" | "amber" | "azure" 
 
 export default function InboxSyncPage() {
   const [address, setAddress] = React.useState("");
+  const [appPass, setAppPass] = React.useState("");
   const [msg, setMsg] = React.useState({ from: "", subject: "", body: "" });
   const [openThread, setOpenThread] = React.useState<string | null>(null);
 
@@ -34,10 +35,24 @@ export default function InboxSyncPage() {
     enabled: !!openThread,
   });
 
+  // the app password is what makes sends automatic: stored once, the backend uses
+  // it as SMTP credentials so pitches and auto-applies never hand off to Gmail again
   const connect = useMutation({
-    mutationFn: () => appFetch("/mailboxes", { method: "POST", body: { kind: "imap", address }, _auth: true }),
+    mutationFn: () =>
+      appFetch("/mailboxes", {
+        method: "POST",
+        body: { kind: "imap", address, config: appPass ? { app_password: appPass } : undefined },
+        _auth: true,
+      }),
     meta: { invalidates: [["inbox"]] },
-    onSuccess: () => toast("Mailbox recorded, local mode, ingestion below is the live path", "success"),
+    onSuccess: () =>
+      toast(
+        appPass
+          ? "Gmail connected: pitches and auto-applies now send automatically, no compose tab"
+          : "Mailbox recorded; add the Gmail app password to send automatically",
+        "success"
+      ),
+    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Connect failed", "error"),
   });
 
   const ingest = useMutation({
@@ -78,11 +93,27 @@ export default function InboxSyncPage() {
             <Badge tone="mint">connected</Badge>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <Input placeholder="you@example.com" value={address} onChange={(e) => setAddress(e.target.value)} type="email" />
-            <Button onClick={() => connect.mutate()} disabled={!address.includes("@") || connect.isPending}>
-              Connect
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input placeholder="you@gmail.com" value={address} onChange={(e) => setAddress(e.target.value)} type="email" />
+              <Button onClick={() => connect.mutate()} disabled={!address.includes("@") || connect.isPending}>
+                Connect
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Gmail app password (16 chars)"
+                value={appPass}
+                onChange={(e) => setAppPass(e.target.value)}
+                type="password"
+                autoComplete="off"
+                className="max-w-xs"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Connect once with a Gmail app password (Google Account → 2-Step Verification → App passwords) and every pitch and auto-apply
+              sends <b>automatically from this app</b> — no Gmail tab, no redirect. Without it, sends hand off to a prefilled Gmail compose.
+            </p>
           </div>
         )}
         <InlineBanner tone="info" className="mt-3" title="Free-tier reality">
