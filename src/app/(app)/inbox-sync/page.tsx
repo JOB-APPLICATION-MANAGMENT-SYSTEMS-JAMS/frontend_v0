@@ -24,10 +24,21 @@ const CLASS_TONE: Record<string, "mint" | "rose" | "orchid" | "amber" | "azure" 
 export default function InboxSyncPage() {
   const [address, setAddress] = React.useState("");
   const [appPass, setAppPass] = React.useState("");
+  const [editing, setEditing] = React.useState(false); // "Edit credentials" on a connected mailbox
+  const seededAddr = React.useRef(false);
   const [msg, setMsg] = React.useState({ from: "", subject: "", body: "" });
   const [openThread, setOpenThread] = React.useState<string | null>(null);
 
   const mailbox = useQuery<{ items: any[]; connected: boolean; smtp_ready?: boolean }>({ queryKey: qk.mailbox(), queryFn: () => appFetch("/mailboxes", { _auth: true }) });
+
+  // prefill the address once so "Edit credentials" opens with what is already saved
+  React.useEffect(() => {
+    const stored = mailbox.data?.items?.[0]?.address;
+    if (stored && !seededAddr.current) {
+      setAddress(stored);
+      seededAddr.current = true;
+    }
+  }, [mailbox.data]);
   const threads = useQuery<{ items: any[] }>({ queryKey: qk.threads(), queryFn: () => appFetch("/inbox/threads", { _auth: true }) });
   const threadDetail = useQuery<any>({
     queryKey: ["inbox", "thread", openThread],
@@ -45,14 +56,20 @@ export default function InboxSyncPage() {
         _auth: true,
       }),
     meta: { invalidates: [["inbox"]] },
-    onSuccess: () =>
+    onSuccess: () => {
+      const wasEditing = editing;
+      setEditing(false);
+      setAppPass("");
       toast(
-        appPass
-          ? "Gmail connected: pitches and auto-applies now send automatically, no compose tab"
-          : "Mailbox recorded; add the Gmail app password to send automatically",
+        wasEditing
+          ? "Credentials updated: the next send will use the new address and app password"
+          : appPass
+            ? "Gmail connected: pitches and auto-applies now send automatically, no compose tab"
+            : "Mailbox recorded; add the Gmail app password to send automatically",
         "success"
-      ),
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Connect failed", "error"),
+      );
+    },
+    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not save the mailbox", "error"),
   });
 
   const ingest = useMutation({
@@ -79,71 +96,124 @@ export default function InboxSyncPage() {
         </h2>
         {mailbox.isPending ? (
           <Skeleton className="h-16 w-full" />
-        ) : mailbox.data?.connected && mailbox.data?.smtp_ready ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
-                <Mail className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">{mailbox.data.items[0]?.address}</p>
-                <p className="text-xs text-muted-foreground">sends leave automatically · last synced {fmt.ago(mailbox.data.items[0]?.last_synced_at)}</p>
-              </div>
-            </div>
-            <Badge tone="mint">auto-send on</Badge>
-          </div>
-        ) : mailbox.data?.connected ? (
-          // connected but no app password yet: keep the field visible so the
-          // one-time connect can actually be finished from here
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
-                <Mail className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">{mailbox.data.items[0]?.address}</p>
-                <p className="text-xs text-muted-foreground">connected, but sends still open a Gmail compose tab</p>
-              </div>
-              <Badge tone="amber" className="ml-auto">
-                app password missing
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Gmail app password (16 chars)"
-                value={appPass}
-                onChange={(e) => setAppPass(e.target.value)}
-                type="password"
-                autoComplete="off"
-                className="max-w-xs"
-              />
-              <Button onClick={() => connect.mutate()} disabled={appPass.length < 8 || connect.isPending}>
-                {connect.isPending ? "Saving…" : "Enable auto-send"}
-              </Button>
-            </div>
-          </div>
         ) : (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input placeholder="you@gmail.com" value={address} onChange={(e) => setAddress(e.target.value)} type="email" />
-              <Button onClick={() => connect.mutate()} disabled={!address.includes("@") || connect.isPending}>
-                Connect
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Gmail app password (16 chars)"
-                value={appPass}
-                onChange={(e) => setAppPass(e.target.value)}
-                type="password"
-                autoComplete="off"
-                className="max-w-xs"
-              />
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Connect once with a Gmail app password (Google Account → 2-Step Verification → App passwords) and every pitch and auto-apply
-              sends <b>automatically from this app</b>: no Gmail tab, no redirect. Without it, sends hand off to a prefilled Gmail compose.
-            </p>
+          <div className="space-y-4">
+            {/* connected: always show what is saved, its send mode, and how to change it */}
+            {mailbox.data?.connected && (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
+                    <Mail className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold">{mailbox.data.items[0]?.address}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {mailbox.data.smtp_ready
+                        ? `sends leave automatically · last synced ${fmt.ago(mailbox.data.items[0]?.last_synced_at)}`
+                        : "connected, but sends still open a Gmail compose tab"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge tone={mailbox.data.smtp_ready ? "mint" : "amber"}>
+                    {mailbox.data.smtp_ready ? "auto-send on" : "app password missing"}
+                  </Badge>
+                  {mailbox.data.smtp_ready && !editing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAppPass("");
+                        setEditing(true);
+                      }}
+                    >
+                      Edit credentials
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* connect, finish the one-time connect, or correct a mistyped password:
+                the address and app password stay editable in every state */}
+            {(!mailbox.data?.connected || editing || !mailbox.data?.smtp_ready) && (
+              <div
+                className={
+                  mailbox.data?.connected ? "space-y-3 rounded-xl border border-border bg-muted/40 p-4" : "space-y-3"
+                }
+              >
+                {editing && (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Edit mailbox credentials</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditing(false);
+                        setAppPass("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="mb-address">Gmail address</Label>
+                    <Input
+                      id="mb-address"
+                      type="email"
+                      placeholder="you@gmail.com"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="mb-pass">App password (16 chars)</Label>
+                    <Input
+                      id="mb-pass"
+                      type="password"
+                      placeholder="abcd efgh ijkl mnop"
+                      value={appPass}
+                      onChange={(e) => setAppPass(e.target.value)}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    onClick={() => connect.mutate()}
+                    disabled={
+                      !address.includes("@") ||
+                      (appPass.replace(/\s/g, "").length > 0 && appPass.replace(/\s/g, "").length < 8) ||
+                      connect.isPending
+                    }
+                  >
+                    {connect.isPending
+                      ? "Saving…"
+                      : editing
+                        ? "Save credentials"
+                        : mailbox.data?.connected
+                          ? "Enable auto-send"
+                          : "Connect"}
+                  </Button>
+                  <a
+                    href="https://my.google.com/apppasswords"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-accent hover:underline"
+                  >
+                    Where do I get an app password?
+                  </a>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {mailbox.data?.connected ? "Leave the app password empty to keep the one already saved. " : ""}
+                  Gmail refuses your normal account password (error 534): the 16-character app password comes from Google Account → 2-Step
+                  Verification → App passwords, and it replaces the old one as soon as you save.
+                </p>
+              </div>
+            )}
           </div>
         )}
         <InlineBanner tone="info" className="mt-3" title="Free-tier reality">

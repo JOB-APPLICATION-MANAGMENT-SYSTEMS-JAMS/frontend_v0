@@ -3,12 +3,13 @@
 /** Outreach (§26): template merge composer, Gmail hand-off send, cadence cap, sequences, threads. */
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { CalendarClock, Layers, Mail, Send, Sparkles } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { Application, Outreach, Paged, Template } from "@/types";
-import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea } from "@/components/ui/base";
+import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea, buttonClass } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -96,9 +97,14 @@ function OutreachPageInner() {
     <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[1.4fr_1fr]">
       {/* composer */}
       <div className="space-y-5">
-        <header>
-          <h1 className="font-display text-2xl font-extrabold">Outreach</h1>
-          <p className="text-sm text-muted-foreground">Compose once, merge variables, hand off to Gmail, you press Send (§26.4).</p>
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-display text-2xl font-extrabold">Outreach</h1>
+            <p className="text-sm text-muted-foreground">Compose once, merge variables, hand off to Gmail, you press Send (§26.4).</p>
+          </div>
+          <Link href="/inbox-sync" className={buttonClass("outline", "sm")}>
+            <Mail className="h-4 w-4" /> Inbox &amp; Sync
+          </Link>
         </header>
 
         <Card className="space-y-4 p-5">
@@ -271,8 +277,11 @@ function OutreachPageInner() {
         <Card className="p-5">
           <h2 className="font-display mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">How sending works</h2>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            No paid SMTP: JAMS prepares the message, opens Gmail pre-filled, and you press Send. Inbound replies are ingested through{" "}
-            <span className="font-semibold text-foreground">Inbox sync</span> and classified deterministically, interview invite, rejection, OOO, bounce.
+            No paid SMTP: JAMS prepares the message, opens Gmail pre-filled, and you press Send. Inbound replies are ingested            through{" "}
+            <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
+              Inbox sync
+            </Link>{" "}
+            and classified deterministically, interview invite, rejection, OOO, bounce.
           </p>
         </Card>
       </div>
