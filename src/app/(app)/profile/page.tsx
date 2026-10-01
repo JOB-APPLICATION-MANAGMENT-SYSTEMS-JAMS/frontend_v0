@@ -34,10 +34,20 @@ export default function ProfilePage() {
   }, [profile.data, draft]);
 
   const save = useMutation({
-    mutationFn: () => appFetch("/profile", { method: "PUT", body: draft, _auth: true }),
+    // strip half-filled rows the "Add" buttons can leave behind: one blank skill
+    // must not fail the whole save with a raw validation error
+    mutationFn: () => {
+      const body = {
+        ...draft,
+        skills: (draft?.skills ?? []).filter((s) => s.name.trim()),
+        experiences: (draft?.experiences ?? []).filter((e) => e.title.trim() && e.company.trim()),
+        education: (draft?.education ?? []).filter((e) => e.school.trim()),
+      };
+      return appFetch("/profile", { method: "PUT", body, _auth: true });
+    },
     meta: { invalidates: [["profile"], ["cvs"], ["jobs"], ["analytics"]] },
     onSuccess: () => {
-      toast("Profile saved, downstream CVs, autofill and scoring updated", "success");
+      toast("Profile saved: CVs, autofill and scoring updated", "success");
       completeness.refetch();
     },
     onError: (e: any) => toast(e.message ?? "Save failed", "error"),

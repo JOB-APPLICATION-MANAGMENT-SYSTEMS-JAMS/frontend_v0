@@ -100,7 +100,7 @@ export function PitchTargets({ className }: { className?: string }) {
    */
   const rescan = useMutation({
     mutationFn: (body: Record<string, any>) => appFetch<any>("/pitch-targets/rescan", { method: "POST", body, _auth: true }),
-    onSuccess: (state) => toast(state.status === "running" ? "Rescan already running — progress below" : "Rescan started", "info"),
+    onSuccess: (state) => toast(state.status === "running" ? "Rescan already running: progress below" : "Rescan started", "info"),
     onError: (e: any) => toast(e.detail ?? e.message ?? "Rescan failed to start", "error"),
   });
 
@@ -156,7 +156,7 @@ export function PitchTargets({ className }: { className?: string }) {
   });
 
   /**
-   * Refresh (§19.1): regenerate the wording. The backend composer is seeded — the
+   * Refresh (§19.1): regenerate the wording. The backend composer is seeded; the
    * new seed picks a different opener, value props, CTA and sign-off, then runs the
    * grammar passes again, so every press is a genuinely different, still-clean email.
    */
@@ -187,7 +187,7 @@ export function PitchTargets({ className }: { className?: string }) {
     onSuccess: (a) => {
       setAttachments((prev) => [...prev, a]);
       setDraft((d) =>
-        d ? { ...d, body: `${d.body.replace(/\s+$/, "")}\n\nAttachment: ${a.filename} — ${a.url}` }
+        d ? { ...d, body: `${d.body.replace(/\s+$/, "")}\n\nAttachment: ${a.filename}: ${a.url}` }
         : d
       );
       toast(`${a.filename} linked into the email`, "success");
@@ -215,7 +215,7 @@ export function PitchTargets({ className }: { className?: string }) {
   /** Drop an attachment: removes the row and the line that linked it. */
   const detach = (a: Attachment) => {
     setAttachments((prev) => prev.filter((x) => x.id !== a.id));
-    setDraft((d) => (d ? { ...d, body: d.body.replace(new RegExp(`\n*Attachment: ${a.filename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} — [^\n]*`, ""), "") } : d));
+    setDraft((d) => (d ? { ...d, body: d.body.replace(new RegExp(`\n*Attachment: ${a.filename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}: [^\n]*`, ""), "") } : d));
   };
 
   /** save the edited draft, then send: SMTP directly, or Gmail compose hand-off. */

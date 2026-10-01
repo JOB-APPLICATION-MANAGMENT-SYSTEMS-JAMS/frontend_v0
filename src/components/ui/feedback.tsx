@@ -89,34 +89,49 @@ export function ConfirmDialog({
   );
 }
 
-/** Top-center inverted toasts with a gradient left border on success (§41.5). */
+/** Top-center toasts: all cards share one slot (newest overlays the older ones),
+ *  surface-colored (black-on-white text flips with the theme), short and wide (§9.2 / §41.5). */
 export function ToastHost() {
   const items = useToasts();
+  if (!items.length) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[120] flex flex-col items-center gap-2 px-4">
-      {items.map((t) => (
-        <ToastCard key={t.id} item={t} />
-      ))}
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[120] flex justify-center px-4">
+      {/* zero-height track: every toast lands at the same spot and overlays the
+          previous card instead of pushing a column down the screen */}
+      <div className="relative h-0 w-full max-w-[min(92vw,560px)]">
+        {items.map((t) => (
+          <div key={t.id} className="absolute inset-x-0 top-0">
+            <ToastCard item={t} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function ToastCard({ item }: { item: ToastItem }) {
+  const dismiss = () => window.dispatchEvent(new CustomEvent("jams-toast-dismiss", { detail: { id: item.id } }));
   return (
     <div
+      role="status"
       className={cn(
-        "route-fade pointer-events-auto flex max-w-[min(92vw,440px)] items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-2xl",
-        item.kind === "success" ? "border-l-4 border-l-[image:var(--gradient-brand)] " : "",
-        "bg-black text-white dark:bg-white dark:text-black"
+        "pointer-events-auto flex w-full items-start gap-3 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground shadow-2xl",
+        item.leaving ? "toast-out" : "toast-in",
+        item.kind === "success" && "border-l-4 border-l-[image:var(--gradient-brand)]",
+        item.kind === "error" && "border-l-4 border-l-destructive"
       )}
     >
       <div className="min-w-0 flex-1">
         {item.title && <p className="font-semibold">{item.title}</p>}
-        <p className={item.title ? "opacity-80" : ""}>{item.message}</p>
+        <p className={cn("break-words", item.title && "opacity-80")}>{item.message}</p>
       </div>
-      <span className="opacity-50">
-        <X className="h-4 w-4" />
-      </span>
+      <button
+        aria-label="Dismiss notification"
+        onClick={dismiss}
+        className="-mr-1 -mt-0.5 shrink-0 rounded-lg p-1 text-muted-foreground hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

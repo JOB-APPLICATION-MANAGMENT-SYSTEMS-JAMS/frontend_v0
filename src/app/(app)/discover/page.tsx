@@ -122,7 +122,7 @@ function DiscoverPageInner() {
                 <b>Pitch targets</b> finds Nigerian companies with no open role but an official email: send the pitch anyway.
               </p>
               <p>
-                <b>Apply by email</b> lists only the postings that publish an address — including the HN “Who is hiring” thread — so you can send your
+                <b>Apply by email</b> lists only the postings that publish an address (including the HN “Who is hiring” thread), so you can send your
                 application straight to a person.
               </p>
             </>

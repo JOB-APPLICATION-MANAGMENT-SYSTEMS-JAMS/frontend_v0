@@ -143,7 +143,7 @@ export function EmailJobs() {
   const refresh = useMutation({
     mutationFn: () => appFetch<any>("/jobs/refresh", { method: "POST", body: {}, _auth: true }),
     onSuccess: () => {
-      toast("Indexing free sources — addresses land in seconds", "info");
+      toast("Indexing free sources: addresses land in seconds", "info");
       setTimeout(() => search.refetch(), 6000);
     },
     onError: (e: any) => toast(e.detail ?? e.message ?? "Refresh failed", "error"),
@@ -204,7 +204,7 @@ export function EmailJobs() {
       ) : total === 0 ? (
         <EmptyState
           title="No address-bearing jobs indexed yet"
-          description="Hit “Refresh sources” to pull the free boards and the HN hiring thread — postings that publish an inbox land here within seconds."
+          description="Hit “Refresh sources” to pull the free boards and the HN hiring thread. Postings that publish an inbox land here within seconds."
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

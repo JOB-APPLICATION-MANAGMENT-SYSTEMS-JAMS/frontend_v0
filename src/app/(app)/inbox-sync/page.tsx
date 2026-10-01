@@ -27,7 +27,7 @@ export default function InboxSyncPage() {
   const [msg, setMsg] = React.useState({ from: "", subject: "", body: "" });
   const [openThread, setOpenThread] = React.useState<string | null>(null);
 
-  const mailbox = useQuery<{ items: any[]; connected: boolean }>({ queryKey: qk.mailbox(), queryFn: () => appFetch("/mailboxes", { _auth: true }) });
+  const mailbox = useQuery<{ items: any[]; connected: boolean; smtp_ready?: boolean }>({ queryKey: qk.mailbox(), queryFn: () => appFetch("/mailboxes", { _auth: true }) });
   const threads = useQuery<{ items: any[] }>({ queryKey: qk.threads(), queryFn: () => appFetch("/inbox/threads", { _auth: true }) });
   const threadDetail = useQuery<any>({
     queryKey: ["inbox", "thread", openThread],
@@ -79,7 +79,7 @@ export default function InboxSyncPage() {
         </h2>
         {mailbox.isPending ? (
           <Skeleton className="h-16 w-full" />
-        ) : mailbox.data?.connected ? (
+        ) : mailbox.data?.connected && mailbox.data?.smtp_ready ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
@@ -87,10 +87,40 @@ export default function InboxSyncPage() {
               </span>
               <div>
                 <p className="text-sm font-semibold">{mailbox.data.items[0]?.address}</p>
-                <p className="text-xs text-muted-foreground">last synced {fmt.ago(mailbox.data.items[0]?.last_synced_at)}</p>
+                <p className="text-xs text-muted-foreground">sends leave automatically · last synced {fmt.ago(mailbox.data.items[0]?.last_synced_at)}</p>
               </div>
             </div>
-            <Badge tone="mint">connected</Badge>
+            <Badge tone="mint">auto-send on</Badge>
+          </div>
+        ) : mailbox.data?.connected ? (
+          // connected but no app password yet: keep the field visible so the
+          // one-time connect can actually be finished from here
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
+                <Mail className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">{mailbox.data.items[0]?.address}</p>
+                <p className="text-xs text-muted-foreground">connected, but sends still open a Gmail compose tab</p>
+              </div>
+              <Badge tone="amber" className="ml-auto">
+                app password missing
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Gmail app password (16 chars)"
+                value={appPass}
+                onChange={(e) => setAppPass(e.target.value)}
+                type="password"
+                autoComplete="off"
+                className="max-w-xs"
+              />
+              <Button onClick={() => connect.mutate()} disabled={appPass.length < 8 || connect.isPending}>
+                {connect.isPending ? "Saving…" : "Enable auto-send"}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
@@ -112,7 +142,7 @@ export default function InboxSyncPage() {
             </div>
             <p className="text-[11px] text-muted-foreground">
               Connect once with a Gmail app password (Google Account → 2-Step Verification → App passwords) and every pitch and auto-apply
-              sends <b>automatically from this app</b> — no Gmail tab, no redirect. Without it, sends hand off to a prefilled Gmail compose.
+              sends <b>automatically from this app</b>: no Gmail tab, no redirect. Without it, sends hand off to a prefilled Gmail compose.
             </p>
           </div>
         )}

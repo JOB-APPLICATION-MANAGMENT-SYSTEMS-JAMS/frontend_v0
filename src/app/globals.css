@@ -286,6 +286,12 @@
 @keyframes routeFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .route-fade { animation: routeFade 0.18s ease-out both; }
 
+/* toast enter/exit (§9.2): fade in on mount, fade out before the hook removes it */
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-6px); } }
+.toast-in { animation: toastIn 0.18s cubic-bezier(0.23, 1, 0.32, 1) both; }
+.toast-out { animation: toastOut 0.24s ease-in both; }
+
 /* gradient text + hairline */
 .text-gradient-brand {
   background: var(--gradient-brand);
@@ -322,6 +328,17 @@
 @layer base {
   .grid > * { min-width: 0; }
   .flex > * { min-width: 0; }
+
+  /* <option> is UA-styled: without an explicit palette the dark theme renders
+     dark text on a dark popup (or light-on-light). Force theme colours. */
+  option {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+  }
+  /* the closed <select> too: glass inputs leave text colour on the UA default */
+  select {
+    color: hsl(var(--foreground));
+  }
 }
 
 /* reduced motion — three layers (§16.2): this is layer 1 */
