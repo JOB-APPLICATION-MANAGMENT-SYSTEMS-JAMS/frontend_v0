@@ -12,7 +12,7 @@ import * as React from "react";
 import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Building2, Copy, FileText, Globe, Mail, MapPin, Paperclip, Phone, RefreshCw, Rocket, Search, Send, Sparkles, Upload, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
-import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
+import { Badge, Button, Card, Combobox, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { InfoButton, Modal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
@@ -288,14 +288,17 @@ export function PitchTargets({ className }: { className?: string }) {
               <option value="all">All cities</option>
             </Select>
           )}
-          <Select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country">
-            <option value="all">All countries</option>
-            {(meta.data?.countries ?? []).map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label} ({c.count.toLocaleString()})
-              </option>
-            ))}
-          </Select>
+          <Combobox
+            value={country}
+            onChange={setCountry}
+            ariaLabel="Country"
+            placeholder="All countries"
+            className="min-w-[190px]"
+            options={[
+              { value: "all", label: "All countries" },
+              ...(meta.data?.countries ?? []).map((c) => ({ value: c.key, label: `${c.label} (${c.count.toLocaleString()})` })),
+            ]}
+          />
           <Button variant="outline" size="sm" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={cn("h-3.5 w-3.5", refresh.isPending && "animate-spin")} /> Rescan
           </Button>
@@ -369,8 +372,7 @@ export function PitchTargets({ className }: { className?: string }) {
         </div>
       ) : list.error ? (
         <ErrorState error={list.error} onRetry={() => list.refetch()} />
-      ) : (list.data?.items?.length ?? 0) === 0 ? (
-        <EmptyState title="No companies matched" description="Try another sector or city, or hit Rescan to refresh the live data." />
+      ) : (list.data?.items?.length ?? 0) === 0 ? (          <EmptyState title="No companies matched" description="Try another sector, city or country, or hit Rescan to refresh the live data." />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {list.data!.items.map((t, i) => (
@@ -556,30 +558,25 @@ export function PitchTargets({ className }: { className?: string }) {
                 )}
               </div>
               {!draft.smtp_ready && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Input
-                    value={connectAddr}
-                    onChange={(e) => setConnectAddr(e.target.value)}
-                    placeholder="you@gmail.com"
-                    type="email"
-                    aria-label="Gmail address"
-                    className="h-8 w-48 text-xs"
-                  />
-                  <Input
-                    value={connectPass}
-                    onChange={(e) => setConnectPass(e.target.value)}
-                    placeholder="Gmail app password (16 chars)"
-                    type="password"
-                    autoComplete="off"
-                    aria-label="Gmail app password"
-                    className="h-8 w-56 text-xs"
-                  />
-                  <Button size="sm" variant="azure" onClick={() => connect.mutate()} disabled={!connectAddr.includes("@") || connectPass.length < 8 || connect.isPending}>
-                    {connect.isPending ? "Enabling…" : "Enable auto-send"}
-                  </Button>
-                  <a href="https://my.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-accent underline">
-                    Get app password
-                  </a>
+                <div className="mt-3 space-y-2.5 border-t border-border pt-3">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="connect-addr">Gmail address</Label>
+                      <Input id="connect-addr" value={connectAddr} onChange={(e) => setConnectAddr(e.target.value)} placeholder="you@gmail.com" type="email" className="h-9 text-xs" />
+                    </div>
+                    <div>
+                      <Label htmlFor="connect-pass">App password (16 chars)</Label>
+                      <Input id="connect-pass" value={connectPass} onChange={(e) => setConnectPass(e.target.value)} placeholder="abcd efgh ijkl mnop" type="password" autoComplete="off" className="h-9 text-xs" />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button size="sm" variant="outline" onClick={() => connect.mutate()} disabled={!connectAddr.includes("@") || connectPass.replace(/\s/g, "").length < 8 || connect.isPending}>
+                      {connect.isPending ? "Enabling…" : "Enable auto-send"}
+                    </Button>
+                    <a href="https://my.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[11px] text-accent underline">
+                      Where do I get an app password?
+                    </a>
+                  </div>
                 </div>
               )}
             </div>

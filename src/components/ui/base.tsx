@@ -2,7 +2,7 @@
 
 /** Primitives (§14.2), variants are semantic, not decorative (CVA-style map). */
 import * as React from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------- Button ------------------------------- */
@@ -116,6 +116,110 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
     );
   }
 );
+
+/* ------------------------------ Combobox ------------------------------- */
+/** Type-to-filter select for long lists (countries, 90+ entries). A native
+ *  <select> forces an alphabetical scroll hunt past ~15 items (§6); this filters
+ *  as you type, keeps the selected value visible, and stays keyboard-reachable
+ *  (Enter picks the top match, Escape closes, the rows are real buttons). */
+export function Combobox({
+  value,
+  onChange,
+  options,
+  placeholder = "Search…",
+  ariaLabel,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  ariaLabel?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const wrap = React.useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+  const needle = q.trim().toLowerCase();
+  const filtered = needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options;
+
+  const pick = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setQ("");
+  };
+
+  // close on any pointer press outside the wrapper
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={wrap} className={cn("relative", className)}>
+      <input
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        aria-label={ariaLabel}
+        value={open ? q : (selected?.label ?? "")}
+        placeholder={selected?.label ? selected.label : placeholder}
+        onChange={(e) => setQ(e.target.value)}
+        onFocus={() => {
+          setOpen(true);
+          setQ("");
+        }}
+        onBlur={(e) => {
+          if (!wrap.current?.contains(e.relatedTarget as Node)) setOpen(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setOpen(false);
+            setQ("");
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (filtered.length) pick(filtered[0].value);
+          }
+        }}
+        className={cn(
+          "glass-input h-10 w-full rounded-xl px-3.5 text-sm text-foreground placeholder:text-muted-foreground",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          className
+        )}
+      />
+      {open && (
+        <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl border border-border bg-card py-1 shadow-2xl">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-xs text-muted-foreground">No match for “{q.trim()}”</li>
+          ) : (
+            filtered.map((o) => (
+              <li key={o.value}>
+                <button
+                  type="button"
+                  // keep focus on the input so the blur handler doesn't race the click
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(o.value)}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 text-left text-sm",
+                    o.value === value ? "bg-muted font-semibold text-foreground" : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  <span className="truncate">{o.label}</span>
+                  {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn("mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground", className)} {...props} />;
