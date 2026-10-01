@@ -62,6 +62,7 @@ type RescanProgress = {
 export function PitchTargets({ className }: { className?: string }) {
   const [sector, setSector] = React.useState("supermarket");
   const [city, setCity] = React.useState("lagos");
+  const [country, setCountry] = React.useState("all");
   const [q, setQ] = React.useState("");
   const [debouncedQ, setDebouncedQ] = React.useState("");
 
@@ -73,13 +74,13 @@ export function PitchTargets({ className }: { className?: string }) {
   const meta = useQuery({
     queryKey: ["pitch", "meta"],
     queryFn: () =>
-      appFetch<{ sectors: { key: string; label: string; source: string; nationwide: boolean }[]; cities: { key: string; label: string }[] }>("/pitch-targets/meta", { _auth: true }),
+      appFetch<{ sectors: { key: string; label: string; source: string; nationwide: boolean }[]; cities: { key: string; label: string }[]; countries: { key: string; label: string; count: number }[] }>("/pitch-targets/meta", { _auth: true }),
     staleTime: 60 * 60 * 1000,
   });
 
   const list = useQuery({
-    queryKey: ["pitch", sector, city, debouncedQ],
-    queryFn: () => appFetch<{ items: Target[]; pagination: { total_count: number } }>("/pitch-targets", { params: { sector, city, q: debouncedQ || undefined, page_size: 50 }, _auth: true }),
+    queryKey: ["pitch", sector, city, country, debouncedQ],
+    queryFn: () => appFetch<{ items: Target[]; pagination: { total_count: number } }>("/pitch-targets", { params: { sector, city, country, q: debouncedQ || undefined, page_size: 50 }, _auth: true }),
     placeholderData: keepPreviousData,
     staleTime: 60 * 60 * 1000,
     retry: 1,
@@ -143,6 +144,20 @@ export function PitchTargets({ className }: { className?: string }) {
   // preview/edit the exact email before anything leaves the building
   const [draft, setDraft] = React.useState<(Prepared & { target: Target }) | null>(null);
   const [attachments, setAttachments] = React.useState<Attachment[]>([]);
+  // one-time Gmail connect, offered right inside the preview: after this saves,
+  // smtpReadyFor flips and Send leaves from the server (no compose tab)
+  const [connectAddr, setConnectAddr] = React.useState("");
+  const [connectPass, setConnectPass] = React.useState("");
+  const connect = useMutation({
+    mutationFn: () =>
+      appFetch<any>("/mailboxes", { method: "POST", body: { kind: "gmail", address: connectAddr, config: { app_password: connectPass } }, _auth: true }),
+    onSuccess: () => {
+      setDraft((d) => (d ? { ...d, smtp_ready: true } : d));
+      setConnectPass("");
+      toast("Auto-send on: press Send and the email leaves this app, no Gmail tab", "success");
+    },
+    onError: (e: any) => toast(e?.detail ?? e?.message ?? "Connect failed", "error"),
+  });
 
   /** prepare (company + contact + tracked draft) → open the preview modal. */
   const prepare = useMutation({
@@ -273,6 +288,14 @@ export function PitchTargets({ className }: { className?: string }) {
               <option value="all">All cities</option>
             </Select>
           )}
+          <Select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country">
+            <option value="all">All countries</option>
+            {(meta.data?.countries ?? []).map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label} ({c.count.toLocaleString()})
+              </option>
+            ))}
+          </Select>
           <Button variant="outline" size="sm" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={cn("h-3.5 w-3.5", refresh.isPending && "animate-spin")} /> Rescan
           </Button>
@@ -518,16 +541,46 @@ export function PitchTargets({ className }: { className?: string }) {
               </details>
             )}
 
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
-              {draft.smtp_ready ? (
-                <span>
-                  SMTP connected: the email is sent <b>automatically</b> when you press send, no other step.
-                </span>
-              ) : (
-                <span>
-                  Gmail hand-off: pressing send opens a prefilled Gmail compose tab. Connect Gmail (app password in Inbox & Sync) once and sends become fully automatic.
-                </span>
+            <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                {draft.smtp_ready ? (
+                  <span>
+                    Auto-send on: the email leaves this app when you press Send. No Gmail tab, no redirect.
+                  </span>
+                ) : (
+                  <span>
+                    Send would open a prefilled Gmail tab. Connect your Gmail <b>once</b> below and every pitch and auto-apply sends
+                    automatically from here.
+                  </span>
+                )}
+              </div>
+              {!draft.smtp_ready && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Input
+                    value={connectAddr}
+                    onChange={(e) => setConnectAddr(e.target.value)}
+                    placeholder="you@gmail.com"
+                    type="email"
+                    aria-label="Gmail address"
+                    className="h-8 w-48 text-xs"
+                  />
+                  <Input
+                    value={connectPass}
+                    onChange={(e) => setConnectPass(e.target.value)}
+                    placeholder="Gmail app password (16 chars)"
+                    type="password"
+                    autoComplete="off"
+                    aria-label="Gmail app password"
+                    className="h-8 w-56 text-xs"
+                  />
+                  <Button size="sm" variant="azure" onClick={() => connect.mutate()} disabled={!connectAddr.includes("@") || connectPass.length < 8 || connect.isPending}>
+                    {connect.isPending ? "Enabling…" : "Enable auto-send"}
+                  </Button>
+                  <a href="https://my.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-accent underline">
+                    Get app password
+                  </a>
+                </div>
               )}
             </div>
             <p className="text-[11px] text-muted-foreground">
