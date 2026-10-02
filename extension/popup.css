@@ -1,23 +1,34 @@
-/* JAMS Autofill popup — compact, dark-mode aware, no pure black/white (design skill). */
+/* JAMS Autofill popup — design-skill pass:
+   hierarchy (one primary action), persistent labels, semantic colors,
+   no pure black/white, dark mode via prefers-color-scheme with desaturated
+   tones, and a fade that only runs when the status line actually changes. */
 :root {
   color-scheme: light dark;
-  --bg: rgb(255, 255, 255);
+  --bg: rgb(252, 251, 249);
   --fg: rgb(33, 24, 18);
-  --muted: rgb(120, 110, 102);
-  --border: rgb(232, 227, 221);
-  --card: rgb(248, 246, 243);
+  --muted: rgb(122, 112, 104);
+  --border: rgb(231, 226, 220);
+  --card: rgb(246, 243, 239);
   --accent: rgb(234, 88, 12);
-  --mint: rgb(5, 150, 105);
+  --accent-soft: rgb(255, 243, 233);
+  --on-accent: rgb(255, 251, 247);
+  --ok: rgb(5, 130, 105);
+  --warn: rgb(180, 118, 16);
+  --err: rgb(190, 45, 45);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: rgb(28, 25, 23);
-    --fg: rgb(245, 243, 240);
-    --muted: rgb(166, 158, 150);
-    --border: rgb(58, 53, 49);
-    --card: rgb(37, 33, 30);
-    --accent: rgb(251, 146, 60);
-    --mint: rgb(52, 211, 153);
+    --bg: rgb(29, 26, 24);
+    --fg: rgb(242, 239, 236);
+    --muted: rgb(160, 152, 145);
+    --border: rgb(57, 52, 48);
+    --card: rgb(38, 34, 31);
+    --accent: rgb(240, 130, 55);
+    --accent-soft: rgb(58, 40, 26);
+    --on-accent: rgb(36, 22, 10);
+    --ok: rgb(80, 200, 165);
+    --warn: rgb(220, 165, 70);
+    --err: rgb(230, 110, 110);
   }
 }
 
@@ -25,31 +36,69 @@
   box-sizing: border-box;
 }
 body {
-  width: 300px;
+  width: 312px;
   margin: 0;
-  padding: 12px;
+  padding: 12px 14px 14px;
   background: var(--bg);
   color: var(--fg);
   font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+/* ---- header: logo + wordmark, one line ---- */
 header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
   margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
-.logo {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mark {
+  display: block;
+  height: 21px;
+  width: auto;
+}
+.wordmark {
   font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  letter-spacing: 0.02em;
 }
-.who,
-.hint {
+.wordmark em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--muted);
+}
+.who {
   color: var(--muted);
   font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 130px;
 }
-section {
+
+/* ---- panes ---- */
+.pane {
   display: grid;
-  gap: 8px;
+  gap: 9px;
+}
+.pane[hidden] {
+  display: none;
+}
+.pane-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .field {
   display: grid;
@@ -69,8 +118,9 @@ label.check {
   font-size: 12px;
   color: var(--fg);
   display: flex;
-  gap: 6px;
+  gap: 7px;
   align-items: center;
+  cursor: pointer;
 }
 input,
 select {
@@ -82,57 +132,150 @@ select {
   color: var(--fg);
   font: inherit;
 }
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
 input:focus-visible,
 select:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* ---- buttons: one primary, one secondary, rest ghost ---- */
 button {
   padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--card);
   color: var(--fg);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: background 0.14s ease, opacity 0.14s ease, transform 0.06s ease;
 }
 button:hover {
-  opacity: 0.88;
+  opacity: 0.9;
+}
+button:active {
+  transform: translateY(1px);
 }
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: default;
+  transform: none;
 }
 button.primary {
   background: var(--accent);
   border-color: transparent;
-  color: rgb(255, 255, 255);
+  color: var(--on-accent);
+}
+button.big {
+  padding: 11px 12px;
+  font-size: 14px;
+  width: 100%;
+}
+button.secondary {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
 }
 button.ghost {
   border: none;
   background: transparent;
   color: var(--muted);
-  font-weight: 400;
+  font-weight: 500;
   padding: 4px 0;
 }
+button.ghost:hover {
+  color: var(--err);
+  opacity: 1;
+}
+
+/* ---- confidence legend ---- */
+.legend {
+  margin: -2px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dot.green {
+  background: var(--ok);
+}
+.dot.amber {
+  background: var(--warn);
+}
+.dot.none {
+  background: var(--border);
+}
+
+/* ---- status line: fade only when text changes (re-triggered by JS) ---- */
 #result {
   margin: 0;
-  min-height: 1em;
+  min-height: 0;
   font-size: 12px;
   white-space: pre-wrap;
+  border-radius: 8px;
+}
+#result:empty {
+  display: none;
 }
 #result.ok {
-  color: var(--mint);
+  color: var(--ok);
 }
 #result.err {
-  color: rgb(220, 38, 38);
+  color: var(--err);
 }
+#result.busy {
+  color: var(--muted);
+}
+#result.animate {
+  animation: statusIn 0.18s ease both;
+}
+@keyframes statusIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #result.animate {
+    animation: none;
+  }
+}
+
+/* ---- footer row ---- */
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+.footer {
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 1px;
+}
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+.fineprint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
 }

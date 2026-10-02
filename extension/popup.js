@@ -12,10 +12,34 @@ function send(msg) {
   });
 }
 
+/** Human-readable status: fade only runs when the text actually changes. */
+let lastSaid = "";
 function say(text, tone = "") {
   const el = $("result");
+  const key = tone + "\n" + text;
   el.textContent = text;
   el.className = tone;
+  if (text && key !== lastSaid) {
+    el.classList.add("animate");
+    lastSaid = key;
+  } else if (!text) {
+    lastSaid = "";
+  }
+}
+
+/** Backend messages are already phrased for humans; pass anything else through. */
+function friendly(e) {
+  const m = e?.message || String(e);
+  if (/failed to fetch|networkerror|load failed/i.test(m)) {
+    return "Can't reach the JAMS backend. Check your connection and try again.";
+  }
+  if (/token expired|not authenticated/i.test(m)) {
+    return "Session expired — sign in again.";
+  }
+  if (/invalid email or password/i.test(m)) {
+    return "That email and password don't match an account.";
+  }
+  return m;
 }
 
 async function activeTab() {
@@ -24,6 +48,16 @@ async function activeTab() {
     throw new Error("Open a normal web page (a job posting) first.");
   }
   return tab;
+}
+
+/** Buttons show a busy label while a job runs — the fade has a job to do. */
+function busy(on, label) {
+  for (const id of ["fill", "capture", "login", "logout"]) {
+    const el = $(id);
+    if (el) el.disabled = on;
+  }
+  const btn = $("fill");
+  if (btn) btn.querySelector(".btn-label").textContent = on && label ? label : "Fill this page";
 }
 
 async function refresh() {
@@ -40,47 +74,57 @@ async function refresh() {
   }
 }
 
-$("login").addEventListener("click", async () => {
+$("signin").addEventListener("submit", async (e) => {
+  e.preventDefault(); // Enter in any field signs in
   const email = $("email").value.trim();
   const password = $("password").value;
   if (!email || !password) return say("Enter your email and password.", "err");
-  $("login").disabled = true;
+  busy(true);
+  say("Signing in…", "busy");
   try {
     await send({ type: "jams:setApiBase", apiBase: $("api").value });
     await send({ type: "jams:login", email, password });
     localStorage.setItem("seen", "1");
     $("password").value = "";
+    say("");
     await refresh();
-  } catch (e) {
-    say(e.message, "err");
+  } catch (e2) {
+    say(friendly(e2), "err");
   } finally {
-    $("login").disabled = false;
+    busy(false);
   }
 });
 
 $("fill").addEventListener("click", async () => {
-  $("fill").disabled = true;
-  say("Matching fields against your profile…");
+  busy(true, "Filling…");
+  say("Matching fields against your profile…", "busy");
   try {
     const tab = await activeTab();
     const r = await send({ type: "jams:fill", tabId: tab.id });
     if (r.reason) return say(r.reason, "err");
-    if (!r.filled) return say(`Nothing to fill: ${r.skipped} field(s) skipped (no confident profile match).`, "err");
+    if (!r.filled) {
+      return say(
+        r.skipped
+          ? `Nothing to fill: ${r.skipped} field(s) had no confident profile match.`
+          : "No form fields found on this page.",
+        "err"
+      );
+    }
     const lines = [`Filled ${r.filled} field(s).`];
     if (r.flagged) lines.push(`${r.flagged} amber — lower confidence, review those.`);
     if (r.skipped) lines.push(`${r.skipped} skipped.`);
     lines.push("Review everything and press Submit yourself.");
     say(lines.join("\n"), "ok");
   } catch (e) {
-    say(e.message, "err");
+    say(friendly(e), "err");
   } finally {
-    $("fill").disabled = false;
+    busy(false);
   }
 });
 
 $("capture").addEventListener("click", async () => {
-  $("capture").disabled = true;
-  say("Saving this page to JAMS…");
+  busy(true, "Saving…");
+  say("Saving this page to JAMS…", "busy");
   try {
     const tab = await activeTab();
     const action = $("draft").checked ? "create_draft" : "log_only";
@@ -92,15 +136,16 @@ $("capture").addEventListener("click", async () => {
         : "Saved to JAMS.";
     say(`${what}${typeof r?.score === "number" ? ` Match score ${r.score}.` : ""}`, "ok");
   } catch (e) {
-    say(e.message, "err");
+    say(friendly(e), "err");
   } finally {
-    $("capture").disabled = false;
+    busy(false);
   }
 });
 
 $("logout").addEventListener("click", async () => {
   await send({ type: "jams:logout" });
+  say("");
   await refresh();
 });
 
-refresh().catch((e) => say(e.message, "err"));
+refresh().catch((e) => say(friendly(e), "err"));

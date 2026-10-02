@@ -7,12 +7,16 @@
   </head>
   <body>
     <header>
-      <span class="logo">JAMS</span>
+      <div class="brand">
+        <img src="logo.png" alt="" class="mark" width="26" height="21" />
+        <span class="wordmark">JAMS <em>Autofill</em></span>
+      </div>
       <span id="who" class="who"></span>
     </header>
 
     <!-- signed out -->
-    <section id="signin">
+    <form id="signin" class="pane">
+      <p class="pane-title">Sign in</p>
       <div class="field">
         <label for="api">Backend</label>
         <select id="api">
@@ -28,17 +32,28 @@
         <label for="password">Password</label>
         <input id="password" type="password" autocomplete="current-password" />
       </div>
-      <button id="login" class="primary">Sign in</button>
-    </section>
+      <button id="login" class="primary" type="submit">Sign in</button>
+      <p class="fineprint">Your token stays in the extension — pages never see it.</p>
+    </form>
 
     <!-- signed in -->
-    <section id="app" hidden>
-      <button id="fill" class="primary">Fill this page</button>
-      <button id="capture">Save this job to JAMS</button>
+    <section id="app" class="pane" hidden>
+      <button id="fill" class="primary big" type="button">
+        <span class="btn-label">Fill this page</span>
+      </button>
+      <p class="legend">
+        <span class="dot green"></span> confident &nbsp;·&nbsp;
+        <span class="dot amber"></span> review &nbsp;·&nbsp;
+        <span class="dot none"></span> skipped
+      </p>
+
+      <button id="capture" class="secondary" type="button">Save this job to JAMS</button>
       <label class="check"><input type="checkbox" id="draft" checked /> Create an application draft (not submitted)</label>
+
       <p id="result" role="status" aria-live="polite"></p>
-      <div class="row">
-        <button id="logout" class="ghost">Sign out</button>
+
+      <div class="row footer">
+        <button id="logout" class="ghost" type="button">Sign out</button>
         <span id="where" class="hint"></span>
       </div>
     </section>
