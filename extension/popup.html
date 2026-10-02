@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JAMS Autofill</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="logo">JAMS</span>
+      <span id="who" class="who"></span>
+    </header>
+
+    <!-- signed out -->
+    <section id="signin">
+      <div class="field">
+        <label for="api">Backend</label>
+        <select id="api">
+          <option value="https://backend-v0-3aeu-omega.vercel.app/api/v1">Production</option>
+          <option value="http://localhost:8000/api/v1">Local (localhost:8000)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
+      <button id="login" class="primary">Sign in</button>
+    </section>
+
+    <!-- signed in -->
+    <section id="app" hidden>
+      <button id="fill" class="primary">Fill this page</button>
+      <button id="capture">Save this job to JAMS</button>
+      <label class="check"><input type="checkbox" id="draft" checked /> Create an application draft (not submitted)</label>
+      <p id="result" role="status" aria-live="polite"></p>
+      <div class="row">
+        <button id="logout" class="ghost">Sign out</button>
+        <span id="where" class="hint"></span>
+      </div>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

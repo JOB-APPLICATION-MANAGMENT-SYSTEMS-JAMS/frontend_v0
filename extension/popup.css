@@ -1,0 +1,138 @@
+/* JAMS Autofill popup — compact, dark-mode aware, no pure black/white (design skill). */
+:root {
+  color-scheme: light dark;
+  --bg: rgb(255, 255, 255);
+  --fg: rgb(33, 24, 18);
+  --muted: rgb(120, 110, 102);
+  --border: rgb(232, 227, 221);
+  --card: rgb(248, 246, 243);
+  --accent: rgb(234, 88, 12);
+  --mint: rgb(5, 150, 105);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: rgb(28, 25, 23);
+    --fg: rgb(245, 243, 240);
+    --muted: rgb(166, 158, 150);
+    --border: rgb(58, 53, 49);
+    --card: rgb(37, 33, 30);
+    --accent: rgb(251, 146, 60);
+    --mint: rgb(52, 211, 153);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  width: 300px;
+  margin: 0;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.logo {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.who,
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+section {
+  display: grid;
+  gap: 8px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+}
+label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+label.check {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--fg);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+input,
+select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+}
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+button:hover {
+  opacity: 0.88;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: rgb(255, 255, 255);
+}
+button.ghost {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+  padding: 4px 0;
+}
+#result {
+  margin: 0;
+  min-height: 1em;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+#result.ok {
+  color: var(--mint);
+}
+#result.err {
+  color: rgb(220, 38, 38);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
