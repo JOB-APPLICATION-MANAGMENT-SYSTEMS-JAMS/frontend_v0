@@ -73,22 +73,30 @@ function profileUrl() {
   return `${webBase()}/autofill`;
 }
 
-/* password reveal — toggle the input type, keep focus and caret */
-$("peek").addEventListener("click", () => {
-  const input = $("password");
-  const btn = $("peek");
-  const showing = input.type === "password";
-  input.type = showing ? "text" : "password";
-  btn.classList.toggle("showing", showing);
-  btn.setAttribute("aria-pressed", String(showing));
-  btn.setAttribute("aria-label", showing ? "Hide password" : "Show password");
-  btn.title = showing ? "Hide password" : "Show password";
-  input.focus();
-});
-
-/* no account yet? open the web signup (deep-links return to the same page) */
-$("signup").addEventListener("click", () => {
-  chrome.tabs.create({ url: `${webBase()}/auth/signup` });
+/* password reveal + signup link — delegated so they register even if the DOM
+   rearranges, and can never break the handlers registered after them */
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  if (!(t instanceof Element)) return;
+  const peekBtn = t.closest("#peek");
+  if (peekBtn) {
+    e.preventDefault();
+    const input = $("password");
+    if (!input) return;
+    const showing = input.type === "password";
+    input.type = showing ? "text" : "password";
+    peekBtn.classList.toggle("showing", showing);
+    peekBtn.setAttribute("aria-pressed", String(showing));
+    const label = showing ? "Hide password" : "Show password";
+    peekBtn.setAttribute("aria-label", label);
+    peekBtn.title = label;
+    input.focus({ preventScroll: true });
+    return;
+  }
+  if (t.closest("#signup")) {
+    e.preventDefault();
+    chrome.tabs.create({ url: `${webBase()}/auth/signup` });
+  }
 });
 
 /** Profile card: who autofill answers as, and how much is saved. */

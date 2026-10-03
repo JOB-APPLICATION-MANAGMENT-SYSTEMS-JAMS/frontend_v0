@@ -7,7 +7,7 @@
  */
 import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Save, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Save, ShieldCheck, Sparkles, Trash2, Upload } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/base";
@@ -35,6 +35,10 @@ const ANSWER_KEYS = [
   ["relocation", "Office / relocation answer"],
   ["graduation_year", "Graduation year"],
   ["heard_about", "How did you hear about this job?"],
+  ["headline", "Headline"],
+  ["school", "School"],
+  ["degree", "Degree"],
+  ["field_of_study", "Field of study"],
 ] as const;
 
 const LINK_KEYS = [
@@ -92,6 +96,46 @@ export default function AutofillPage() {
     onError: (e: any) => toast(e.message ?? "Save failed", "error"),
   });
 
+  /* Resume → answers: parse on the server, fill the DRAFT here, human saves. */
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result).split(",")[1] ?? "");
+        fr.onerror = () => reject(new Error("Couldn’t read that file"));
+        fr.readAsDataURL(file);
+      });
+      return appFetch<{ identity: Record<string, any>; warnings: string[] }>("/autofill/parse-resume", {
+        method: "POST",
+        body: { filename: file.name, content_base64: base64 },
+        _auth: true,
+      });
+    },
+    onSuccess: (data, file) => {
+      const { links: importedLinks, ...rest } = data.identity ?? {};
+      setAnswers((a) => ({ ...a, ...rest }));
+      if (importedLinks) setLinks((l) => ({ ...l, ...importedLinks }));
+      const n = [...Object.values(rest), ...Object.values(importedLinks ?? {})].filter((v) => v && String(v).trim()).length;
+      toast(`Pulled ${n} detail(s) from ${file.name} — review below, then press Save.`, "success");
+      const notes = (data.warnings ?? []).join(" ");
+      if (notes) toast(notes, "info");
+    },
+    onError: (e: any) => toast(e.message ?? "Couldn’t read that file", "error"),
+  });
+
+  const onPickResume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file after a fix
+    if (!file) return;
+    if (!/\.(pdf|txt|md|rtf)$/i.test(file.name)) {
+      return toast("DOCX isn’t supported yet — export your resume as PDF or .txt and try again.", "error");
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      return toast("That resume is over 4 MB — export a smaller PDF and try again.", "error");
+    }
+    upload.mutate(file);
+  };
+
   if (profile.isPending || !ready) return <Skeleton className="h-[60vh] w-full" />;
   if (profile.error) return <ErrorState error={profile.error} onRetry={() => profile.refetch()} />;
 
@@ -117,6 +161,25 @@ export default function AutofillPage() {
             <Badge>below that stays empty — never guessed</Badge>
             <Badge tone="rose">never: {guardrails.join(", ")}</Badge>
           </div>
+        </Card>
+
+        {/* resume import */}
+        <Card className="p-5">
+          <Section icon={<Upload className="h-4 w-4" />} title="Resume / CV — import into these answers" />
+          <p className="-mt-2 mb-3 text-sm text-muted-foreground">
+            Upload your resume and we’ll read the details out of it — name, contact, links, education. Nothing is saved until you press
+            <strong> Save autofill details</strong> below, so you can review every field first.
+          </p>
+          <Label htmlFor="resume-file">Choose your resume (PDF or .txt, up to 4 MB)</Label>
+          <Input
+            id="resume-file"
+            type="file"
+            accept=".pdf,.txt,.md,.rtf"
+            disabled={upload.isPending}
+            onChange={onPickResume}
+            className="mt-1 file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-1.5 file:font-medium file:text-foreground file:text-sm"
+          />
+          {upload.isPending && <p className="mt-2 text-sm text-muted-foreground">Reading your resume…</p>}
         </Card>
 
         {/* application answers */}
