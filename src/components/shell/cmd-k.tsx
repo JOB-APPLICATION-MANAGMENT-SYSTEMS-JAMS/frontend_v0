@@ -7,7 +7,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Command as CommandIcon, Compass, Crosshair, FilePlus2, Flame, LayoutDashboard, Mail, Search, Send, UserRound, Columns3, ChartLine, Trophy } from "lucide-react";
+import { Command as CommandIcon, Compass, Crosshair, FilePlus2, Flame, LayoutDashboard, Mail, MousePointerClick, Search, Send, UserRound, Columns3, ChartLine, Trophy } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import type { Application, Paged } from "@/types";
 import { Kbd } from "@/components/ui/base";
@@ -44,6 +44,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { id: "streak", label: "Streaks & goals", icon: Flame, run: () => go("/streaks"), group: "Go" },
     { id: "analyt", label: "Analytics", icon: ChartLine, run: () => go("/analytics"), group: "Go" },
     { id: "prof", label: "Profile (master form)", icon: UserRound, run: () => go("/profile"), group: "Go" },
+    { id: "autofill", label: "Autofill answers & guardrails", icon: MousePointerClick, run: () => go("/autofill"), group: "Go" },
     { id: "victory", label: "I got a job 🎉", icon: Trophy, run: () => go("/victory"), group: "Go" },
     { id: "newapp", label: "Log an application", hint: "c", icon: FilePlus2, run: () => go("/tracker?new=1"), group: "Actions" },
     { id: "capture", label: "Quick capture (paste URL)", icon: Crosshair, run: () => go("/capture"), group: "Actions" },

@@ -13,6 +13,7 @@ export const authedRoutes = [
   "/studio",
   "/outreach",
   "/profile",
+  "/autofill",
   "/streaks",
   "/analytics",
   "/settings",

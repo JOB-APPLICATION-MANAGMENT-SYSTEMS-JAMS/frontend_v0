@@ -16,6 +16,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  MousePointerClick,
   Send,
   Settings,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const NAV = [
   { href: "/tracker", label: "Tracker", icon: Columns3 },
   { href: "/studio", label: "CV Studio", icon: FileText },
   { href: "/outreach", label: "Outreach", icon: Send },
+  { href: "/autofill", label: "Autofill", icon: MousePointerClick },
   { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

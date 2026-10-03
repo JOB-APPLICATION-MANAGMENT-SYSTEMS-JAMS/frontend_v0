@@ -136,6 +136,60 @@ input::placeholder {
   color: var(--muted);
   opacity: 0.75;
 }
+
+/* password reveal: eye toggle sits inside the input */
+.pw-wrap {
+  position: relative;
+}
+.pw-wrap input {
+  padding-right: 34px;
+}
+.peek {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+}
+.peek:hover {
+  color: var(--fg);
+  opacity: 1;
+}
+.peek svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.peek .eye-off {
+  display: none;
+}
+.peek.showing .eye {
+  display: none;
+}
+.peek.showing .eye-off {
+  display: block;
+}
+
+/* text links that look like links, not buttons */
+.linklike {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 650;
+  color: var(--accent);
+  cursor: pointer;
+}
+.linklike:hover {
+  text-decoration: underline;
+  opacity: 1;
+}
 input:focus-visible,
 select:focus-visible,
 button:focus-visible {

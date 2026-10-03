@@ -22,6 +22,7 @@ const TITLES: Record<string, string> = {
   "/studio": "CV Studio",
   "/outreach": "Outreach",
   "/profile": "Profile",
+  "/autofill": "Autofill",
   "/streaks": "Streaks",
   "/analytics": "Analytics",
   "/settings": "Settings",

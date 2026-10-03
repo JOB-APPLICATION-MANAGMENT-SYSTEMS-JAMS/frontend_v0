@@ -64,10 +64,32 @@ function busy(on, label) {
 }
 
 let apiBase = "";
-/** Where "✎ Edit" opens: the profile master form on the matching backend. */
-function profileUrl() {
-  return apiBase.includes("localhost") ? "http://localhost:3000/profile" : "https://frontend-v0-lilac.vercel.app/profile";
+/** The web app on the same backend — auth deep-links land back where you were. */
+function webBase() {
+  return apiBase.includes("localhost") ? "http://localhost:3000" : "https://frontend-v0-lilac.vercel.app";
 }
+/** Where "✎ Edit" opens: the autofill control centre (answers, Q&A, aliases). */
+function profileUrl() {
+  return `${webBase()}/autofill`;
+}
+
+/* password reveal — toggle the input type, keep focus and caret */
+$("peek").addEventListener("click", () => {
+  const input = $("password");
+  const btn = $("peek");
+  const showing = input.type === "password";
+  input.type = showing ? "text" : "password";
+  btn.classList.toggle("showing", showing);
+  btn.setAttribute("aria-pressed", String(showing));
+  btn.setAttribute("aria-label", showing ? "Hide password" : "Show password");
+  btn.title = showing ? "Hide password" : "Show password";
+  input.focus();
+});
+
+/* no account yet? open the web signup (deep-links return to the same page) */
+$("signup").addEventListener("click", () => {
+  chrome.tabs.create({ url: `${webBase()}/auth/signup` });
+});
 
 /** Profile card: who autofill answers as, and how much is saved. */
 async function loadProfile() {
