@@ -95,63 +95,97 @@ $("signup").addEventListener("click", () => {
 async function loadProfile() {
   try {
     const p = await send({ type: "jams:profile" });
-    const who = p.name || p.email || "Your profile";
-    $("pname").textContent = who;
-    $("pmeta").textContent = [p.email, `${p.saved} detail${p.saved === 1 ? "" : "s"} saved`].filter(Boolean).join(" · ");
-    $("avatar").textContent = who.trim().charAt(0).toUpperCase() || "?";
+    const name = p.name || "";
+    $("pname").textContent = name || p.email || "Your profile";
+    $("pmeta").textContent =
+      name && p.email && name !== p.email ? `${p.email} · ${p.saved} detail${p.saved === 1 ? "" : "s"} saved` : `${p.saved} detail${p.saved === 1 ? "" : "s"} saved`;
+    $("avatar").textContent = (name || p.email || "?").trim().charAt(0).toUpperCase() || "?";
   } catch (e) {
-    $("pname").textContent = "Your profile";
-    $("pmeta").textContent = "not loaded";
-    // say WHY — a silent "couldn't load" hides expired sessions and stale bundles
+    // degrade gracefully: keep WHO on the card, then recover or explain
+    const who = $("who").textContent || localStorage.getItem("lastEmail") || "";
+    $("avatar").textContent = "?";
+    $("pname").textContent = who || "Your profile";
+    $("pmeta").textContent = "details not loaded";
+    if (isSessionError(e)) return recoverSession();
     say(friendly(e), "err");
   }
 }
 
-/* ---- per-field breakdown: what filled, what didn't, and why ---- */
+/* ---- per-field breakdown: grouped into filled vs skipped ---- */
 function clearBreakdown() {
   $("breakdown").hidden = true;
   $("fills").innerHTML = "";
+  $("skips").innerHTML = "";
+}
+
+function addRow(ul, row) {
+  const li = document.createElement("li");
+  if (row.skip) li.className = "skip";
+  li.innerHTML = `<span class="dot ${row.cls}"></span><span class="rlabel"></span><span class="rsub"></span>`;
+  li.querySelector(".rlabel").textContent = row.label;
+  li.querySelector(".rsub").textContent = row.sub;
+  ul.appendChild(li);
+}
+
+function addMore(ul, n) {
+  const p = document.createElement("p");
+  p.className = "rmore";
+  p.textContent = `+${n} more`;
+  ul.appendChild(p);
 }
 
 function renderBreakdown(r) {
-  const rows = [];
-  for (const d of r.details ?? []) {
-    rows.push({
-      cls: d.confidence >= 0.85 ? "green" : "amber",
-      label: d.label,
-      sub: `${d.value || "—"} · ${Math.round(d.confidence * 100)}% · ${d.method}`,
-    });
-  }
-  for (const s of r.skippedFields ?? []) {
-    rows.push({ cls: "none", skip: true, label: s.field, sub: s.reason || "skipped" });
-  }
-  if (!rows.length && !(r.excluded ?? []).length) {
+  const details = r.details ?? [];
+  const skipped = r.skippedFields ?? [];
+  const excluded = r.excluded ?? [];
+  if (!details.length && !skipped.length && !excluded.length) {
     clearBreakdown();
     return;
   }
-  const ul = $("fills");
-  ul.innerHTML = "";
-  const shown = rows.slice(0, 14);
-  for (const row of shown) {
-    const li = document.createElement("li");
-    if (row.skip) li.className = "skip";
-    li.innerHTML = `<span class="dot ${row.cls}"></span><span class="rlabel"></span><span class="rsub"></span>`;
-    li.querySelector(".rlabel").textContent = row.label;
-    li.querySelector(".rsub").textContent = row.sub;
-    ul.appendChild(li);
-  }
-  if (rows.length > shown.length) {
-    const more = document.createElement("p");
-    more.className = "rmore";
-    more.textContent = `+${rows.length - shown.length} more`;
-    ul.appendChild(more);
-  }
-  $("btitle").textContent = r.filled ? `Filled ${r.filled} field${r.filled === 1 ? "" : "s"}` : "Nothing filled on this page";
+  const fillUl = $("fills");
+  fillUl.innerHTML = "";
+  const skipUl = $("skips");
+  skipUl.innerHTML = "";
+
+  details.slice(0, 12).forEach((d) =>
+    addRow(fillUl, {
+      cls: d.confidence >= 0.85 ? "green" : "amber",
+      label: d.label,
+      sub: `${d.value || "—"} · ${Math.round(d.confidence * 100)}% · ${d.method}`,
+    })
+  );
+  if (details.length > 12) addMore(fillUl, details.length - 12);
+
+  skipped.slice(0, 8).forEach((s) => addRow(skipUl, { cls: "none", skip: true, label: s.field, sub: s.reason || "skipped" }));
+  if (skipped.length > 8) addMore(skipUl, skipped.length - 8);
+
+  $("group-filled").hidden = !details.length;
+  $("filled-title").textContent = `Filled ${details.length}`;
+  $("group-skipped").hidden = !skipped.length;
+  $("skipped-title").textContent = `Skipped ${skipped.length}`;
   const notes = [];
-  if ((r.excluded ?? []).length) notes.push(`${r.excluded.length} voluntary (EEOC) question${r.excluded.length === 1 ? "" : "s"} left to you.`);
+  if (excluded.length) notes.push(`${excluded.length} voluntary (EEOC) question${excluded.length === 1 ? "" : "s"} left to you.`);
   notes.push("Review everything and press Submit yourself.");
   $("bnote").textContent = notes.join(" ");
   $("breakdown").hidden = false;
+}
+
+/* ---- session recovery: a dead token returns to sign-in, not a dead card ---- */
+function isSessionError(e) {
+  return /session expired|request failed \(401\)|refresh token|not authenticated|token expired/i.test(e?.message || "");
+}
+
+async function recoverSession() {
+  const remembered = $("who").textContent || $("email").value || localStorage.getItem("lastEmail") || "";
+  try {
+    await send({ type: "jams:logout" });
+  } catch {
+    /* already out */
+  }
+  clearBreakdown();
+  await refresh(); // sign-in pane, backend + email prefilled
+  if (remembered && !$("email").value) $("email").value = remembered;
+  say("Session expired — sign in again.", "err");
 }
 
 async function refresh() {
@@ -164,6 +198,8 @@ async function refresh() {
   if (!s.signedIn) {
     $("api").value = s.apiBase;
     clearBreakdown();
+    // prefill who was signed in before, so an expired session is one field to type
+    if (!$("email").value) $("email").value = s.email || localStorage.getItem("lastEmail") || "";
     if (!localStorage.getItem("seen")) {
       say("Sign in with your JAMS account to fill forms.");
     }
@@ -183,6 +219,7 @@ $("signin").addEventListener("submit", async (e) => {
     await send({ type: "jams:setApiBase", apiBase: $("api").value });
     await send({ type: "jams:login", email, password });
     localStorage.setItem("seen", "1");
+    localStorage.setItem("lastEmail", email);
     $("password").value = "";
     say("");
     await refresh();
@@ -224,7 +261,8 @@ $("fill").addEventListener("click", async () => {
     if (r.skipped) lines.push(`${r.skipped} skipped.`);
     say(lines.join("\n"), "ok");
   } catch (e) {
-    say(friendly(e), "err");
+    if (isSessionError(e)) await recoverSession();
+    else say(friendly(e), "err");
   } finally {
     busy(false);
   }
@@ -244,7 +282,8 @@ $("capture").addEventListener("click", async () => {
         : "Saved to JAMS.";
     say(`${what}${typeof r?.score === "number" ? ` Match score ${r.score}.` : ""}`, "ok");
   } catch (e) {
-    say(friendly(e), "err");
+    if (isSessionError(e)) await recoverSession();
+    else say(friendly(e), "err");
   } finally {
     busy(false);
   }

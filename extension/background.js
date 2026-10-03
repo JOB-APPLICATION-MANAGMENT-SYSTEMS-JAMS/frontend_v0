@@ -20,6 +20,15 @@ async function settings() {
 /* Access tokens live 15 minutes; the 30-day refresh token keeps the session
  * alive silently so the popup never dies mid-fill with "session expired". */
 let refreshing = null;
+/** JWT exp within 60s (or undecodable) → refresh before the next call 401s. */
+function tokenExpiring(t) {
+  try {
+    const p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return !p.exp || p.exp - 60 <= Date.now() / 1000;
+  } catch {
+    return true;
+  }
+}
 async function refreshSession() {
   if (refreshing) return refreshing;
   refreshing = (async () => {
@@ -100,8 +109,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 async function handle(msg) {
   switch (msg?.type) {
     case "jams:status": {
+      // proactively refresh a token that's about to (or already has) expired, so
+      // opening the popup never starts with a 401
       const s = await settings();
-      return { signedIn: !!s.token, email: s.email, apiBase: s.apiBase };
+      if (s.token && s.refreshToken && tokenExpiring(s.token)) await refreshSession();
+      const s2 = await settings();
+      return { signedIn: !!s2.token, email: s2.email, apiBase: s2.apiBase };
     }
 
     case "jams:login": {

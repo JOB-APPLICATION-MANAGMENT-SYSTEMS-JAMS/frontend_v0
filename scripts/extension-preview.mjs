@@ -361,8 +361,9 @@ const BACKGROUND_HTML = `<!doctype html>
       }
     });
 
-    // Bootstrap: point the worker at the harness proxy and sign the demo user in.
+    // Bootstrap: point the worker at the local backend and sign the demo user in.
     (async function () {
+      var API = "http://localhost:8000/api/v1"; // matches the popup's "Local" option
       function tokenExpired(t) {
         try {
           var p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
@@ -370,11 +371,11 @@ const BACKGROUND_HTML = `<!doctype html>
         } catch (e) { return true; }
       }
       var s = read();
-      s.apiBase = "/api/v1";
+      s.apiBase = API;
       write(s);
       if (!s.token || tokenExpired(s.token)) {
         try {
-          var r = await fetch("/api/v1/auth/login", {
+          var r = await fetch(API + "/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: "uitest@example.com", password: "Passw0rd!123" }),
@@ -386,7 +387,7 @@ const BACKGROUND_HTML = `<!doctype html>
             cur.token = t;
             cur.refreshToken = (j.data && j.data.refresh_token) || "";
             cur.email = "uitest@example.com";
-            cur.apiBase = "/api/v1";
+            cur.apiBase = API;
             write(cur);
           }
           else console.warn("jams preview: login returned no token", j);

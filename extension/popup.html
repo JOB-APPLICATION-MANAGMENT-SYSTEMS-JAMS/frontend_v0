@@ -49,7 +49,7 @@
 
     <!-- signed in -->
     <section id="app" class="pane" hidden>
-      <!-- Jobright-style profile card: who you are + the door to editing it -->
+      <!-- who autofill answers as -->
       <div class="profile-card">
         <div class="avatar" id="avatar" aria-hidden="true">?</div>
         <div class="pinfo">
@@ -59,28 +59,41 @@
         <button id="edit" class="editbtn" type="button" title="Add or change the details autofill uses">✎ Edit</button>
       </div>
 
-      <button id="fill" class="primary big" type="button">
-        <span class="btn-label">Fill this page</span>
-      </button>
-      <p class="legend">
-        <span class="dot green"></span> confident &nbsp;·&nbsp;
-        <span class="dot amber"></span> review &nbsp;·&nbsp;
-        <span class="dot none"></span> skipped
-      </p>
+      <!-- FILL -->
+      <div class="section">
+        <p class="section-title">Fill this job form</p>
+        <button id="fill" class="primary big" type="button">
+          <span class="btn-label">Fill this page</span>
+        </button>
+        <p class="legend">
+          <span class="dot green"></span> confident &nbsp;·&nbsp;
+          <span class="dot amber"></span> review &nbsp;·&nbsp;
+          <span class="dot none"></span> skipped
+        </p>
 
-      <!-- per-field breakdown: what filled, what didn't, and why -->
-      <div id="breakdown" class="breakdown" hidden>
-        <p class="btitle" id="btitle"></p>
-        <ul id="fills" class="fills"></ul>
-        <p class="bnote" id="bnote"></p>
+        <!-- per-field breakdown, grouped: filled vs skipped -->
+        <div id="breakdown" class="breakdown" hidden>
+          <div class="bgroup" id="group-filled" hidden>
+            <p class="btitle" id="filled-title">Filled</p>
+            <ul id="fills" class="fills"></ul>
+          </div>
+          <div class="bgroup" id="group-skipped" hidden>
+            <p class="btitle" id="skipped-title">Skipped</p>
+            <ul id="skips" class="fills"></ul>
+          </div>
+          <p class="bnote" id="bnote"></p>
+        </div>
+
+        <p id="result" role="status" aria-live="polite"></p>
+        <p class="hint files">📎 Resume, transcript &amp; cover-letter files attach by hand.</p>
       </div>
 
-      <p id="result" role="status" aria-live="polite"></p>
-
-      <button id="capture" class="secondary" type="button">Save this job to JAMS</button>
-      <label class="check"><input type="checkbox" id="draft" checked /> Create an application draft (not submitted)</label>
-
-      <p class="hint files">Resume, transcript and portfolio files must be attached by hand — extensions can’t upload files for you.</p>
+      <!-- SAVE -->
+      <div class="section">
+        <p class="section-title">Add this job in one click</p>
+        <button id="capture" class="secondary" type="button">Save this job to JAMS</button>
+        <label class="check"><input type="checkbox" id="draft" checked /> Also create an application draft (not submitted)</label>
+      </div>
 
       <div class="row footer">
         <button id="logout" class="ghost" type="button">Sign out</button>
