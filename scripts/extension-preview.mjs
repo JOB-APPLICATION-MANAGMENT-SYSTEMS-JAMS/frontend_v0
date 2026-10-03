@@ -178,11 +178,17 @@ const NOOKS_HTML = `<!doctype html>
     fieldset { border: 1px solid #ebe5de; border-radius: 10px; padding: 12px 16px 14px; margin: 0 0 12px; background: #fff; }
     legend { font-weight: 650; padding: 0 6px; }
     .voluntary { border-left: 3px solid #d6cfc6; padding-left: 16px; }
-    label.opt { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; font-weight: 450; text-transform: none; letter-spacing: 0; font-size: 14px; color: #2b241f; margin-bottom: 0; cursor: pointer; }
+    .opt { display: flex; gap: 8px; align-items: center; padding: 6px 0; font-size: 14px; color: #2b241f; cursor: pointer; }
+    .circ { display: inline-flex; }
+    label.qhead { display: block; font-size: 14px; font-weight: 650; text-transform: none; letter-spacing: 0; color: #2b241f; margin-bottom: 8px; }
     input[type="radio"] { margin-top: 3px; accent-color: #ea580c; }
     input[type="file"] { font: inherit; color: #7a7068; }
     button[type="submit"] { justify-self: start; padding: 11px 20px; border: 0; border-radius: 8px; background: #ea580c; color: #fffbeb; font: inherit; font-weight: 650; cursor: pointer; }
     button[type="submit"]:hover { background: #c2410c; }
+    .yesno { display: flex; gap: 8px; }
+    .yesno button { padding: 7px 20px; border: 1px solid #e2dbd3; border-radius: 999px; background: #fff; color: #2b241f; font: inherit; font-weight: 550; cursor: pointer; }
+    .yesno button:hover { background: #f6efe8; }
+    .yesno button[aria-pressed="true"], .yesno button[aria-pressed="true"]:hover { background: #ea580c; border-color: #ea580c; color: #fffbeb; }
     footer { margin-top: 40px; color: #9a9088; font-size: 12px; }
     #jams-popup { position: fixed; top: 16px; right: 16px; width: 368px; height: 620px; border: 1px solid #e2dbd3; border-radius: 14px; box-shadow: 0 12px 32px rgba(43, 36, 31, .16); background: #fff; z-index: 50; }
     @media (max-width: 900px) { #jams-popup { display: none; } }
@@ -206,43 +212,52 @@ const NOOKS_HTML = `<!doctype html>
     <div class="field"><label for="em">Email Address</label><input id="em" name="email" type="email" /></div>
     <div class="field"><label for="ph">Phone Number</label><input id="ph" name="phone_number" type="tel" placeholder="1-415-555-1234..." /></div>
 
-    <div class="q">
-      <p class="q-text">It's ok to text me updates on my application.</p>
-      <label class="opt"><input type="radio" name="text_updates" value="Yes" /> Yes</label>
-      <label class="opt"><input type="radio" name="text_updates" value="No" /> No</label>
+    <!-- Ashby draws this Yes/No as aria-pressed <button type=submit>s with the question as a sibling label -->
+    <div class="fieldentry">
+      <label class="qhead">It's ok to text me updates on my application.</label>
+      <input type="checkbox" name="text_updates" hidden />
+      <div class="yesno">
+        <button type="submit" aria-pressed="false">Yes</button>
+        <button type="submit" aria-pressed="false">No</button>
+      </div>
     </div>
 
-    <div class="field"><label for="loc">Location</label><input id="loc" name="location" type="text" placeholder="Start typing..." /></div>
-
-    <div class="q">
-      <p class="q-text">Are you able to come in to the San Francisco office 3 days per week (Monday, Tuesday, Thursday)?</p>
-      <label class="opt"><input type="radio" name="office_attendance" value="Yes, I live locally" /> Yes, I live locally</label>
-      <label class="opt"><input type="radio" name="office_attendance" value="Yes, but I will need to relocate" /> Yes, but I will need to relocate</label>
-      <label class="opt"><input type="radio" name="office_attendance" value="No. I do not live locally nor do I plan to relocate" /> No. I do not live locally nor do I plan to relocate</label>
+    <!-- label points at a dangling id, input sits in its own wrapper — like Ashby's combobox fields -->
+    <div class="field">
+      <label class="qhead" for="f07010a1-location">Location</label>
+      <div class="inputwrap"><input id="loc" name="location" type="text" placeholder="Start typing..." /></div>
     </div>
+
+    <!-- Ashby native radios: question label inside the box, option text OUTSIDE the input's wrapper, no value attrs -->
+    <fieldset>
+      <label class="qhead">Are you able to come in to the San Francisco office 3 days per week (Monday, Tuesday, Thursday)?</label>
+      <div class="opt"><span class="circ"><input type="radio" name="office_attendance" /></span> Yes, I live locally</div>
+      <div class="opt"><span class="circ"><input type="radio" name="office_attendance" /></span> Yes, but I will need to relocate</div>
+      <div class="opt"><span class="circ"><input type="radio" name="office_attendance" /></span> No. I do not live locally nor do I plan to relocate</div>
+    </fieldset>
 
     <section class="voluntary">
       <h3>Voluntary Self Identification</h3>
       <p class="hint">For government reporting purposes, we ask candidates to respond to the below self-identification survey. Completion of the form is entirely voluntary. Whatever your decision, it will not be considered in the hiring process or thereafter.</p>
       <fieldset>
-        <legend>Disability Status</legend>
-        <label class="opt"><input type="radio" name="disability" value="have" /> I have a disability, or have had one in the past</label>
-        <label class="opt"><input type="radio" name="disability" value="none" /> I do not have a disability and have not had one in the past</label>
-        <label class="opt"><input type="radio" name="disability" value="decline" /> I do not want to answer</label>
+        <label class="qhead">Disability Status</label>
+        <div class="opt"><span class="circ"><input type="radio" name="disability" /></span> I have a disability, or have had one in the past</div>
+        <div class="opt"><span class="circ"><input type="radio" name="disability" /></span> I do not have a disability and have not had one in the past</div>
+        <div class="opt"><span class="circ"><input type="radio" name="disability" /></span> I do not want to answer</div>
       </fieldset>
     </section>
 
     <section>
       <h3>Immigration Status</h3>
       <fieldset>
-        <legend>Are you legally authorized to work in the United States? (Yes/No)</legend>
-        <label class="opt"><input type="radio" name="work_auth" value="Yes" /> Yes</label>
-        <label class="opt"><input type="radio" name="work_auth" value="No" /> No</label>
+        <label class="qhead">Are you legally authorized to work in the United States? (Yes/No)</label>
+        <div class="opt"><span class="circ"><input type="radio" name="work_auth" /></span> Yes</div>
+        <div class="opt"><span class="circ"><input type="radio" name="work_auth" /></span> No</div>
       </fieldset>
       <fieldset>
-        <legend>Will you now or in the future require sponsorship for employment visa status (e.g., H-1B, TN, etc.)?</legend>
-        <label class="opt"><input type="radio" name="sponsorship" value="Yes" /> Yes</label>
-        <label class="opt"><input type="radio" name="sponsorship" value="No" /> No</label>
+        <label class="qhead">Will you now or in the future require sponsorship for employment visa status (e.g., H-1B, TN, etc.)?</label>
+        <div class="opt"><span class="circ"><input type="radio" name="sponsorship" /></span> Yes</div>
+        <div class="opt"><span class="circ"><input type="radio" name="sponsorship" /></span> No</div>
       </fieldset>
       <div class="field"><label for="sd">If yes, please let us know what kind and the expiration date.</label><input id="sd" name="sponsor_detail" type="text" placeholder="Type here..." /></div>
     </section>
@@ -254,6 +269,20 @@ const NOOKS_HTML = `<!doctype html>
 
 <iframe id="jams-popup" src="/popup.html?live=1" title="JAMS Autofill"></iframe>
 <iframe id="jams-bg" src="/background.html" style="display:none" title="JAMS background"></iframe>
+
+<!-- mimic Ashby's React: clicking a Yes/No button flips aria-pressed. Note: no preventDefault —
+     these are type=submit inside a real <form>, so only JAMS's clickWidget submit-guard stops a send. -->
+<script>
+  document.querySelectorAll(".yesno button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      b.parentElement.querySelectorAll("button").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      var cb = b.closest(".fieldentry").querySelector('input[type="checkbox"]');
+      if (cb) cb.checked = b === b.parentElement.firstElementChild;
+    });
+  });
+</script>
 
 <!-- content-side chrome.* shim: content.js registers its listener here -->
 <script>

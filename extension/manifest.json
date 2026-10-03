@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "JAMS Autofill",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fill job application forms from your JAMS profile and save postings to JAMS. Never submits for you.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [

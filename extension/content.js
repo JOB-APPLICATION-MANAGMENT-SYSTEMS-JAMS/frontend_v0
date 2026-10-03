@@ -4,9 +4,14 @@
  * describe(): the form fields on this page (name/id/label/autocomplete/
  *            placeholder/type) in one stable order — the background sends that
  *            array to POST /autofill/match and results come back keyed by the
- *            same index (§35.2 confidence tiers).
+ *            same index (§35.2 confidence tiers). Covers native inputs AND
+ *            widget controls the site draws itself (aria-pressed buttons,
+ *            role=radio/checkbox/switch), which is how Ashby/Nooks-style
+ *            application forms build their Yes/No questions.
  * fill():    write values in with the native setter + input/change events so
- *            React/Vue forms notice; outline green (≥0.85) or amber (≥0.55).
+ *            React/Vue forms notice; widget controls are clicked (never
+ *            submitting — a temporary submit-blocker guards type=submit
+ *            buttons); outline green (≥0.85) or amber (≥0.55).
  * pageMeta(): title / company guess / text excerpt for POST /capture.
  *
  * Never submits, never touches password/credit_card/ssn/cvv (§35.2 guardrails).
@@ -28,6 +33,19 @@
     }
     const wrap = el.closest("label");
     if (wrap && wrap.innerText.trim()) return wrap.innerText.trim().slice(0, 80);
+    // a label sitting NEXT to the control — Ashby renders <label for="…"> beside
+    // the input, sometimes with a dangling id — beats a placeholder like
+    // "Start typing…" for matching. Walk: own siblings first, then ancestors'.
+    // Only text-only siblings qualify, so a previous field's block never leaks in.
+    let node = el;
+    for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
+      let sib = node.previousElementSibling;
+      while (sib) {
+        const t = (sib.innerText || "").trim().replace(/\s+/g, " ");
+        if (t && t.length <= 100 && !sib.querySelector("input, select, textarea, button")) return t;
+        sib = sib.previousElementSibling;
+      }
+    }
     return el.getAttribute("placeholder") || "";
   };
 
@@ -63,7 +81,9 @@
       let sib = node.previousElementSibling;
       while (sib) {
         const t = (sib.innerText || "").trim().replace(/\s+/g, " ");
-        if (t && t.length >= 8 && t.length <= 300 && !sib.querySelector("input, select, textarea")) {
+        // never read another option's wrapper as the question: skip siblings
+        // that contain any control (inputs AND widget buttons/roles)
+        if (t && t.length >= 8 && t.length <= 300 && !sib.querySelector("input, select, textarea, button, [role=radio], [role=checkbox], [role=switch]")) {
           return { text: t, box: node.parentElement || node };
         }
         sib = sib.previousElementSibling;
@@ -74,22 +94,47 @@
 
   const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
+  /**
+   * Caption of one option. Native inputs often sit in a bare <span> while the
+   * text lives on the wrapping div (Ashby: fieldset > div._option > span > input),
+   * so climb up to 4 ancestors — but stop before entering a box that holds the
+   * *other* options, whose text would be the whole question, not this choice.
+   */
+  function optionText(opt, group) {
+    const others = (group || []).filter((g) => g !== opt);
+    let n = opt;
+    for (let i = 0; n && i < 4; i++, n = n.parentElement) {
+      if (others.some((o) => n.contains(o))) break;
+      const t = (n.innerText || "").trim().replace(/\s+/g, " ");
+      if (t) return t;
+    }
+    return "";
+  }
+
   /** Pick the radio whose value/text best answers `value` (token-safe, never a guess). */
   function pickOption(group, value) {
     const v = norm(value);
     if (!v) return null;
     for (const opt of group) {
-      const text = norm(opt.closest("label")?.innerText || opt.parentElement?.innerText || "");
+      const text = norm(optionText(opt, group));
       const val = norm(opt.value);
       if ((val && val === v) || (text && text === v)) return opt;
     }
     for (const opt of group) {
-      const text = norm(opt.closest("label")?.innerText || opt.parentElement?.innerText || "");
+      const text = norm(optionText(opt, group));
       const val = norm(opt.value);
       const hay = ` ${val || text} `;
       if (val && ` ${v} `.includes(hay)) return opt; // value is a superset of the option
       if (text && text.length >= 3 && ` ${v} `.includes(` ${text} `)) return opt;
     }
+    return null;
+  }
+
+  /** "Yes"/"true"/"1" → true, "No"/"false"/"0" → false — anything else refuses to guess. */
+  function asBool(value) {
+    const v = norm(value);
+    if (/^(y|yes|true|1|on)$/.test(v)) return true;
+    if (/^(n|no|false|0|off)$/.test(v)) return false;
     return null;
   }
 
@@ -147,7 +192,68 @@
       };
       pairs.push({ el, field, signature: signatureOf(field) });
     }
+
+    // Widget controls: modern ATS forms (Ashby/Nooks) draw choices as
+    // <button aria-pressed> pairs or role=radio/checkbox/switch divs — there is
+    // no <input> at all, so the loop above never sees them. Same contract as
+    // native radios: one pair per question, labelled by the question, EEOC
+    // excluded, nothing guessed when the question can't be found.
+    const WSEL = 'button[aria-pressed], [role="radio"], [role="checkbox"], [role="switch"]';
+    const seenBoxes = new Set();
+    for (const el of document.querySelectorAll(WSEL)) {
+      if (el.matches("input, textarea, select")) continue; // native controls are owned by the loop above
+      if (el.disabled || !VISIBLE(el)) continue;
+      if (NEVER_FILL.test(`${el.id || ""} ${el.getAttribute("aria-label") || ""} ${el.innerText || ""}`)) continue;
+      const role = el.getAttribute("role") || "";
+      const isCheck = role === "checkbox" || role === "switch";
+      const group = isCheck ? [el] : groupWidgets(el, WSEL);
+      const box = isCheck ? null : el.closest('[role="radiogroup"]') || el.parentElement;
+      if (box) {
+        if (seenBoxes.has(box)) continue; // one pair per container
+        seenBoxes.add(box);
+      }
+      if (!group.length) continue;
+      const q = questionFor(group[0]);
+      const own = (el.innerText || "").trim().replace(/\s+/g, " ").slice(0, 120);
+      const label = isCheck ? el.getAttribute("aria-label") || own || q.text : q.text;
+      if (!label) continue; // no question → don't guess at bare widgets
+      if (SELF_ID.test(label) || SELF_ID.test(q.text)) {
+        excluded.push(label); // EEOC rendered as widgets
+        continue;
+      }
+      if (NEVER_FILL.test(label) || NEVER_FILL.test(q.text)) continue;
+      const field = {
+        name: el.id || (box && box.id) || "",
+        id: el.id || "",
+        label: (label || q.text).slice(0, 300),
+        autocomplete: "",
+        placeholder: "",
+        type: isCheck ? "checkbox" : "radio",
+        section: "",
+      };
+      pairs.push({
+        el: group[0],
+        field,
+        group: isCheck ? null : group,
+        widget: isCheck ? "check" : "group",
+        box: q.box || box,
+        signature: signatureOf(field),
+      });
+    }
     return { pairs, excluded };
+  }
+
+  /** The choice widgets sharing a container with `el` (radiogroup or shared parent). */
+  function groupWidgets(el, sel) {
+    const container = el.closest('[role="radiogroup"]') || el.parentElement;
+    if (!container) return [el];
+    return [...container.querySelectorAll(sel)].filter(
+      (w) =>
+        !w.disabled &&
+        VISIBLE(w) &&
+        !["checkbox", "switch"].includes(w.getAttribute("role") || "") &&
+        (w.closest('[role="radiogroup"]') || w.parentElement) === container
+    );
   }
 
   function setNativeValue(el, value) {
@@ -189,60 +295,51 @@
     return null;
   }
 
+  /** aria-checked for role widgets, aria-pressed for <button> toggles. */
+  const widgetAttr = (el) => (el.tagName === "BUTTON" ? "aria-pressed" : "aria-checked");
+
+  /** true / false / null when the widget carries no state attribute at all. */
+  function readWidgetState(el) {
+    const a = el.getAttribute(widgetAttr(el));
+    if (a === "true") return true;
+    if (a === "false") return false;
+    return el.type === "checkbox" ? !!el.checked : null;
+  }
+
+  /**
+   * Click a widget so the site's own handlers record the choice — without ever
+   * letting the page submit (§35.2 guardrail: a Yes/No button that is also
+   * type=submit must not send the application).
+   */
+  function clickWidget(el) {
+    const form = el.closest("form");
+    const stop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    if (form) form.addEventListener("submit", stop);
+    try {
+      el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+    } finally {
+      if (form) setTimeout(() => form.removeEventListener("submit", stop), 0);
+    }
+  }
+
   function fillItems(items) {
     const { pairs } = describe();
     const out = [];
     let flagged = 0;
     const needsReview = [];
 
-    for (const item of items) {
-      const pair = pairs[item.field_index];
-      if (!pair) continue;
-      const { el } = pair;
-      if (el.disabled || NEVER_FILL.test(`${el.name} ${el.id} ${el.type || ""}`)) continue; // guardrail, twice
-      if (SELF_ID.test(pair.field.label || "")) continue; // belt + braces on EEOC
-
-      if (pair.group) {
-        const opt = pickOption(pair.group, item.value);
-        if (!opt) continue; // no confident answer → leave the question untouched
-        opt.checked = true;
-        opt.dispatchEvent(new Event("input", { bubbles: true }));
-        opt.dispatchEvent(new Event("change", { bubbles: true }));
-        const box = pair.box || el.closest("fieldset") || el.parentElement;
-        if (box) {
-          box.style.outline = item.confidence >= 0.85 ? "2px solid #10b981" : "2px solid #f59e0b";
-          box.style.outlineOffset = "1px";
-          box.title = `Filled by JAMS · ${Math.round(item.confidence * 100)}% (${item.method}) — review before submitting`;
-        }
-        el.dataset.jams = item.key;
-        out.push({
-          index: item.field_index,
-          key: item.key,
-          confidence: item.confidence,
-          method: item.method,
-          signature: pair.signature,
-        });
-        if (item.confidence < 0.85) {
-          flagged += 1;
-          needsReview.push(`${item.key} → ${pair.field.label || pair.field.name || "radio group"}`);
-        }
-        continue;
-      }
-
-      if (el.tagName === "SELECT") {
-        const match = pickSelectOption(el, item.value);
-        if (!match) continue; // no option answers it → leave the select untouched
-        el.value = match.value;
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-      } else {
-        setNativeValue(el, item.value);
-      }
-
-      el.style.outline = item.confidence >= 0.85 ? "2px solid #10b981" : "2px solid #f59e0b";
-      el.style.outlineOffset = "1px";
-      el.title = `Filled by JAMS · ${Math.round(item.confidence * 100)}% (${item.method}) — review before submitting`;
-      el.dataset.jams = item.key;
-
+    /** Outline the filled control (green ≥0.85, amber below) and record it. */
+    const record = (pair, item, box) => {
+      const target = box || pair.el;
+      target.style.outline = item.confidence >= 0.85 ? "2px solid #10b981" : "2px solid #f59e0b";
+      target.style.outlineOffset = "1px";
+      target.title = `Filled by JAMS · ${Math.round(item.confidence * 100)}% (${item.method}) — review before submitting`;
+      pair.el.dataset.jams = item.key;
       out.push({
         index: item.field_index,
         key: item.key,
@@ -254,6 +351,77 @@
         flagged += 1;
         needsReview.push(`${item.key} → ${pair.field.label || pair.field.name || "field"}`);
       }
+    };
+
+    for (const item of items) {
+      const pair = pairs[item.field_index];
+      if (!pair) continue;
+      const { el } = pair;
+      if (el.disabled || NEVER_FILL.test(`${el.name || ""} ${el.id || ""} ${el.type || ""}`)) continue; // guardrail, twice
+      if (SELF_ID.test(pair.field.label || "")) continue; // belt + braces on EEOC
+
+      // widget group: role=radio list or aria-pressed button pair — click the
+      // choice, never write .checked (these elements have no such property)
+      if (pair.widget === "group") {
+        const opt = pickOption(pair.group, item.value);
+        if (!opt) continue; // no confident answer → leave the question untouched
+        if (readWidgetState(opt) !== true) clickWidget(opt);
+        if (readWidgetState(opt) !== true) {
+          // dumb widget with no JS behind it: mirror the choice in ARIA ourselves
+          opt.setAttribute(widgetAttr(opt), "true");
+          for (const o of pair.group) {
+            if (o !== opt && readWidgetState(o) === true) o.setAttribute(widgetAttr(o), "false");
+          }
+        }
+        record(pair, item, pair.box || el.closest("fieldset") || el.parentElement);
+        continue;
+      }
+
+      // single widget toggle (role=checkbox/switch): needs a clear yes/no
+      if (pair.widget === "check") {
+        let want = asBool(item.value);
+        if (want === null && norm(item.value) && norm(item.value) === norm(el.innerText)) want = true; // value IS the option text
+        if (want === null) continue;
+        if (readWidgetState(el) !== want) {
+          clickWidget(el);
+          if (readWidgetState(el) !== want) el.setAttribute(widgetAttr(el), String(want));
+        }
+        record(pair, item, pair.box || el.parentElement);
+        continue;
+      }
+
+      if (pair.group) {
+        const opt = pickOption(pair.group, item.value);
+        if (!opt) continue; // no confident answer → leave the question untouched
+        opt.checked = true;
+        opt.dispatchEvent(new Event("input", { bubbles: true }));
+        opt.dispatchEvent(new Event("change", { bubbles: true }));
+        record(pair, item, pair.box || el.closest("fieldset") || el.parentElement);
+        continue;
+      }
+
+      if (el.type === "checkbox") {
+        const want = asBool(item.value);
+        if (want === null) continue; // no clear yes/no → never guess a checkbox
+        if (el.checked !== want) el.click(); // click so React/Vue onChange fires
+        if (el.checked !== want) {
+          el.checked = want;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        record(pair, item, el.closest("label") || el);
+        continue;
+      }
+
+      if (el.tagName === "SELECT") {
+        const match = pickSelectOption(el, item.value);
+        if (!match) continue; // no option answers it → leave the select untouched
+        el.value = match.value;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      } else {
+        setNativeValue(el, item.value);
+      }
+      record(pair, item, el);
     }
     return { items: out, flagged, needsReview };
   }
