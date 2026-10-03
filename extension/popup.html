@@ -38,6 +38,16 @@
 
     <!-- signed in -->
     <section id="app" class="pane" hidden>
+      <!-- Jobright-style profile card: who you are + the door to editing it -->
+      <div class="profile-card">
+        <div class="avatar" id="avatar" aria-hidden="true">?</div>
+        <div class="pinfo">
+          <p class="pname" id="pname">Your profile</p>
+          <p class="pmeta" id="pmeta">loading…</p>
+        </div>
+        <button id="edit" class="editbtn" type="button" title="Add or change the details autofill uses">✎ Edit</button>
+      </div>
+
       <button id="fill" class="primary big" type="button">
         <span class="btn-label">Fill this page</span>
       </button>
@@ -47,10 +57,19 @@
         <span class="dot none"></span> skipped
       </p>
 
+      <!-- per-field breakdown: what filled, what didn't, and why -->
+      <div id="breakdown" class="breakdown" hidden>
+        <p class="btitle" id="btitle"></p>
+        <ul id="fills" class="fills"></ul>
+        <p class="bnote" id="bnote"></p>
+      </div>
+
+      <p id="result" role="status" aria-live="polite"></p>
+
       <button id="capture" class="secondary" type="button">Save this job to JAMS</button>
       <label class="check"><input type="checkbox" id="draft" checked /> Create an application draft (not submitted)</label>
 
-      <p id="result" role="status" aria-live="polite"></p>
+      <p class="hint files">Resume, transcript and portfolio files must be attached by hand — extensions can’t upload files for you.</p>
 
       <div class="row footer">
         <button id="logout" class="ghost" type="button">Sign out</button>

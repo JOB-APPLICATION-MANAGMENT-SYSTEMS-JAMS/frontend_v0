@@ -96,6 +96,7 @@
   /** One pass, one order: [element, field] pairs the API results can index into. */
   function describe() {
     const pairs = [];
+    const excluded = []; // voluntary/EEOC questions we refuse to even send
     const seenGroups = new Set();
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (el.disabled || !VISIBLE(el)) continue;
@@ -112,7 +113,11 @@
           ? [...document.querySelectorAll('input[type="radio"]')].filter((r) => r.name === el.name && r.form === el.form)
           : [el];
         const q = questionFor(group[0]);
-        if (!q.text || SELF_ID.test(q.text)) continue; // no question found, or EEOC: not ours to answer
+        if (!q.text) continue; // no question found — don't guess at bare radios
+        if (SELF_ID.test(q.text)) {
+          excluded.push(q.text); // EEOC: not ours to answer
+          continue;
+        }
         const field = {
           name: el.name || "",
           id: el.name ? "" : el.id || "",
@@ -125,12 +130,16 @@
         pairs.push({ el: group[0], field, group, box: q.box, signature: signatureOf(field) });
         continue;
       }
-      if (SELF_ID.test(labelFor(el))) continue; // checkbox/radio-adjacent EEOC inputs
+      const label = labelFor(el);
+      if (SELF_ID.test(label)) {
+        excluded.push(label); // checkbox/select EEOC inputs
+        continue;
+      }
 
       const field = {
         name: el.name || "",
         id: el.id || "",
-        label: labelFor(el),
+        label,
         autocomplete: el.getAttribute("autocomplete") || "",
         placeholder: el.getAttribute("placeholder") || "",
         type,
@@ -138,7 +147,7 @@
       };
       pairs.push({ el, field, signature: signatureOf(field) });
     }
-    return pairs;
+    return { pairs, excluded };
   }
 
   function setNativeValue(el, value) {
@@ -150,8 +159,38 @@
     el.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  /**
+   * Choose a <select> option for a profile value: exact → token containment →
+   * family (degree/country phrasings), so "B.S." can still find "Bachelor of
+   * Science". Never picks when nothing confidently answers the value.
+   */
+  function pickSelectOption(sel, value) {
+    const v = norm(value);
+    if (!v) return null;
+    const opts = [...sel.options].filter((o) => o.text.trim() || o.value);
+    for (const o of opts) if (norm(o.value) === v || norm(o.text) === v) return o;
+    const family = (s) => {
+      if (/bachelor|\bb s c?\b|\bbs\b|\bba\b|btech|undergrad/.test(s)) return "f:bachelor";
+      if (/master|\bms\b|\bmsc\b|mtech|mba/.test(s)) return "f:master";
+      if (/phd|doctor/.test(s)) return "f:doctor";
+      if (/united states|\bu s a\b|\bu s\b|america/.test(s)) return "f:us";
+      return s;
+    };
+    const fv = family(v);
+    for (const o of opts) {
+      const t = norm(o.text);
+      const hay = norm(o.value) || t;
+      if (!hay) continue;
+      if (` ${v} `.includes(` ${hay} `)) return o; // value is a superset of the option
+      if (t && ` ${v} `.includes(` ${t} `)) return o;
+      if (t && v.length >= 3 && ` ${t} `.includes(` ${v} `)) return o; // option is a superset
+      if (fv !== v && family(hay) === fv) return o; // same family (degree, country)
+    }
+    return null;
+  }
+
   function fillItems(items) {
-    const pairs = describe();
+    const { pairs } = describe();
     const out = [];
     let flagged = 0;
     const needsReview = [];
@@ -191,8 +230,8 @@
       }
 
       if (el.tagName === "SELECT") {
-        const match = [...el.options].find((o) => o.value === item.value || o.text.trim() === item.value.trim());
-        if (!match) continue;
+        const match = pickSelectOption(el, item.value);
+        if (!match) continue; // no option answers it → leave the select untouched
         el.value = match.value;
         el.dispatchEvent(new Event("change", { bubbles: true }));
       } else {
@@ -253,7 +292,7 @@
       salary_text: salary,
       posted_text: jsonLd?.datePosted || "",
       form_fields: describe()
-        .slice(0, 40)
+        .pairs.slice(0, 40)
         .map((p) => ({ name: p.field.name, label: p.field.label, type: p.field.type })),
     };
   }
@@ -261,8 +300,10 @@
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("jams:")) return;
     try {
-      if (msg.type === "jams:collect") sendResponse({ fields: describe().map((p) => p.field) });
-      else if (msg.type === "jams:fill") sendResponse(fillItems(msg.items || []));
+      if (msg.type === "jams:collect") {
+        const d = describe();
+        sendResponse({ fields: d.pairs.map((p) => p.field), excluded: d.excluded });
+      } else if (msg.type === "jams:fill") sendResponse(fillItems(msg.items || []));
       else if (msg.type === "jams:pageMeta") sendResponse(pageMeta());
     } catch (e) {
       sendResponse({ error: String(e) });

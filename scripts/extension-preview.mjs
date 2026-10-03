@@ -42,7 +42,27 @@ function shim(state) {
           apiBase: "https://backend-v0-3aeu-omega.vercel.app/api/v1",
         };
       case "jams:fill":
-        return { filled: 6, flagged: 1, skipped: 2, needsReview: ["identity.website → Portfolio"] };
+        return {
+          filled: 6,
+          flagged: 1,
+          skipped: 2,
+          needsReview: ["identity.work_authorization → Are you legally authorized…"],
+          details: [
+            { key: "identity.full_name", label: "Full Name", value: "Israel Iraoya", confidence: 0.9, method: "name" },
+            { key: "identity.email", label: "Email Address", value: "israeliraoya7@gmail.com", confidence: 0.9, method: "name" },
+            { key: "identity.phone", label: "Phone Number", value: "1-415-555-1234", confidence: 0.9, method: "name" },
+            { key: "identity.location", label: "Location", value: "San Francisco, CA", confidence: 0.9, method: "name" },
+            { key: "identity.sponsorship", label: "Require sponsorship for employment visa status?", value: "No", confidence: 0.9, method: "name" },
+            { key: "identity.work_authorization", label: "Are you legally authorized to work?", value: "Yes", confidence: 0.79, method: "label" },
+          ],
+          skippedFields: [
+            { field: "LinkedIn Profile URL", reason: "no profile data for identity.linkedin — add it in your profile" },
+            { field: "Disability Status", reason: "voluntary self-identification — your answer, not ours" },
+          ],
+          excluded: ["Disability Status", "Gender", "Veteran Status"],
+        };
+      case "jams:profile":
+        return { name: "Israel Iraoya", email: "catalog.seed@jams.local", saved: 12, education: 1, skills: 4 };
       case "jams:capture":
         return { application_id: "app_123", posting_id: "post_456", score: 87 };
       case "jams:login":
@@ -69,6 +89,10 @@ function shim(state) {
       // MV3 promise style, matching what popup.js uses
       query: function () {
         return Promise.resolve([{ id: 1, url: "https://boards.example.com/jobs/42" }]);
+      },
+      create: function (opts) {
+        try { window.open(opts && opts.url, "_blank"); } catch (e) { /* popup blocker */ }
+        return Promise.resolve({ id: 2 });
       },
     },
   };
@@ -403,6 +427,10 @@ const LIVE_BRIDGE = `<script>
     query: function () {
       var origin = new URL(location.href).origin;
       return Promise.resolve([{ id: 1, active: true, url: origin + "/nooks.html", title: "Software Engineer, New Grad — Nooks" }]);
+    },
+    create: function (opts) {
+      try { window.open(opts && opts.url, "_blank"); } catch (e) { /* popup blocker */ }
+      return Promise.resolve({ id: 2 });
     },
   };
   window.addEventListener("message", function (e) {

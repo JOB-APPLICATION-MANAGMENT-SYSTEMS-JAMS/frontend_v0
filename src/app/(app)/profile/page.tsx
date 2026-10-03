@@ -103,13 +103,27 @@ export default function ProfilePage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Full name"><Input value={id.name ?? ""} onChange={(e) => setId("name", e.target.value)} /></Field>
             <Field label="Headline"><Input value={id.headline ?? ""} onChange={(e) => setId("headline", e.target.value)} placeholder="Full-Stack Engineer, TS, React, Node" /></Field>
+            <Field label="First name"><Input value={id.first_name ?? ""} onChange={(e) => setId("first_name", e.target.value)} placeholder="Israel" /></Field>
+            <Field label="Middle name"><Input value={id.middle_name ?? ""} onChange={(e) => setId("middle_name", e.target.value)} placeholder="Omokhagbo" /></Field>
+            <Field label="Last name"><Input value={id.last_name ?? ""} onChange={(e) => setId("last_name", e.target.value)} placeholder="Iraoya" /></Field>
             <Field label="Email"><Input value={id.email ?? ""} onChange={(e) => setId("email", e.target.value)} /></Field>
             <Field label="Phone"><Input value={id.phone ?? ""} onChange={(e) => setId("phone", e.target.value)} /></Field>
             <Field label="Location"><Input value={id.location ?? ""} onChange={(e) => setId("location", e.target.value)} /></Field>
-            <Field label="Work authorization"><Input value={id.work_authorization ?? ""} onChange={(e) => setId("work_authorization", e.target.value)} /></Field>
+            <Field label="Work authorization (Yes/No)"><Input value={id.work_authorization ?? ""} onChange={(e) => setId("work_authorization", e.target.value)} placeholder="Yes" /></Field>
+            <Field label="Requires visa sponsorship (Yes/No)"><Input value={id.sponsorship ?? ""} onChange={(e) => setId("sponsorship", e.target.value)} placeholder="No" /></Field>
+            <Field label="Office / relocation answer">
+              <Input value={id.relocation ?? ""} onChange={(e) => setId("relocation", e.target.value)} placeholder="Yes, I live locally" />
+            </Field>
+            <Field label="Graduation year"><Input value={id.graduation_year ?? ""} onChange={(e) => setId("graduation_year", e.target.value)} placeholder="2028" /></Field>
+            <Field label="How did you hear about a job?">
+              <Input value={id.heard_about ?? ""} onChange={(e) => setId("heard_about", e.target.value)} placeholder="LinkedIn" />
+            </Field>
             <Field label="Salary expectation (USD)"><Input type="number" value={id.salary_expectation ?? ""} onChange={(e) => setId("salary_expectation", Number(e.target.value))} /></Field>
             <Field label="Seniority"><Input value={pref.seniority ?? ""} onChange={(e) => setPref("seniority", e.target.value)} placeholder="junior | mid | senior | staff" /></Field>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            First / middle / last fill their own form fields — leave them blank and they’re derived from Full name. Education selects (school, degree, discipline) come from the Education card below.
+          </p>
           <Field label="Pitch paragraph (templates merge this)">
             <Textarea rows={3} value={id.pitch ?? ""} onChange={(e) => setId("pitch", e.target.value)} placeholder="I build typed, well-tested product surfaces end-to-end…" />
           </Field>

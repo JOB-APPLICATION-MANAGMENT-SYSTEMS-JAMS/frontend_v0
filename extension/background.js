@@ -82,6 +82,22 @@ async function handle(msg) {
       return { email: msg.email };
     }
 
+    case "jams:profile": {
+      const prof = await api("/profile");
+      const id = prof?.identity || {};
+      const links = id.links || {};
+      const filled = [id.name || id.full_name, id.email, id.phone, id.location, id.headline, id.work_authorization, id.sponsorship, id.relocation, id.middle_name, id.graduation_year, id.heard_about, links.linkedin, links.github, links.website].filter(
+        (v) => v && String(v).trim()
+      ).length;
+      return {
+        name: id.name || id.full_name || [id.first_name, id.last_name].filter(Boolean).join(" ") || "",
+        email: id.email || "",
+        saved: filled + (prof?.education?.filter((e) => e.school).length || 0) + (prof?.skills?.length || 0),
+        education: prof?.education?.length || 0,
+        skills: prof?.skills?.length || 0,
+      };
+    }
+
     case "jams:logout":
       await chrome.storage.local.remove(["token", "email"]);
       return {};
@@ -94,12 +110,26 @@ async function handle(msg) {
       const tab = await chrome.tabs.get(msg.tabId);
       const host = new URL(tabUrl(tab)).host;
       const page = await withContent(msg.tabId, { type: "jams:collect" });
-      const { mappings, skipped } = await api("/autofill/match", {
+      const { mappings, skipped, skip_reasons } = await api("/autofill/match", {
         method: "POST",
         body: { host, fields: page.fields },
       });
+      // per-field detail so the popup can show *what* was filled and *why* not
+      const skippedFields = (skipped || []).map((s, i) => ({ field: s, reason: skip_reasons?.[i]?.reason || "" }));
+      const details = (mappings || []).map((m) => {
+        const f = page.fields[m.field_index] || {};
+        return { index: m.field_index, key: m.key, label: f.label || f.name || `Field ${m.field_index + 1}`, value: String(m.value ?? "").slice(0, 80), confidence: m.confidence, method: m.method };
+      });
       if (!mappings?.length) {
-        return { filled: 0, flagged: 0, skipped: skipped?.length ?? 0, reason: page.fields.length ? undefined : "No form fields found on this page" };
+        return {
+          filled: 0,
+          flagged: 0,
+          skipped: skippedFields.length,
+          skippedFields,
+          excluded: page.excluded || [],
+          details: [],
+          reason: page.fields.length ? undefined : "No form fields found on this page",
+        };
       }
       const filled = await withContent(msg.tabId, { type: "jams:fill", items: mappings });
       // learn high-confidence fills so the next visit to this host is smarter (§35.2)
@@ -113,11 +143,22 @@ async function handle(msg) {
           }).catch(() => null)
         );
       await Promise.all(learns);
+      // the content script can still decline (e.g. no select option answers the
+      // value) — those move from details to skippedFields so the counts stay honest
+      const filledIdx = new Set((filled.items || []).map((it) => it.index));
+      const shown = details.filter((d) => filledIdx.has(d.index));
+      const declined = details
+        .filter((d) => !filledIdx.has(d.index))
+        .map((d) => ({ field: d.label, reason: "no option in that field answered your value — pick one yourself" }));
+      const allSkipped = [...skippedFields, ...declined];
       return {
         filled: filled.items?.length ?? 0,
         flagged: filled.flagged ?? 0,
-        skipped: skipped?.length ?? 0,
+        skipped: allSkipped.length,
         needsReview: filled.needsReview ?? [],
+        details: shown,
+        skippedFields: allSkipped,
+        excluded: page.excluded || [],
       };
     }
 
