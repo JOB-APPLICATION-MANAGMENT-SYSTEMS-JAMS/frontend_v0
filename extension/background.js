@@ -13,11 +13,41 @@ const PROD_API = "https://backend-v0-3aeu-omega.vercel.app/api/v1";
 const LOCAL_API = "http://localhost:8000/api/v1";
 
 async function settings() {
-  const s = await chrome.storage.local.get(["apiBase", "token", "email"]);
-  return { apiBase: s.apiBase || PROD_API, token: s.token || "", email: s.email || "" };
+  const s = await chrome.storage.local.get(["apiBase", "token", "refreshToken", "email"]);
+  return { apiBase: s.apiBase || PROD_API, token: s.token || "", refreshToken: s.refreshToken || "", email: s.email || "" };
 }
 
-async function api(path, { method = "GET", body } = {}) {
+/* Access tokens live 15 minutes; the 30-day refresh token keeps the session
+ * alive silently so the popup never dies mid-fill with "session expired". */
+let refreshing = null;
+async function refreshSession() {
+  if (refreshing) return refreshing;
+  refreshing = (async () => {
+    const { apiBase, refreshToken } = await settings();
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${apiBase}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const token = data?.data?.access_token ?? data?.access_token;
+      const next = data?.data?.refresh_token ?? data?.refresh_token;
+      if (!token) return false;
+      await chrome.storage.local.set({ token, ...(next ? { refreshToken: next } : {}) });
+      return true;
+    } catch {
+      return false; // network down — surface the original 401 instead
+    }
+  })().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
+async function api(path, { method = "GET", body, _retried } = {}) {
   const { apiBase, token } = await settings();
   const res = await fetch(`${apiBase}${path}`, {
     method,
@@ -32,6 +62,10 @@ async function api(path, { method = "GET", body } = {}) {
     data = await res.json();
   } catch {
     /* non-JSON body */
+  }
+  if (res.status === 401 && !_retried && !path.startsWith("/auth/")) {
+    const { refreshToken } = await settings();
+    if (refreshToken && (await refreshSession())) return api(path, { method, body, _retried: true });
   }
   if (!res.ok) {
     const detail = data?.error?.detail || data?.message || `Request failed (${res.status})`;
@@ -78,7 +112,7 @@ async function handle(msg) {
       });
       const token = res?.access_token ?? res?.token;
       if (!token) throw new Error("Login failed: no token returned");
-      await chrome.storage.local.set({ token, email: msg.email, apiBase });
+      await chrome.storage.local.set({ token, refreshToken: res?.refresh_token || "", email: msg.email, apiBase });
       return { email: msg.email };
     }
 
@@ -99,7 +133,7 @@ async function handle(msg) {
     }
 
     case "jams:logout":
-      await chrome.storage.local.remove(["token", "email"]);
+      await chrome.storage.local.remove(["token", "refreshToken", "email"]);
       return {};
 
     case "jams:setApiBase":

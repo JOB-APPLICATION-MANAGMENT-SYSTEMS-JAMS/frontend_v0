@@ -381,7 +381,14 @@ const BACKGROUND_HTML = `<!doctype html>
           });
           var j = await r.json();
           var t = j && j.data && j.data.access_token;
-          if (t) { var cur = read(); cur.token = t; cur.email = "uitest@example.com"; cur.apiBase = "/api/v1"; write(cur); }
+          if (t) {
+            var cur = read();
+            cur.token = t;
+            cur.refreshToken = (j.data && j.data.refresh_token) || "";
+            cur.email = "uitest@example.com";
+            cur.apiBase = "/api/v1";
+            write(cur);
+          }
           else console.warn("jams preview: login returned no token", j);
         } catch (err) {
           console.warn("jams preview: login failed — is the local backend running on :8000?", err);

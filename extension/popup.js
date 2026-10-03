@@ -33,8 +33,11 @@ function friendly(e) {
   if (/failed to fetch|networkerror|load failed/i.test(m)) {
     return "Can't reach the JAMS backend. Check your connection and try again.";
   }
-  if (/token expired|not authenticated/i.test(m)) {
+  if (/token expired|not authenticated|request failed \(401\)|refresh token/i.test(m)) {
     return "Session expired — sign in again.";
+  }
+  if (/unknown message/i.test(m)) {
+    return "Extension was updated — click ⟲ (reload) on JAMS Autofill in chrome://extensions, then try again.";
   }
   if (/invalid email or password/i.test(m)) {
     return "That email and password don't match an account.";
@@ -74,9 +77,11 @@ async function loadProfile() {
     $("pname").textContent = who;
     $("pmeta").textContent = [p.email, `${p.saved} detail${p.saved === 1 ? "" : "s"} saved`].filter(Boolean).join(" · ");
     $("avatar").textContent = who.trim().charAt(0).toUpperCase() || "?";
-  } catch {
+  } catch (e) {
     $("pname").textContent = "Your profile";
-    $("pmeta").textContent = "couldn't load — try again";
+    $("pmeta").textContent = "not loaded";
+    // say WHY — a silent "couldn't load" hides expired sessions and stale bundles
+    say(friendly(e), "err");
   }
 }
 
