@@ -30,6 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# local scratch — crawler dumps (never commit)
+_lc_*.html
+catalog.json
+
 # env files (can opt-in for committing if needed)
 .env*
 
