@@ -14,7 +14,7 @@ import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/bas
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 
-type Profile = { identity: any; aliases: any; version: number };
+type Profile = { identity: any; aliases: any; version: number; education?: { school?: string; degree?: string; field?: string }[] };
 type Schema = {
   fields: { key: string; aliases: string[]; value: string | null; visible: boolean }[];
   guardrails: { never_fill: string[] };
@@ -22,28 +22,98 @@ type Schema = {
 };
 type Answer = { match: string; answer: string };
 
-/** The exact questions job forms keep asking — each maps to one identity key. */
-const ANSWER_KEYS = [
-  ["first_name", "First name"],
-  ["middle_name", "Middle name"],
-  ["last_name", "Last name"],
-  ["email", "Email"],
-  ["phone", "Phone"],
-  ["location", "Location"],
-  ["work_authorization", "Legally authorized to work (Yes/No)"],
-  ["sponsorship", "Requires visa sponsorship (Yes/No)"],
-  ["relocation", "Office / relocation answer"],
-  ["graduation_year", "Graduation year"],
-  ["heard_about", "How did you hear about this job?"],
-  ["headline", "Headline"],
-  ["school", "School"],
-  ["degree", "Degree"],
-  ["field_of_study", "Field of study"],
-] as const;
+/** The exact questions job forms keep asking — grouped the way application forms lay them out. */
+const ANSWER_GROUPS: { title: string; keys: [string, string][] }[] = [
+  {
+    title: "Basic info",
+    keys: [
+      ["first_name", "First name"],
+      ["middle_name", "Middle name"],
+      ["last_name", "Last name"],
+      ["date_of_birth", "Date of birth"],
+      ["marital_status", "Marital status"],
+      ["gender", "Gender"],
+      ["nationality", "Nationality"],
+      ["religion", "Religion"],
+      ["hobbies", "Hobbies / interests"],
+      ["headline", "Headline"],
+      ["heard_about", "How did you hear about this job?"],
+    ],
+  },
+  {
+    title: "Contact",
+    keys: [
+      ["email", "Email"],
+      ["phone", "Phone"],
+      ["location", "Location"],
+      ["street", "Street / address"],
+      ["city", "City"],
+      ["state", "State / province"],
+      ["country", "Country"],
+      ["zip", "Zip / postal code"],
+    ],
+  },
+  {
+    title: "Work authorization",
+    keys: [
+      ["work_authorization", "Legally authorized to work (Yes/No)"],
+      ["sponsorship", "Requires visa sponsorship (Yes/No)"],
+      ["relocation", "Office / relocation answer"],
+    ],
+  },
+  {
+    title: "Education",
+    keys: [
+      ["degree", "Highest qualification / degree"],
+      ["field_of_study", "Field of study"],
+      ["school", "Institution attended"],
+      ["grade", "Grade / degree class"],
+      ["cgpa", "CGPA"],
+      ["graduation_year", "Graduation year"],
+      ["other_qualifications", "Other qualifications"],
+    ],
+  },
+  {
+    title: "Experience",
+    keys: [
+      ["experience_years", "Experience (years)"],
+      ["experience_months", "Experience (months)"],
+      ["current_employer", "Current employer"],
+      ["current_job_role", "Current job role"],
+      ["current_responsibilities", "Job responsibilities (current)"],
+      ["previous_employer", "Previous employer"],
+      ["previous_job_role", "Previous job role"],
+      ["previous_responsibilities", "Job responsibilities (previous)"],
+    ],
+  },
+  {
+    title: "Remuneration",
+    keys: [
+      ["current_salary", "Current salary (per annum)"],
+      ["salary_expectation", "Expected salary"],
+    ],
+  },
+  {
+    title: "References",
+    keys: [
+      ["referee1_name", "Referee 1 — name"],
+      ["referee1_email", "Referee 1 — email"],
+      ["referee1_phone", "Referee 1 — phone"],
+      ["referee1_address", "Referee 1 — address"],
+      ["referee2_name", "Referee 2 — name"],
+      ["referee2_email", "Referee 2 — email"],
+      ["referee2_phone", "Referee 2 — phone"],
+      ["referee2_address", "Referee 2 — address"],
+    ],
+  },
+];
+const ANSWER_KEYS: [string, string][] = ANSWER_GROUPS.flatMap((g) => g.keys);
 
 const LINK_KEYS = [
   ["linkedin", "LinkedIn URL"],
   ["github", "GitHub URL"],
+  ["facebook", "Facebook URL"],
+  ["twitter", "X (Twitter) URL"],
   ["website", "Website / portfolio"],
 ] as const;
 
@@ -64,8 +134,14 @@ export default function AutofillPage() {
   React.useEffect(() => {
     if (!profile.data || ready) return;
     const id = profile.data.identity ?? {};
+    // education lives in its own table — show the saved row when identity has no answer yet
+    const e0 = (profile.data.education ?? [])[0];
     const a: Record<string, string> = {};
-    for (const [k] of ANSWER_KEYS) a[k] = id[k] == null ? "" : String(id[k]);
+    for (const [k] of ANSWER_KEYS) {
+      let v = id[k];
+      if ((v == null || v === "") && e0) v = k === "school" ? e0.school : k === "degree" ? e0.degree : k === "field_of_study" ? e0.field : v;
+      a[k] = v == null ? "" : String(v);
+    }
     setAnswers(a);
     setLinks({ ...(id.links ?? {}) });
     setCustom(Array.isArray(id.autofill_answers) ? id.autofill_answers : []);
@@ -185,14 +261,23 @@ export default function AutofillPage() {
         {/* application answers */}
         <Card className="p-5">
           <Section icon={<Sparkles className="h-4 w-4" />} title="Application answers" />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {ANSWER_KEYS.map(([k, label]) => (
-              <Field key={k} label={label}>
-                <Input value={answers[k] ?? ""} onChange={(e) => setAnswers({ ...answers, [k]: e.target.value })} />
-              </Field>
-            ))}
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <p className="-mt-2 mb-4 text-sm text-muted-foreground">
+            Fill what you want the extension to answer. Voluntary self-ID questions (e.g. gender) fill <em>only</em> from an answer you save here —
+            never inferred; anything left empty stays empty on the form.
+          </p>
+          {ANSWER_GROUPS.map((g) => (
+            <div key={g.title} className="mb-5 last:mb-0">
+              <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{g.title}</h3>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {g.keys.map(([k, label]) => (
+                  <Field key={k} label={label}>
+                    <Input value={answers[k] ?? ""} onChange={(e) => setAnswers({ ...answers, [k]: e.target.value })} />
+                  </Field>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {LINK_KEYS.map(([k, label]) => (
               <Field key={k} label={label}>
                 <Input value={links[k] ?? ""} onChange={(e) => setLinks({ ...links, [k]: e.target.value })} placeholder={`https://${k}.com/…`} />
@@ -270,7 +355,7 @@ export default function AutofillPage() {
             <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save autofill details"}
           </Button>
           <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
-            <li>· EEOC / voluntary self-ID questions are never answered for you.</li>
+            <li>· Voluntary self-ID questions are answered only from your own saved answer — never guessed.</li>
             <li>· Passwords, card numbers, SSN and CVV are never touched.</li>
             <li>· Resume, transcript and cover-letter files attach by hand.</li>
             <li>· Nothing ever submits — you press Submit yourself.</li>

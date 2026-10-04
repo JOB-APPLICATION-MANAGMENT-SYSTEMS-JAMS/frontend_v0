@@ -21,8 +21,13 @@
   window.__jamsAutofill = true;
 
   const NEVER_FILL = /password|passwd|pwd|credit_?card|card_?number|cvv|cvc|ssn|social_?security/i;
-  /** EEOC / voluntary self-ID: never asked or answered — that choice is the candidate's. */
-  const SELF_ID = /disabilit|veteran|race\b|racial|ethnic|hispanic|latino|latinx|gender|\bsex\b|sexual orientation|transgender|non.?binary|self.?identif/i;
+  /**
+   * EEOC / voluntary self-ID we refuse to even send (§35.2). Gender/sex is
+   * deliberately NOT here: the server fills it only from an answer the
+   * candidate explicitly saved in their profile — their choice, never a guess —
+   * and skips it with a visible reason when they saved none.
+   */
+  const SELF_ID = /disabilit|veteran|race\b|racial|ethnic|hispanic|latino|latinx|sexual orientation|transgender|non.?binary|self.?identif/i;
   const VISIBLE = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
 
   const labelFor = (el) => {
