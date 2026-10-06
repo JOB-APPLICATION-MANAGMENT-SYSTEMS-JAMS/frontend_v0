@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Columns3, List, Plus, X, Building2, CalendarClock, ExternalLink } from "lucide-react";
+import { Columns3, List, Plus, X, CalendarClock, ExternalLink } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { AppStatus, Application, Paged } from "@/types";
@@ -38,25 +38,23 @@ function TrackerPageInner() {
   const listParams = { status: statusFilter ?? undefined, page, page_size: pageSize, sort: "recent" };
   const list = useQuery<Paged<Application>>({
     queryKey: qk.applicationList(listParams),
-    queryFn: () => appFetch("/applications", { params: listParams as any, _auth: true }),
+    queryFn: () => appFetch("/applications", { params: listParams, _auth: true }),
     staleTime: 15_000,
   });
 
   const move = useMutation({
     mutationFn: ({ id, status }: { id: string; status: AppStatus }) => appFetch(`/applications/${id}/status`, { method: "POST", body: { status }, _auth: true }),
-    meta: { invalidates: [["applications"], ["analytics"], ["streaks"], ["outreach"]] },
+    meta: { invalidates: [["applications"], ["analytics"], ["streaks"], ["outreach"]], errorFallback: "Can’t move there" },
     onSuccess: (_d, v) => toast(`Moved to ${STATUS_META[v.status]?.label ?? v.status}`, "success"),
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Can’t move there", "error"),
   });
 
   const bulkMove = useMutation({
     mutationFn: (status: AppStatus) => appFetch("/applications/bulk-status", { method: "POST", body: { ids: selected, status }, _auth: true }),
-    meta: { invalidates: [["applications"], ["analytics"], ["streaks"]] },
+    meta: { invalidates: [["applications"], ["analytics"], ["streaks"]], errorFallback: "Bulk update failed" },
     onSuccess: () => {
       setSelected([]);
       toast("Bulk status applied", "success");
     },
-    onError: (e: any) => toast(e.message, "error"),
   });
 
   const byStatus = React.useMemo(() => {
@@ -211,7 +209,7 @@ function TrackerPageInner() {
                       dragId === a.id && "opacity-50",
                       ["interview", "offer"].includes(a.status) && "border-orange-400/50"
                     )}
-                    style={{ ["--i" as any]: Math.min(i, 6) }}
+                    style={{ "--i": Math.min(i, 6) } as React.CSSProperties}
                   >
                     <Link href={`/applications/${a.id}`} className="block">
                       <p className="truncate text-[13px] font-semibold leading-tight">{a.role_title}</p>
@@ -270,7 +268,7 @@ function ListView({ items, selected, onToggle }: { items: Application[]; selecte
         </thead>
         <tbody>
           {items.map((a, i) => (
-            <tr key={a.id} className="animate-stagger border-b border-border/40 last:border-0 hover:bg-muted/50" style={{ ["--i" as any]: Math.min(i, 10) }}>
+            <tr key={a.id} className="animate-stagger border-b border-border/40 last:border-0 hover:bg-muted/50" style={{ "--i": Math.min(i, 10) } as React.CSSProperties}>
               <td className="px-4 py-2.5">
                 <input type="checkbox" checked={selected.includes(a.id)} onChange={() => onToggle(a.id)} className="accent-orange-600" />
               </td>
@@ -307,14 +305,13 @@ function NewApplicationModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = React.useState({ company_name: "", role_title: "", url: "", kind: "application", notes: "" });
 
   const create = useMutation({
-    mutationFn: () => appFetch<any>("/applications", { method: "POST", body: { ...form, url: form.url || null }, _auth: true }),
-    meta: { invalidates: [["applications"], ["analytics"], ["streaks"]] },
+    mutationFn: () => appFetch<{ id: string }>("/applications", { method: "POST", body: { ...form, url: form.url || null }, _auth: true }),
+    meta: { invalidates: [["applications"], ["analytics"], ["streaks"]], errorFallback: "Couldn’t create" },
     onSuccess: (data) => {
       toast("Application logged", "success");
       onClose();
       router.push(`/applications/${data.id}`);
     },
-    onError: (e: any) => toast(e.message ?? "Couldn’t create", "error"),
   });
 
   return (

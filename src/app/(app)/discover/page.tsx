@@ -17,14 +17,20 @@ import { InfoButton } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
-function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay: number) {
+function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, delay: number) {
   const t = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const ref = React.useRef(fn);
-  ref.current = fn;
-  return React.useCallback((...args: any[]) => {
-    clearTimeout(t.current);
-    t.current = setTimeout(() => (ref.current as any)(...args), delay);
-  }, [delay]);
+  // latest-ref pattern: write in an effect, never during render (react-hooks/refs)
+  React.useEffect(() => {
+    ref.current = fn;
+  });
+  return React.useCallback(
+    (...args: Parameters<T>) => {
+      clearTimeout(t.current);
+      t.current = setTimeout(() => ref.current(...args), delay);
+    },
+    [delay]
+  );
 }
 
 export default function DiscoverPage() {
@@ -70,14 +76,14 @@ function DiscoverPageInner() {
 
   const search = useQuery<SearchResponse>({
     queryKey: qk.jobList(queryParams),
-    queryFn: () => appFetch("/jobs/search", { params: queryParams as any, _auth: true }),
+    queryFn: () => appFetch("/jobs/search", { params: queryParams, _auth: true }),
     placeholderData: keepPreviousData, // no flash between keystrokes (§34.5)
     staleTime: 30_000,
   });
 
   const sources = useQuery({
     queryKey: ["jobs", "sources"],
-    queryFn: () => appFetch<{ items: any[] }>("/jobs/sources", { _auth: true }),
+    queryFn: () => appFetch<{ items: { name: string; last_error?: string | null; last_run_at?: string | null; items_found?: number | null }[] }>("/jobs/sources", { _auth: true }),
     staleTime: 60_000,
   });
 
@@ -171,7 +177,7 @@ function DiscoverPageInner() {
 
         {/* source chips (progressive rendering signal, §25.1) */}
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {(sources.data?.items ?? []).map((s: any) => (
+          {(sources.data?.items ?? []).map((s) => (
             <button
               key={s.name}
               onClick={() => patch({ source: queryParams.source === s.name ? undefined : s.name })}
@@ -237,7 +243,7 @@ function DiscoverPageInner() {
               <span className="mb-1 block font-semibold text-muted-foreground">Remote only</span>
               <div className="glass-tab flex rounded-full p-0.5">
                 {[["any", undefined], ["yes", "true"]].map(([label, value]) => (
-                  <button key={String(label)} onClick={() => patch({ remote: value as any })} className={cn("flex-1 rounded-full px-3 py-1.5 text-xs font-semibold", (queryParams.remote ?? undefined) === value ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
+                  <button key={String(label)} onClick={() => patch({ remote: value })} className={cn("flex-1 rounded-full px-3 py-1.5 text-xs font-semibold", (queryParams.remote ?? undefined) === value ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
                     {label}
                   </button>
                 ))}
@@ -319,7 +325,7 @@ function DiscoverPageInner() {
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {search.data!.items.map((job, i) => (
-              <div key={job.id} className="animate-stagger" style={{ ["--i" as any]: Math.min(i, 8) }}>
+              <div key={job.id} className="animate-stagger" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
                 <JobCard job={job} onOpen={() => router.push(`/jobs/${job.id}`)} />
               </div>
             ))}

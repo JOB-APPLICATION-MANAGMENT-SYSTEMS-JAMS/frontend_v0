@@ -8,7 +8,7 @@ import { PartyPopper, Trophy } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { Application, Paged } from "@/types";
-import { Button, Card, Select, Skeleton } from "@/components/ui/base";
+import { Button, Card, Select } from "@/components/ui/base";
 import { fireConfetti } from "@/lib/confetti";
 import { toast } from "@/hooks/use-toast";
 
@@ -34,13 +34,12 @@ export default function VictoryPage() {
         body: { offer_source: "manual", application_id: appId || undefined },
         _auth: true,
       }),
-    meta: { invalidates: [["streaks"], ["applications"], ["analytics"]] },
+    meta: { invalidates: [["streaks"], ["applications"], ["analytics"]], errorFallback: "Could not record victory" },
     onSuccess: (res) => {
       setResult(res);
       fireConfetti({ slowmo: true });
       toast("Congratulations! 🎉", "success");
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not record victory", "error"),
   });
 
   return (

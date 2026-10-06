@@ -10,6 +10,16 @@ import { handleMutationError } from "@/lib/api/error-utils";
 
 let client: QueryClient | null = null;
 
+/** Meta every mutation may declare (§11.1 / §9.2). Typed so the cache never needs `any`. */
+type MutationMeta = {
+  /** query keys to invalidate on success */
+  invalidates?: string[][];
+  /** message used when the error carries none of its own */
+  errorFallback?: string;
+  /** the page renders its own inline error UI — stay quiet in the toast host */
+  silentError?: boolean;
+};
+
 export function getQueryClient(): QueryClient {
   if (client) return client;
   client = new QueryClient({
@@ -19,16 +29,19 @@ export function getQueryClient(): QueryClient {
     },
     mutationCache: new MutationCache({
       onSuccess: (_data, _vars, _ctx, mutation) => {
-        const keys = (mutation.meta as any)?.invalidates as string[][] | undefined;
-        if (!keys?.length) return;
-        for (const key of keys) client!.invalidateQueries({ queryKey: key });
+        const meta = mutation.meta as MutationMeta | undefined;
+        if (!meta?.invalidates?.length) return;
+        for (const key of meta.invalidates) client!.invalidateQueries({ queryKey: key });
       },
       onError: (error, _vars, _ctx, mutation) => {
-        const fallback = (mutation.meta as any)?.errorFallback as string | undefined;
-        if ((mutation.meta as any)?.silentError) return;
-        // toast surfaced centrally: any mounted <ToastHost/> listens for this event (§9.2)
+        const meta = mutation.meta as MutationMeta | undefined;
+        if (meta?.silentError) return;
+        // toast surfaced centrally: any mounted <ToastHost/> listens for this event (§9.2).
+        // kind is explicit: a failed mutation is an error even when its message reads neutral.
         if (typeof window !== "undefined") {
-          const ev = new CustomEvent("jams-toast", { detail: { message: handleMutationError(error, fallback) } });
+          const ev = new CustomEvent("jams-toast", {
+            detail: { message: handleMutationError(error, meta?.errorFallback), kind: "error" },
+          });
           window.dispatchEvent(ev);
         }
       },
@@ -43,10 +56,10 @@ export const qk = {
   profile: () => ["profile"] as const,
   completeness: () => ["profile", "completeness"] as const,
   applications: () => ["applications"] as const,
-  applicationList: (params: any) => ["applications", "list", params] as const,
+  applicationList: (params: unknown) => ["applications", "list", params] as const,
   application: (id: string) => ["applications", "detail", id] as const,
   jobs: () => ["jobs"] as const,
-  jobList: (params: any) => ["jobs", "search", params] as const,
+  jobList: (params: unknown) => ["jobs", "search", params] as const,
   job: (id: string) => ["jobs", "detail", id] as const,
   analytics: () => ["analytics"] as const,
   summary: (period: string) => ["analytics", "summary", period] as const,
@@ -54,9 +67,9 @@ export const qk = {
   today: () => ["streaks", "today"] as const,
   cvs: () => ["cvs"] as const,
   cv: (id: string) => ["cvs", "detail", id] as const,
-  templates: (filter?: any) => ["templates", filter ?? {}] as const,
-  outreach: (filter?: any) => ["outreach", filter ?? {}] as const,
-  companies: (filter?: any) => ["companies", filter ?? {}] as const,
+  templates: (filter?: unknown) => ["templates", filter ?? {}] as const,
+  outreach: (filter?: unknown) => ["outreach", filter ?? {}] as const,
+  companies: (filter?: unknown) => ["companies", filter ?? {}] as const,
   company: (id: string) => ["companies", "detail", id] as const,
   threads: () => ["inbox", "threads"] as const,
   mailbox: () => ["inbox", "mailbox"] as const,

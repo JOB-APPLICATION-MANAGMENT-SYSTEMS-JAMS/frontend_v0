@@ -8,6 +8,7 @@
  */
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
@@ -21,6 +22,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearSession } from "@/lib/api/session";
 import { Kbd } from "@/components/ui/base";
 import { ConfirmDialog } from "@/components/ui/feedback";
 
@@ -53,7 +55,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
   );
 
   const logout = async () => {
-    await fetch("/api/session", { method: "DELETE" });
+    await clearSession();
     router.push("/auth/login");
   };
 
@@ -97,7 +99,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
         )}
       >
         <div className="mb-4 flex items-center gap-2 px-2">
-          <img src="/jams-logo.png" alt="" className="h-8 w-auto shrink-0" />
+          <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-8 w-auto shrink-0" />
           <span className="font-display text-lg font-extrabold tracking-tight">JAMS</span>
         </div>
 

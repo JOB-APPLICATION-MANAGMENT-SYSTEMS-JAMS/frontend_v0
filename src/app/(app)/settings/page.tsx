@@ -7,8 +7,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { Database, Download, FileJson, LogOut, Moon, RefreshCw, Sun, User, Zap } from "lucide-react";
 import { appFetch } from "@/lib/api";
+import { clearSession } from "@/lib/api/session";
 import { qk } from "@/lib/queries";
-import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
+import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/base";
+import { useMounted } from "@/hooks/use-mounted";
 import { InlineBanner } from "@/components/ui/feedback";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -25,18 +27,23 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   // next-themes only knows the stored theme after mount, server always renders "system",
   // so the selected-button variant must stay "system" during hydration or the tree mismatches
-  const [themeMounted, setThemeMounted] = React.useState(false);
-  React.useEffect(() => setThemeMounted(true), []);
-  const activeTheme = themeMounted ? theme : "system";
+  const hydrated = useMounted();
+  const activeTheme = hydrated ? theme : "system";
   const [goal, setGoal] = React.useState<string>("");
+  const [goalSeeded, setGoalSeeded] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
 
   const me = useQuery<Me>({ queryKey: qk.me(), queryFn: () => appFetch("/auth/me", { _auth: true }) });
-  const sources = useQuery<{ items: any[] }>({ queryKey: ["sources"], queryFn: () => appFetch("/sources", { _auth: true }) });
+  const sources = useQuery<{ items: { name: string; enabled: number | boolean; last_run_at: string | null; error_streak: number }[] }>({
+    queryKey: ["sources"],
+    queryFn: () => appFetch("/sources", { _auth: true }),
+  });
 
-  React.useEffect(() => {
-    if (me.data && !goal) setGoal(String(me.data.settings.goal));
-  }, [me.data, goal]);
+  // seed the goal field once the account lands (adjust-during-render, not an effect)
+  if (!goalSeeded && me.data) {
+    setGoalSeeded(true);
+    setGoal(String(me.data.settings.goal));
+  }
 
   const saveGoal = useMutation({
     mutationFn: () => appFetch("/goals", { method: "PUT", body: { goal: Number(goal) }, _auth: true }),
@@ -63,9 +70,9 @@ export default function SettingsPage() {
   const signOut = async () => {
     setSigningOut(true);
     try {
-      await fetch("/api/session", { method: "DELETE" });
+      await clearSession();
     } finally {
-      router.replace("/login");
+      router.replace("/auth/login");
     }
   };
 

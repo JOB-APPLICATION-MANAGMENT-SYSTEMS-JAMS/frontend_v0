@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { API_BASE } from "@/lib/api/base";
+import { COOKIE_NAMES } from "@/lib/cookies";
 const MAX_REDIRECTS = 10;
 
 export const runtime = "nodejs";
@@ -19,7 +20,7 @@ const isProd = process.env.NODE_ENV === "production";
  * cookies and retries once, app JS still never touches a token.
  */
 async function refreshSession(request: NextRequest): Promise<{ access: string; refresh?: string } | null> {
-  const refreshToken = request.cookies.get("jams_refresh")?.value;
+  const refreshToken = request.cookies.get(COOKIE_NAMES.REFRESH_TOKEN)?.value;
   if (!refreshToken) return null;
   try {
     const r = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
@@ -39,8 +40,8 @@ async function refreshSession(request: NextRequest): Promise<{ access: string; r
 }
 
 function sessionCookies(res: NextResponse, tokens: { access: string; refresh?: string }) {
-  res.cookies.set("jams_access", tokens.access, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 12 });
-  if (tokens.refresh) res.cookies.set("jams_refresh", tokens.refresh, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 24 * 30 });
+  res.cookies.set(COOKIE_NAMES.ACCESS_TOKEN, tokens.access, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 12 });
+  if (tokens.refresh) res.cookies.set(COOKIE_NAMES.REFRESH_TOKEN, tokens.refresh, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 24 * 30 });
 }
 
 async function forward(request: NextRequest, pathParts: string[], attempt = 0, refreshed: false | { access: string; refresh?: string } = false): Promise<NextResponse> {
@@ -56,7 +57,7 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
 
   // auth: the client merely says "I want auth", the cookie never leaks to JS (§3.2)
   if (request.headers.get("x-use-auth") === "true") {
-    const token = request.cookies.get("jams_access")?.value;
+    const token = request.cookies.get(COOKIE_NAMES.ACCESS_TOKEN)?.value;
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -68,8 +69,8 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
   let response: Response;
   try {
     response = await fetch(url, { method, headers, body, redirect: "manual", signal: AbortSignal.timeout(30_000) });
-  } catch (e: any) {
-    console.error(`[proxy] ${method} /api/v1/${path} → upstream error: ${e?.message}`);
+  } catch (e) {
+    console.error(`[proxy] ${method} /api/v1/${path} → upstream error: ${e instanceof Error ? e.message : String(e)}`);
     return NextResponse.json(
       { status: "failure", status_code: 502, message: "API unreachable", error: { code: "SOURCE_DOWN", detail: `Is the backend running on ${API_BASE}?` } },
       { status: 502, headers: { "X-Request-Id": requestId } }
@@ -90,8 +91,8 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
       if (!fresh) {
         // session is truly dead, bounce the cookies so the route guard sends them to login
         const dead = new NextResponse(buf, { status: 401, headers: { "content-type": "application/json", "X-Request-Id": requestId } });
-        dead.cookies.delete("jams_access");
-        dead.cookies.delete("jams_refresh");
+        dead.cookies.delete(COOKIE_NAMES.ACCESS_TOKEN);
+        dead.cookies.delete(COOKIE_NAMES.REFRESH_TOKEN);
         return dead;
       }
       headers.set("Authorization", `Bearer ${fresh.access}`);

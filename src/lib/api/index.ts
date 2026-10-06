@@ -12,8 +12,8 @@ const CLIENT_BASE = "/api/proxy";
 
 export type AppFetchOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  params?: Record<string, any>;
-  body?: any;
+  params?: Record<string, unknown>;
+  body?: unknown;
   headers?: Record<string, string>;
   /** ask the proxy to attach the Bearer token from the httpOnly-ish cookie */
   _auth?: boolean;
@@ -24,13 +24,7 @@ export type AppFetchOptions = {
   cache?: RequestCache;
 };
 
-export const COOKIE_NAMES = {
-  ACCESS_TOKEN: "jams_access",
-  REFRESH_TOKEN: "jams_refresh",
-  USER_ROLE: "jams_role",
-} as const;
-
-function buildUrl(base: string, endpoint: string, params?: Record<string, any>) {
+function buildUrl(base: string, endpoint: string, params?: Record<string, unknown>) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params ?? {})) {
     if (v === undefined || v === null || v === "") continue;
@@ -49,11 +43,11 @@ async function getResponseData(res: Response) {
   return res.blob();
 }
 
-export async function appFetch<T = any>(endpoint: string, options: AppFetchOptions = {}): Promise<T> {
+export async function appFetch<T = unknown>(endpoint: string, options: AppFetchOptions = {}): Promise<T> {
   const base = isServer ? `${SERVER_BASE}/api/v1` : CLIENT_BASE;
   const url = buildUrl(base, endpoint, options.params);
   const headers: Record<string, string> = { ...(options.headers ?? {}) };
-  let body: any = options.body;
+  let body: BodyInit | undefined;
   if (options._formData) {
     body = options._formData;
   } else if (options.body !== undefined) {
@@ -76,6 +70,9 @@ export async function appFetch<T = any>(endpoint: string, options: AppFetchOptio
     // dead session after the proxy's silent refresh failed → back to login (client GETs only;
     // mutations surface their own toast so a failed POST never navigates away from typed input)
     if (!isServer && res.status === 401 && (options.method ?? "GET") === "GET" && !window.location.pathname.startsWith("/auth")) {
+      // deliberate hard navigation: appFetch runs outside React (there is no router here)
+      // and a full reload guarantees no stale authorised UI survives a dead session
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign("/auth/login");
     }
     throwApiError(res.status, data, `${options.method ?? "GET"} ${endpoint} failed`);

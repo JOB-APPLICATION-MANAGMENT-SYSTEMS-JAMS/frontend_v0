@@ -24,7 +24,7 @@ type Job = SearchResponse["items"][number];
 function EmailJobCard({ job }: { job: Job }) {
   const apply = useMutation({
     mutationFn: async () => {
-      const cap = await appFetch<any>("/capture", {
+      const cap = await appFetch<{ application_id: string }>("/capture", {
         method: "POST",
         body: {
           source: "paste",
@@ -45,7 +45,7 @@ function EmailJobCard({ job }: { job: Job }) {
         { method: "POST", body: {}, _auth: true }
       );
     },
-    meta: { invalidates: [["applications"], ["jobs"], ["outreach"], ["streaks"], ["analytics"]] },
+    meta: { invalidates: [["applications"], ["jobs"], ["outreach"], ["streaks"], ["analytics"]], errorFallback: "Could not send the application" },
     onSuccess: (res) => {
       if (res.mode === "sent") toast(`Application sent to ${res.email}`, "success");
       else if (res.mode === "compose" && res.compose_url) {
@@ -56,7 +56,6 @@ function EmailJobCard({ job }: { job: Job }) {
         toast(res.reason ?? "Opened the posting so you can apply manually", "info");
       }
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not send the application", "error"),
   });
 
   const copy = async () => {
@@ -134,19 +133,19 @@ export function EmailJobs() {
 
   const search = useQuery<SearchResponse>({
     queryKey: ["jobs", "with-email", debouncedQ, page],
-    queryFn: () => appFetch("/jobs/search", { params: params as any, _auth: true }),
+    queryFn: () => appFetch("/jobs/search", { params, _auth: true }),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     retry: 1,
   });
 
   const refresh = useMutation({
-    mutationFn: () => appFetch<any>("/jobs/refresh", { method: "POST", body: {}, _auth: true }),
+    mutationFn: () => appFetch<unknown>("/jobs/refresh", { method: "POST", body: {}, _auth: true }),
     onSuccess: () => {
       toast("Indexing free sources: addresses land in seconds", "info");
       setTimeout(() => search.refetch(), 6000);
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Refresh failed", "error"),
+    meta: { errorFallback: "Refresh failed" },
   });
 
   const total = search.data?.pagination.total_count ?? 0;

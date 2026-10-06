@@ -4,8 +4,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { InfoButton } from "@/components/ui/modal";
-
-type Day = { day: string; count: number; goal: number; hit: boolean; streak: number };
+import type { HeatmapDay as Day } from "@/types";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -52,8 +51,8 @@ export function Heatmap({ days, year, onPick, className }: { days?: Day[]; year:
                 className={cn("heat-cell h-3.5 w-3.5 cursor-pointer rounded-[4px] transition-transform hover:scale-125", isToday && "today-ring")}
                 style={{
                   background: c ? intensity(pct) : "hsl(var(--line) / 0.4)",
-                  ["--c" as any]: col,
-                }}
+                  "--c": col,
+                } as React.CSSProperties}
                 title={c ? `${c.day}: ${c.count}/${c.goal}${c.hit ? " · goal hit 🎯" : ""}` : ""}
                 onClick={() => c && onPick?.(c.day)}
               />

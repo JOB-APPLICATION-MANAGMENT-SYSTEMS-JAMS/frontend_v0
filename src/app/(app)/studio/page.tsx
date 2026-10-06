@@ -121,7 +121,7 @@ export default function StudioPage() {
           </div>
           <div>
             <Label>Archetype</Label>
-            <Select value={archetype} onChange={(e) => setArchetype(e.target.value as any)}>
+            <Select value={archetype} onChange={(e) => setArchetype(e.target.value as "opening" | "pitch")}>
               <option value="opening">Opening (broad, ATS-safe)</option>
               <option value="pitch">Pitch (tailored, dense)</option>
             </Select>
@@ -155,7 +155,7 @@ export default function StudioPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cvs.data!.items.map((cv, i) => (
-            <Card key={cv.id} className="animate-stagger flex flex-col p-4" style={{ ["--i" as any]: i }}>
+            <Card key={cv.id} className="animate-stagger flex flex-col p-4" style={{ "--i": i } as React.CSSProperties}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate font-display text-base font-bold">{cv.name}</p>

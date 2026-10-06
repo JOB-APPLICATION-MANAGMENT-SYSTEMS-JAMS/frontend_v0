@@ -14,7 +14,12 @@ import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/bas
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 
-type Profile = { identity: any; aliases: any; version: number; education?: { school?: string; degree?: string; field?: string }[] };
+type Profile = {
+  identity: Record<string, string> & { links?: Record<string, string>; autofill_answers?: Answer[] };
+  aliases: Record<string, string[]>;
+  version: number;
+  education?: { school?: string; degree?: string; field?: string }[];
+};
 type Schema = {
   fields: { key: string; aliases: string[]; value: string | null; visible: boolean }[];
   guardrails: { never_fill: string[] };
@@ -131,14 +136,15 @@ export default function AutofillPage() {
   const [custom, setCustom] = React.useState<Answer[]>([]);
   const [aliasText, setAliasText] = React.useState<Record<string, string>>({});
 
-  React.useEffect(() => {
-    if (!profile.data || ready) return;
+  // seed the form once the profile lands (adjust-during-render, not an effect:
+  // a single render with data beats effect → setState → second render)
+  if (profile.data && !ready) {
     const id = profile.data.identity ?? {};
     // education lives in its own table — show the saved row when identity has no answer yet
     const e0 = (profile.data.education ?? [])[0];
     const a: Record<string, string> = {};
     for (const [k] of ANSWER_KEYS) {
-      let v = id[k];
+      let v: string | undefined = id[k];
       if ((v == null || v === "") && e0) v = k === "school" ? e0.school : k === "degree" ? e0.degree : k === "field_of_study" ? e0.field : v;
       a[k] = v == null ? "" : String(v);
     }
@@ -149,11 +155,11 @@ export default function AutofillPage() {
     for (const [k, v] of Object.entries(profile.data.aliases ?? {})) at[k] = (v as string[]).join(", ");
     setAliasText(at);
     setReady(true);
-  }, [profile.data, ready]);
+  }
 
   const save = useMutation({
     mutationFn: () => {
-      const identity: any = {};
+      const identity: Record<string, unknown> = {};
       for (const [k] of ANSWER_KEYS) identity[k] = (answers[k] ?? "").trim();
       identity.links = links;
       identity.autofill_answers = custom.filter((c) => c.match.trim() && c.answer.trim());
@@ -167,9 +173,8 @@ export default function AutofillPage() {
       }
       return appFetch("/profile", { method: "PUT", body: { identity, aliases }, _auth: true });
     },
-    meta: { invalidates: [["profile"], ["autofill", "schema"], ["cvs"], ["jobs"], ["analytics"]] },
+    meta: { invalidates: [["profile"], ["autofill", "schema"], ["cvs"], ["jobs"], ["analytics"]], errorFallback: "Save failed" },
     onSuccess: () => toast("Autofill details saved — the extension uses them on the next fill", "success"),
-    onError: (e: any) => toast(e.message ?? "Save failed", "error"),
   });
 
   /* Resume → answers: parse on the server, fill the DRAFT here, human saves. */
@@ -181,7 +186,7 @@ export default function AutofillPage() {
         fr.onerror = () => reject(new Error("Couldn’t read that file"));
         fr.readAsDataURL(file);
       });
-      return appFetch<{ identity: Record<string, any>; warnings: string[] }>("/autofill/parse-resume", {
+      return appFetch<{ identity: Record<string, string> & { links?: Record<string, string> }; warnings: string[] }>("/autofill/parse-resume", {
         method: "POST",
         body: { filename: file.name, content_base64: base64 },
         _auth: true,
@@ -196,7 +201,7 @@ export default function AutofillPage() {
       const notes = (data.warnings ?? []).join(" ");
       if (notes) toast(notes, "info");
     },
-    onError: (e: any) => toast(e.message ?? "Couldn’t read that file", "error"),
+    meta: { errorFallback: "Couldn’t read that file" },
   });
 
   const onPickResume = (e: React.ChangeEvent<HTMLInputElement>) => {

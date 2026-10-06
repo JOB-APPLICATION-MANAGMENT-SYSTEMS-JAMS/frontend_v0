@@ -4,15 +4,16 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, Mail, Phone, Users } from "lucide-react";
+import { ArrowLeft, ExternalLink, Mail, Users } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { Application, Company } from "@/types";
+import type { Application, Company, Contact } from "@/types";
 import { Badge, Button, Card, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { STATUS_META, fmt } from "@/lib/utils";
 
-type CompanyDetail = Company & { contacts: any[]; applications: Application[] };
+/** detail endpoint returns the contact rows (list returns a count → Omit) */
+type CompanyDetail = Omit<Company, "contacts"> & { contacts: Contact[]; applications: Application[] };
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -76,16 +77,12 @@ export default function CompanyDetailPage() {
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.name ?? p.email}</p>
-                  <p className="truncate text-xs text-muted-foreground">{p.title ?? ""}</p>
+                  {/* the contacts table stores `role` — `title` never existed, so this line was always blank */}
+                  {p.role && <p className="truncate text-xs text-muted-foreground">{p.role}</p>}
                 </div>
                 {p.email && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Mail className="h-3.5 w-3.5" /> {p.email}
-                  </span>
-                )}
-                {p.phone && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" /> {p.phone}
                   </span>
                 )}
               </li>

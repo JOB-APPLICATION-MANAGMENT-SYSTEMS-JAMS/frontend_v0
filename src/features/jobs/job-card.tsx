@@ -5,7 +5,6 @@ import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck, Check, ExternalLink, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
-import { qk } from "@/lib/queries";
 import { Badge, Button } from "@/components/ui/base";
 import { cn, fmt } from "@/lib/utils";
 import type { JobPosting } from "@/types";
@@ -20,7 +19,7 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
   });
 
   const capture = useMutation({
-    mutationFn: () => appFetch<any>("/capture", { method: "POST", body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft" }, _auth: true }),
+    mutationFn: () => appFetch<unknown>("/capture", { method: "POST", body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft" }, _auth: true }),
     meta: { invalidates: [["applications"], ["jobs"], ["streaks"], ["analytics"]] },
     onSuccess: () => toast("Saved to tracker as a draft application", "success"),
   });
@@ -33,14 +32,14 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
    */
   const autoApply = useMutation({
     mutationFn: async () => {
-      const cap = await appFetch<any>("/capture", {
+      const cap = await appFetch<{ application_id: string }>("/capture", {
         method: "POST",
         body: { source: "paste", url: job.url, page: { title: `${job.title}, ${job.company.name}`, company_guess: job.company.name, text_excerpt: job.description_snippet }, action: "create_draft", kind: "application", contact_email: job.contact_email ?? undefined },
         _auth: true,
       });
       return appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string; url?: string | null; reason?: string }>(`/applications/${cap.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
     },
-    meta: { invalidates: [["applications"], ["jobs"], ["outreach"], ["streaks"], ["analytics"]] },
+    meta: { invalidates: [["applications"], ["jobs"], ["outreach"], ["streaks"], ["analytics"]], errorFallback: "Auto-apply failed" },
     onSuccess: (res) => {
       if (res.mode === "sent") toast(`Application sent to ${res.email}`, "success");
       else if (res.mode === "compose" && res.compose_url) {
@@ -51,7 +50,6 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
         toast(res.reason ?? "Opened the posting so you can apply manually", "info");
       }
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Auto-apply failed", "error"),
   });
 
   const scoreTone = job.score >= 75 ? "mint" : job.score >= 50 ? "azure" : "amber";

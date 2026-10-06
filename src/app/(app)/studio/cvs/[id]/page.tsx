@@ -4,7 +4,7 @@
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Download, Eye, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, Eye, RefreshCw, Trash2, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { CV, CVBlock } from "@/types";
@@ -38,8 +38,6 @@ function CVEditorPageInner() {
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
   const [draft, setDraft] = React.useState<CV | null>(null);
-  const [preview, setPreview] = React.useState<string>("");
-  const [previewBusy, setPreviewBusy] = React.useState(false);
   const [previewOpen, setPreviewOpen] = React.useState(false);
 
   // fullscreen A4 preview overlay, Esc closes it
@@ -57,14 +55,17 @@ function CVEditorPageInner() {
     queryFn: () => appFetch(`/cvs/${id}`, { _auth: true }),
   });
 
-  React.useEffect(() => {
-    if (detail.data && !draft) setDraft(structuredClone(detail.data));
-  }, [detail.data, draft]);
+  const [seeded, setSeeded] = React.useState(false);
+  // seed the editable draft once the CV lands (adjust-during-render, not an effect)
+  if (!seeded && detail.data) {
+    setSeeded(true);
+    setDraft(structuredClone(detail.data));
+  }
 
   const match = useQuery<{
     ats: { score: number; checks: { key: string; label: string; ok: boolean; fix: string }[] };
     keywords: { matched: string[]; missing: string[]; coverage_pct: number | null; jd_total: number };
-    jd_match: any;
+    jd_match: unknown;
     suggestions: string[];
   }>({
     queryKey: qk.cv(`${id}-match`),
@@ -72,22 +73,20 @@ function CVEditorPageInner() {
     enabled: !!detail.data,
   });
 
-  const refreshPreview = React.useCallback(async () => {
-    setPreviewBusy(true);
-    try {
-      const html = await appFetch<string>(`/cvs/${id}/html`, { _auth: true });
-      setPreview(typeof html === "string" ? html : String(html));
-    } catch (e: any) {
-      toast("Preview failed to render", "error");
-    } finally {
-      setPreviewBusy(false);
-    }
-  }, [id]);
-
-  React.useEffect(() => {
-    if (detail.data) void refreshPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail.data]);
+  /**
+   * A4 preview as its own query: React Query fetches, caches and — via the
+   * ["cvs"] invalidation after Save — reloads it, so no setState-in-effect.
+   */
+  const previewQuery = useQuery<string>({
+    queryKey: qk.cv(`${id}-html`),
+    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { _auth: true }),
+    enabled: !!detail.data,
+  });
+  const preview = previewQuery.data ?? "";
+  const previewBusy = previewQuery.isFetching;
+  const refreshPreview = React.useCallback(() => {
+    void previewQuery.refetch();
+  }, [previewQuery]);
 
   const save = useMutation({
     mutationFn: () =>
@@ -164,7 +163,7 @@ function CVEditorPageInner() {
             </div>
             <div>
               <Label>Archetype</Label>
-              <Select value={draft.archetype} onChange={(e) => setDraft({ ...draft, archetype: e.target.value as any })}>
+              <Select value={draft.archetype} onChange={(e) => setDraft({ ...draft, archetype: e.target.value as CV["archetype"] })}>
                 <option value="opening">Opening</option>
                 <option value="pitch">Pitch</option>
               </Select>

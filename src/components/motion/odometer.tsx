@@ -13,9 +13,13 @@ export function Odometer({ value, duration = 600, className }: { value: number; 
   React.useEffect(() => {
     if (prev.current === value) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(value);
-      prev.current = value;
-      return;
+      // jump to the final value on the next frame: no roll-out, and the setState
+      // stays async so it never triggers a cascading render from this effect
+      const jump = requestAnimationFrame(() => {
+        setShown(value);
+        prev.current = value;
+      });
+      return () => cancelAnimationFrame(jump);
     }
     const t0 = performance.now();
     const from = prev.current;

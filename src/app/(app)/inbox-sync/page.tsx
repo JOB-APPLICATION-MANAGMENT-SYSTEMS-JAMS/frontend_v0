@@ -6,8 +6,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Inbox, Link2, Mail, MessageSquare, Send } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
+import { Badge, Button, Card, Input, Label, Skeleton, Textarea } from "@/components/ui/base";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
+import { AppPasswordHelp, AppPasswordLink } from "@/components/gmail-setup";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -29,7 +30,10 @@ export default function InboxSyncPage() {
   const [msg, setMsg] = React.useState({ from: "", subject: "", body: "" });
   const [openThread, setOpenThread] = React.useState<string | null>(null);
 
-  const mailbox = useQuery<{ items: any[]; connected: boolean; smtp_ready?: boolean }>({ queryKey: qk.mailbox(), queryFn: () => appFetch("/mailboxes", { _auth: true }) });
+  const mailbox = useQuery<{ items: { address: string; last_synced_at?: string | null }[]; connected: boolean; smtp_ready?: boolean }>({
+    queryKey: qk.mailbox(),
+    queryFn: () => appFetch("/mailboxes", { _auth: true }),
+  });
 
   // prefill the address once so "Edit credentials" opens with what is already saved
   React.useEffect(() => {
@@ -39,8 +43,12 @@ export default function InboxSyncPage() {
       seededAddr.current = true;
     }
   }, [mailbox.data]);
-  const threads = useQuery<{ items: any[] }>({ queryKey: qk.threads(), queryFn: () => appFetch("/inbox/threads", { _auth: true }) });
-  const threadDetail = useQuery<any>({
+  const threads = useQuery<{
+    items: { id: string; subject: string; messages: number; company_name?: string | null; contact_email?: string | null; last_message_at?: string | null; created_at: string; status?: string | null }[];
+  }>({ queryKey: qk.threads(), queryFn: () => appFetch("/inbox/threads", { _auth: true }) });
+  const threadDetail = useQuery<{
+    messages: { id: string | number; direction?: string; from_addr?: string; received_at: string; classification?: string | null; body?: string }[];
+  }>({
     queryKey: ["inbox", "thread", openThread],
     queryFn: () => appFetch(`/inbox/threads/${openThread}`, { _auth: true }),
     enabled: !!openThread,
@@ -55,7 +63,7 @@ export default function InboxSyncPage() {
         body: { kind: "imap", address, config: appPass ? { app_password: appPass } : undefined },
         _auth: true,
       }),
-    meta: { invalidates: [["inbox"]] },
+    meta: { invalidates: [["inbox"]], errorFallback: "Could not save the mailbox" },
     onSuccess: () => {
       const wasEditing = editing;
       setEditing(false);
@@ -69,17 +77,15 @@ export default function InboxSyncPage() {
         "success"
       );
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not save the mailbox", "error"),
   });
 
   const ingest = useMutation({
-    mutationFn: () => appFetch("/inbox/messages", { method: "POST", body: { from: msg.from, subject: msg.subject, body: msg.body }, _auth: true }),
-    meta: { invalidates: [["inbox"], ["applications"], ["analytics"], ["streaks"]] },
-    onSuccess: (res: any) => {
+    mutationFn: () => appFetch<{ classification?: string }>("/inbox/messages", { method: "POST", body: { from: msg.from, subject: msg.subject, body: msg.body }, _auth: true }),
+    meta: { invalidates: [["inbox"], ["applications"], ["analytics"], ["streaks"]], errorFallback: "Ingest failed" },
+    onSuccess: (res) => {
       toast(`Ingested & classified → ${res.classification ?? "matched"}`, "success");
       setMsg({ from: "", subject: "", body: "" });
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Ingest failed", "error"),
   });
 
   return (
@@ -91,9 +97,13 @@ export default function InboxSyncPage() {
 
       {/* mailbox */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="font-display mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
           <Link2 className="h-4 w-4" /> Mailbox
         </h2>
+        <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+          Connect your Gmail <b className="font-semibold text-foreground">once</b> and pitches, follow-ups and auto-applications send
+          automatically from this app. Without it, sending opens a prefilled Gmail tab and you press Send yourself.
+        </p>
         {mailbox.isPending ? (
           <Skeleton className="h-16 w-full" />
         ) : (
@@ -198,20 +208,13 @@ export default function InboxSyncPage() {
                           ? "Enable auto-send"
                           : "Connect"}
                   </Button>
-                  <a
-                    href="https://my.google.com/apppasswords"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-accent hover:underline"
-                  >
-                    Where do I get an app password?
-                  </a>
+                  <AppPasswordLink />
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   {mailbox.data?.connected ? "Leave the app password empty to keep the one already saved. " : ""}
-                  Gmail refuses your normal account password (error 534): the 16-character app password comes from Google Account → 2-Step
-                  Verification → App passwords, and it replaces the old one as soon as you save.
+                  Your normal Gmail password will not work — Gmail needs the 16-character app password, and saving replaces the old one.
                 </p>
+                <AppPasswordHelp />
               </div>
             )}
           </div>
@@ -281,13 +284,13 @@ export default function InboxSyncPage() {
                     {threadDetail.isPending ? (
                       <Skeleton className="h-16 w-full" />
                     ) : (
-                      (threadDetail.data?.messages ?? []).map((m: any) => (
+                      (threadDetail.data?.messages ?? []).map((m) => (
                         <div key={m.id} className="rounded-xl bg-muted/60 p-3">
                           <div className="flex items-center justify-between gap-2">
                             <p className="truncate text-xs font-semibold">
                               {m.direction === "out" ? "you" : m.from_addr} · {fmt.dateTime(m.received_at)}
                             </p>
-                            <Badge tone={CLASS_TONE[m.classification] ?? "neutral"} className="capitalize">
+                            <Badge tone={CLASS_TONE[m.classification ?? ""] ?? "neutral"} className="capitalize">
                               {String(m.classification ?? "neutral").replace("_", " ")}
                             </Badge>
                           </div>

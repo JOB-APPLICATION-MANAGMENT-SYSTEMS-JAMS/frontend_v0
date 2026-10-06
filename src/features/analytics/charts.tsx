@@ -2,8 +2,9 @@
 
 /** Chart primitives (§22.3): dual-series bars+line, donut, histogram, breakdown table, sparkline. */
 import * as React from "react";
-import { Card, Skeleton } from "@/components/ui/base";
+import { Skeleton } from "@/components/ui/base";
 import { cn, fmt } from "@/lib/utils";
+import type { BreakdownRow } from "@/types";
 
 export function ChartCard({ title, subtitle, action, children, className }: { title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -51,7 +52,7 @@ export function DualSeries({
       ))}
       {data.map((d, i) => {
         const v = d.applied ?? d.count ?? 0;
-        return <rect key={i} x={x(i)} y={y(v)} width={barW} height={Math.max(1, h - pad.b - y(v))} rx="3" fill="hsl(22 92% 52% / 0.85)" className="funnel-band" style={{ ["--i" as any]: Math.min(i, 8), transformOrigin: "center bottom" }} />;
+        return <rect key={i} x={x(i)} y={y(v)} width={barW} height={Math.max(1, h - pad.b - y(v))} rx="3" fill="hsl(22 92% 52% / 0.85)" className="funnel-band" style={{ "--i": Math.min(i, 8), transformOrigin: "center bottom" } as React.CSSProperties} />;
       })}
       <polyline points={linePts} fill="none" stroke="hsl(40 90% 55%)" strokeWidth="2.5" strokeLinejoin="round" className="route-fade" />
       {data.map((d, i) => (
@@ -76,17 +77,14 @@ export function Donut({ segments, centerLabel, centerValue }: { segments: { labe
   const total = segments.reduce((a, s) => a + s.value, 0) || 1;
   const r = 54;
   const c = 2 * Math.PI * r;
-  let offset = 0;
   return (
     <div className="flex items-center gap-5">
       <svg viewBox="0 0 140 140" className="h-36 w-36 -rotate-90">
-        {segments.map((s) => {
+        {segments.map((s, i) => {
           const len = (s.value / total) * c;
-          const el = (
-            <circle key={s.label} cx="70" cy="70" r={r} fill="none" stroke={s.color} strokeWidth="16" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-offset} strokeLinecap="butt" />
-          );
-          offset += len;
-          return el;
+          // pure prefix sum: distance every previous arc already covers (no render-scoped mutation)
+          const before = segments.slice(0, i).reduce((a, p) => a + (p.value / total) * c, 0);
+          return <circle key={s.label} cx="70" cy="70" r={r} fill="none" stroke={s.color} strokeWidth="16" strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-before} strokeLinecap="butt" />;
         })}
       </svg>
       <div>
@@ -134,7 +132,7 @@ export function Histogram({ labels, counts, p50, p90, threshold }: { labels: str
 }
 
 /** “What's working” table with inline bars (§22.3). */
-export function BreakdownTable({ items, emptyHint }: { items: { key: string; sent: number; replied: number; interviews: number; rate: number }[]; emptyHint?: string }) {
+export function BreakdownTable({ items, emptyHint }: { items: BreakdownRow[]; emptyHint?: string }) {
   if (!items.length) return <p className="py-6 text-center text-sm text-muted-foreground">{emptyHint ?? "Nothing to compare yet."}</p>;
   const maxSent = Math.max(1, ...items.map((i) => i.sent));
   return (
@@ -151,7 +149,7 @@ export function BreakdownTable({ items, emptyHint }: { items: { key: string; sen
         </thead>
         <tbody>
           {items.map((row, i) => (
-            <tr key={row.key} className="animate-stagger border-b border-border/50 last:border-0" style={{ ["--i" as any]: i }}>
+            <tr key={row.key} className="animate-stagger border-b border-border/50 last:border-0" style={{ "--i": i } as React.CSSProperties}>
               <td className="py-2.5 pr-3 font-medium capitalize">{row.key.replace("_", " ")}</td>
               <td className="tnum py-2.5 pr-3">{fmt.n(row.sent)}</td>
               <td className="tnum py-2.5 pr-3">{fmt.n(row.replied)}</td>

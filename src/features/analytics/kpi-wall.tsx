@@ -10,7 +10,7 @@ import { Odometer } from "@/components/motion/odometer";
 import { fmt, cn } from "@/lib/utils";
 import type { Kpi, Summary, Today } from "@/types";
 
-type TileDef = { key: string; label: string; icon: any; tone: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate" };
+type TileDef = { key: string; label: string; icon: React.ComponentType<{ className?: string }>; tone: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate" };
 
 const TILES: TileDef[] = [
   { key: "applications", label: "Applications", icon: AppWindow, tone: "azure" },
@@ -65,7 +65,7 @@ export function KpiWall({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {tiles.map((tile, i) => (
-        <div key={tile.key} className="animate-stagger" style={{ ["--i" as any]: i }}>
+        <div key={tile.key} className="animate-stagger" style={{ "--i": i } as React.CSSProperties}>
           {isPending || !summary ? (
             <Card className="p-5">
               <div className="flex items-center justify-between">

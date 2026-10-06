@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { isProtected, isPublic } from "@/lib/route-config";
+import { COOKIE_NAMES } from "@/lib/cookies";
 
 export const config = {
   // run on everything except static assets + the proxy/session routes themselves
@@ -12,7 +13,7 @@ export const config = {
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  const token = req.cookies.get("jams_access")?.value;
+  const token = req.cookies.get(COOKIE_NAMES.ACCESS_TOKEN)?.value;
 
   if (isProtected(pathname) && !token) {
     const url = new URL("/auth/login", req.url);

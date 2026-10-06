@@ -14,6 +14,7 @@ import { Building2, Copy, FileText, Globe, Mail, MapPin, Paperclip, Phone, Refre
 import { appFetch } from "@/lib/api";
 import { Badge, Button, Card, Combobox, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
+import { AppPasswordHelp, AppPasswordLink } from "@/components/gmail-setup";
 import { InfoButton, Modal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -87,12 +88,12 @@ export function PitchTargets({ className }: { className?: string }) {
   });
 
   const refresh = useMutation({
-    mutationFn: () => appFetch<any>("/pitch-targets", { params: { sector, city, refresh: "1" }, _auth: true }),
+    mutationFn: () => appFetch<unknown>("/pitch-targets", { params: { sector, city, refresh: "1" }, _auth: true }),
     onSuccess: () => {
       toast("Re-scanned live sources", "success");
       list.refetch();
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Refresh failed", "error"),
+    meta: { errorFallback: "Refresh failed" },
   });
 
   /**
@@ -100,9 +101,9 @@ export function PitchTargets({ className }: { className?: string }) {
    * rescan and polls its progress. This is the 10,000-company button.
    */
   const rescan = useMutation({
-    mutationFn: (body: Record<string, any>) => appFetch<any>("/pitch-targets/rescan", { method: "POST", body, _auth: true }),
+    mutationFn: (body: Record<string, unknown>) => appFetch<{ status: string }>("/pitch-targets/rescan", { method: "POST", body, _auth: true }),
     onSuccess: (state) => toast(state.status === "running" ? "Rescan already running: progress below" : "Rescan started", "info"),
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Rescan failed to start", "error"),
+    meta: { errorFallback: "Rescan failed to start" },
   });
 
   const rescanState = useQuery<RescanProgress>({
@@ -133,12 +134,12 @@ export function PitchTargets({ className }: { className?: string }) {
 
   /** fill rows that only have a website: visit the site, take the published inbox. */
   const enrich = useMutation({
-    mutationFn: () => appFetch<any>("/pitch-targets/enrich", { method: "POST", body: { limit: 1000 }, _auth: true }),
+    mutationFn: () => appFetch<{ updated: number }>("/pitch-targets/enrich", { method: "POST", body: { limit: 1000 }, _auth: true }),
     onSuccess: (r) => {
       toast(`${r.updated} emails discovered from company websites`, "success");
       list.refetch();
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Enrichment failed", "error"),
+    meta: { errorFallback: "Enrichment failed" },
   });
 
   // preview/edit the exact email before anything leaves the building
@@ -150,13 +151,13 @@ export function PitchTargets({ className }: { className?: string }) {
   const [connectPass, setConnectPass] = React.useState("");
   const connect = useMutation({
     mutationFn: () =>
-      appFetch<any>("/mailboxes", { method: "POST", body: { kind: "gmail", address: connectAddr, config: { app_password: connectPass } }, _auth: true }),
+      appFetch<unknown>("/mailboxes", { method: "POST", body: { kind: "gmail", address: connectAddr, config: { app_password: connectPass } }, _auth: true }),
     onSuccess: () => {
       setDraft((d) => (d ? { ...d, smtp_ready: true } : d));
       setConnectPass("");
       toast("Auto-send on: press Send and the email leaves this app, no Gmail tab", "success");
     },
-    onError: (e: any) => toast(e?.detail ?? e?.message ?? "Connect failed", "error"),
+    meta: { errorFallback: "Connect failed" },
   });
 
   /** prepare (company + contact + tracked draft) → open the preview modal. */
@@ -167,7 +168,7 @@ export function PitchTargets({ className }: { className?: string }) {
       setAttachments([]);
       setDraft(p);
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not prepare the pitch", "error"),
+    meta: { errorFallback: "Could not prepare the pitch" },
   });
 
   /**
@@ -185,7 +186,7 @@ export function PitchTargets({ className }: { className?: string }) {
       setDraft({ ...d, subject: res.subject, body: res.body, compose: { score: res.score, checks: res.checks, category: res.category, variant: res.variant } });
       toast(`Reworded · quality ${res.score}`, "success");
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not reword the pitch", "error"),
+    meta: { errorFallback: "Could not reword the pitch" },
   });
 
   /** CVs from CV Studio, offered as one-click attachments. */
@@ -207,7 +208,7 @@ export function PitchTargets({ className }: { className?: string }) {
       );
       toast(`${a.filename} linked into the email`, "success");
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Upload failed", "error"),
+    meta: { errorFallback: "Upload failed" },
   });
 
   const fileInput = React.useRef<HTMLInputElement | null>(null);
@@ -240,7 +241,7 @@ export function PitchTargets({ className }: { className?: string }) {
       const res = await appFetch<{ mode: "sent" | "compose" | "open"; compose_url?: string; email?: string }>(`/applications/${d.application_id}/auto-apply`, { method: "POST", body: {}, _auth: true });
       return { ...res, company: d.target.name };
     },
-    meta: { invalidates: [["applications"], ["outreach"], ["streaks"], ["analytics"]] },
+    meta: { invalidates: [["applications"], ["outreach"], ["streaks"], ["analytics"]], errorFallback: "Could not send the pitch" },
     onSuccess: (res) => {
       setDraft(null);
       if (res.mode === "sent") toast(`Pitch sent to ${res.email}`, "success");
@@ -249,7 +250,6 @@ export function PitchTargets({ className }: { className?: string }) {
         toast("Gmail compose opened; press Send there", "info");
       } else toast("No email found; opened the company site", "info");
     },
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Could not send the pitch", "error"),
   });
 
   const activeSector = meta.data?.sectors.find((s) => s.key === sector);
@@ -376,7 +376,7 @@ export function PitchTargets({ className }: { className?: string }) {
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {list.data!.items.map((t, i) => (
-            <Card key={t.external_id} className="animate-stagger flex flex-col gap-2.5 p-4" style={{ ["--i" as any]: Math.min(i, 8) }}>
+            <Card key={t.external_id} className="animate-stagger flex flex-col gap-2.5 p-4" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate font-display text-sm font-bold">{t.name}</p>
@@ -573,10 +573,9 @@ export function PitchTargets({ className }: { className?: string }) {
                     <Button size="sm" variant="outline" onClick={() => connect.mutate()} disabled={!connectAddr.includes("@") || connectPass.replace(/\s/g, "").length < 8 || connect.isPending}>
                       {connect.isPending ? "Enabling…" : "Enable auto-send"}
                     </Button>
-                    <a href="https://my.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-[11px] text-accent underline">
-                      Where do I get an app password?
-                    </a>
+                    <AppPasswordLink className="inline-flex min-h-6 items-center text-[11px] text-accent underline" />
                   </div>
+                  <AppPasswordHelp title="How do I get an app password? (about a minute)" />
                 </div>
               )}
             </div>

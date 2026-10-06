@@ -117,7 +117,7 @@ export function FunnelField({
               <g
                 key={b.key}
                 className="funnel-band cursor-pointer"
-                style={{ ["--i" as any]: i }}
+                style={{ "--i": i } as React.CSSProperties}
                 onClick={() => onDrill?.(b.key)}
                 role="button"
                 tabIndex={0}

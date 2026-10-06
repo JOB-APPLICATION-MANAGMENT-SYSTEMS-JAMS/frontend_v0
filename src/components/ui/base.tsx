@@ -144,6 +144,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
   const wrap = React.useRef<HTMLDivElement>(null);
+  const listId = React.useId();
   const selected = options.find((o) => o.value === value);
   const needle = q.trim().toLowerCase();
   const filtered = needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options;
@@ -169,6 +170,8 @@ export function Combobox({
       <input
         role="combobox"
         aria-expanded={open}
+        aria-controls={listId}
+        aria-haspopup="listbox"
         aria-autocomplete="list"
         aria-label={ariaLabel}
         value={open ? q : (selected?.label ?? "")}
@@ -197,12 +200,12 @@ export function Combobox({
         )}
       />
       {open && (
-        <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl border border-border bg-card py-1 shadow-2xl">
+        <ul id={listId} role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-auto rounded-xl border border-border bg-card py-1 shadow-2xl">
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-xs text-muted-foreground">No match for “{q.trim()}”</li>
           ) : (
             filtered.map((o) => (
-              <li key={o.value}>
+              <li key={o.value} role="option" aria-selected={o.value === value}>
                 <button
                   type="button"
                   // keep focus on the input so the blur handler doesn't race the click

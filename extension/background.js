@@ -10,7 +10,6 @@
  */
 
 const PROD_API = "https://backend-v0-3aeu-omega.vercel.app/api/v1";
-const LOCAL_API = "http://localhost:8000/api/v1";
 
 async function settings() {
   const s = await chrome.storage.local.get(["apiBase", "token", "refreshToken", "email"]);

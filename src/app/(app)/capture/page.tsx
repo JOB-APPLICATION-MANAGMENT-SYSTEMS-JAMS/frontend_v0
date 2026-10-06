@@ -46,20 +46,20 @@ function CapturePageInner() {
 
   const preview = useMutation({
     mutationFn: () =>
-      appFetch<{ parsed: Parsed; warnings: string[] }>("/capture/preview", {
+      appFetch<{ parsed: Parsed; emails?: string[]; warnings?: string[] }>("/capture/preview", {
         method: "POST",
         body: { url: url.trim(), html_text: pageText.trim() || undefined },
         _auth: true,
       }),
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       setParsed(res.parsed);
       const found: string[] = res.emails ?? [];
       setFoundEmails(found);
       if (found[0]) setContactEmail((prev) => prev || found[0]);
-      if (res.warnings.length) toast(res.warnings.join("; "), "info");
+      if (res.warnings?.length) toast(res.warnings.join("; "), "info");
       if (found.length) toast(`Found ${found.length} email${found.length > 1 ? "s" : ""} on that page`, "success");
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not parse that URL", "error"),
+    meta: { errorFallback: "Could not parse that URL" },
   });
 
   const confirm = useMutation({
@@ -69,13 +69,12 @@ function CapturePageInner() {
         body: { source: "paste", url: url.trim(), html_text: pageText.trim() || undefined, action, kind, contact_email: contactEmail.trim() || undefined },
         _auth: true,
       }),
-    meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]] },
+    meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]], errorFallback: "Capture failed" },
     onSuccess: (res) => {
       toast(`Captured, scored ${res.score}`, "success");
       if (res.application_id) router.push(`/applications/${res.application_id}`);
       else router.push("/tracker");
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Capture failed", "error"),
   });
 
   return (
@@ -156,7 +155,7 @@ function CapturePageInner() {
           <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
             <div>
               <Label>What is this?</Label>
-              <Select value={kind} onChange={(e) => setKind(e.target.value as any)} className="w-full">
+              <Select value={kind} onChange={(e) => setKind(e.target.value as "application" | "pitch")} className="w-full">
                 <option value="application">Application: replying to an open role</option>
                 <option value="pitch">Pitch: CV to a company, no opening</option>
               </Select>
@@ -183,7 +182,7 @@ function CapturePageInner() {
           <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
             <div>
               <Label>What should happen?</Label>
-              <Select value={action} onChange={(e) => setAction(e.target.value as any)} className="w-56">
+              <Select value={action} onChange={(e) => setAction(e.target.value as "log_only" | "create_draft" | "mark_submitted")} className="w-56">
                 <option value="create_draft">Create application draft</option>
                 <option value="log_only">Log posting only (saved)</option>
                 <option value="mark_submitted">Mark as submitted</option>

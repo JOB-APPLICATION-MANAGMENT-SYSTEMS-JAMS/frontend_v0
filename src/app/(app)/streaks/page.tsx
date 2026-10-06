@@ -3,6 +3,7 @@
 /** Streaks (§23): goal hero + ring, badges, freeze, day-by-day history, manual effort log. */
 import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Award, Flame, Gift, Minus, Plus, Snowflake, Trophy } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
@@ -18,6 +19,7 @@ import { fireConfetti } from "@/lib/confetti";
 type HistoryDay = { day: string; applications: number; goal: number; hit: 0 | 1; streak_value: number; frozen: 0 | 1 };
 
 export default function StreaksPage() {
+  const router = useRouter();
   const [goal, setGoal] = React.useState<string>("");
   const celebrated = React.useRef(false);
 
@@ -35,9 +37,12 @@ export default function StreaksPage() {
     }
   }, [today.data?.hit]);
 
-  React.useEffect(() => {
-    if (today.data && !goal) setGoal(String(today.data.goal));
-  }, [today.data, goal]);
+  const [goalSeeded, setGoalSeeded] = React.useState(false);
+  // seed the goal field once today's numbers land (adjust-during-render, not an effect)
+  if (!goalSeeded && today.data) {
+    setGoalSeeded(true);
+    setGoal(String(today.data.goal));
+  }
 
   const setGoalMutation = useMutation({
     mutationFn: () => appFetch("/streaks/goals", { method: "PUT", body: { goal: Number(goal) }, _auth: true }),
@@ -143,7 +148,7 @@ export default function StreaksPage() {
               <div
                 key={b.key}
                 className={`animate-stagger rounded-xl border p-4 text-center transition-all ${b.unlocked ? "border-amber-500/45 bg-amber-500/10" : "border-border opacity-55 grayscale"}`}
-                style={{ ["--i" as any]: i }}
+                style={{ "--i": i } as React.CSSProperties}
               >
                 <span className={`mx-auto grid h-10 w-10 place-items-center rounded-full ${b.unlocked ? "bg-[image:var(--gradient-brand)] text-white" : "bg-muted"}`}>
                   <Trophy className="h-5 w-5" />
@@ -183,8 +188,8 @@ export default function StreaksPage() {
                   style={{
                     height: `${Math.max(4, (d.applications / maxDay) * 100)}%`,
                     background: d.hit ? "hsl(40 90% 52% / .9)" : d.frozen ? "hsl(210 10% 70% / .7)" : "hsl(22 92% 52% / .6)",
-                    ["--i" as any]: Math.min(i, 12),
-                  }}
+                    "--i": Math.min(i, 12),
+                  } as React.CSSProperties}
                 />
               ))}
             </div>
@@ -213,7 +218,7 @@ export default function StreaksPage() {
       </Card>
 
       <div className="text-center">
-        <Button variant="success" onClick={() => (window.location.href = "/victory")}>
+        <Button variant="success" onClick={() => router.push("/victory")}>
           <Gift className="h-4 w-4" /> I got a job!
         </Button>
       </div>

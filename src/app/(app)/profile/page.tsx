@@ -11,10 +11,30 @@ import { ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+/** Identity block: this form edits a handful of keys, the API stores more (§19.3). */
+type Identity = {
+  name?: string;
+  headline?: string;
+  first_name?: string;
+  middle_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  work_authorization?: string;
+  sponsorship?: string;
+  relocation?: string;
+  graduation_year?: string;
+  heard_about?: string;
+  salary_expectation?: number;
+  pitch?: string;
+  links?: Record<string, string>;
+  [k: string]: unknown;
+};
 type Profile = {
-  identity: any;
-  prefs: any;
-  aliases: any;
+  identity: Identity;
+  prefs: { seniority?: string; [k: string]: unknown };
+  aliases: Record<string, string[]>;
   version: number;
   skills: { id: string; name: string; level: string | null; years: number | null; is_top5: number }[];
   experiences: { id: string; company: string; title: string; start_date: string | null; end_date: string | null; bullets: string[] }[];
@@ -23,15 +43,19 @@ type Profile = {
 
 export default function ProfilePage() {
   const profile = useQuery<Profile>({ queryKey: qk.profile(), queryFn: () => appFetch("/profile", { _auth: true }) });
-  const completeness = useQuery<{ score: number; checks: any[]; suggestions: { label: string; hint: string }[] }>({
+  const completeness = useQuery<{ score: number; checks: unknown[]; suggestions: { label: string; hint: string }[] }>({
     queryKey: qk.completeness(),
     queryFn: () => appFetch("/profile/completeness", { _auth: true }),
   });
 
   const [draft, setDraft] = React.useState<Profile | null>(null);
-  React.useEffect(() => {
-    if (profile.data && !draft) setDraft(profile.data);
-  }, [profile.data, draft]);
+  const [seeded, setSeeded] = React.useState(false);
+  // seed the editable draft once the query lands (adjust-during-render pattern —
+  // no effect round-trip, so the first paint after data arrives is a single render)
+  if (!seeded && profile.data) {
+    setSeeded(true);
+    setDraft(profile.data);
+  }
 
   const save = useMutation({
     // strip half-filled rows the "Add" buttons can leave behind: one blank skill
@@ -45,21 +69,20 @@ export default function ProfilePage() {
       };
       return appFetch("/profile", { method: "PUT", body, _auth: true });
     },
-    meta: { invalidates: [["profile"], ["cvs"], ["jobs"], ["analytics"]] },
+    meta: { invalidates: [["profile"], ["cvs"], ["jobs"], ["analytics"]], errorFallback: "Save failed" },
     onSuccess: () => {
       toast("Profile saved: CVs, autofill and scoring updated", "success");
       completeness.refetch();
     },
-    onError: (e: any) => toast(e.message ?? "Save failed", "error"),
   });
 
   if (profile.isPending || !draft) return <Skeleton className="h-[60vh] w-full" />;
   if (profile.error) return <ErrorState error={profile.error} onRetry={() => profile.refetch()} />;
 
   const id = draft.identity ?? {};
-  const setId = (k: string, v: any) => setDraft({ ...draft, identity: { ...id, [k]: v } });
+  const setId = (k: string, v: unknown) => setDraft({ ...draft, identity: { ...id, [k]: v } });
   const pref = draft.prefs ?? {};
-  const setPref = (k: string, v: any) => setDraft({ ...draft, prefs: { ...pref, [k]: v } });
+  const setPref = (k: string, v: unknown) => setDraft({ ...draft, prefs: { ...pref, [k]: v } });
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
@@ -190,7 +213,7 @@ export default function ProfilePage() {
           <Section icon={<Award className="h-4 w-4" />} title="Experience" />
           <div className="space-y-4">
             {draft.experiences.map((e, i) => {
-              const upd = (patch: any) => {
+              const upd = (patch: Partial<Profile["experiences"][number]>) => {
                 const experiences = [...draft.experiences];
                 experiences[i] = { ...e, ...patch };
                 setDraft({ ...draft, experiences });
@@ -227,7 +250,7 @@ export default function ProfilePage() {
           <Section icon={<GraduationCap className="h-4 w-4" />} title="Education" />
           <div className="space-y-2">
             {draft.education.map((e, i) => {
-              const upd = (patch: any) => {
+              const upd = (patch: Partial<Profile["education"][number]>) => {
                 const education = [...draft.education];
                 education[i] = { ...e, ...patch };
                 setDraft({ ...draft, education });

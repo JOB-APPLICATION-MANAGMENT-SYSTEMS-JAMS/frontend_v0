@@ -3,6 +3,7 @@
 /** Auth layout (§40.2): split panel, form + animated brand panel. */
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="absolute inset-0 opacity-80" style={{ background: "radial-gradient(30rem 24rem at 15% 20%, hsl(22 92% 52% / .3), transparent 60%), radial-gradient(28rem 22rem at 85% 85%, hsl(14 76% 46% / .26), transparent 60%), radial-gradient(24rem 20rem at 70% 15%, hsl(40 90% 55% / .18), transparent 60%)" }} />
         <div className="relative flex h-full flex-col justify-between p-10 text-white">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/jams-logo.png" alt="" className="h-9 w-auto" />
+            <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-9 w-auto" priority />
             <span className="font-display text-xl font-extrabold">JAMS</span>
           </Link>
           <div>

@@ -13,6 +13,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMounted } from "@/hooks/use-mounted";
 import { Button } from "./base";
 
 export function Modal({
@@ -28,9 +29,7 @@ export function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-
+  const mounted = useMounted();
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -68,8 +67,7 @@ export function Modal({
 
 /** Escapes transformed ancestors (e.g. `route-fade` on <main>) by rendering into document.body. */
 export function Portal({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
   if (!mounted) return null;
   return createPortal(children, document.body);
 }

@@ -25,23 +25,22 @@ export default function JobDetailPage() {
 
   const suggestions = useQuery<{ cv: CV; match: number | null }[]>({
     queryKey: ["cvs", "suggest", id],
-    queryFn: () => appFetch(`/cvs/${(job.data as any)?.id ?? id}/suggest`, { params: { posting_id: id }, _auth: true }).catch(() => []),
+    queryFn: () => appFetch<{ cv: CV; match: number | null }[]>(`/cvs/${job.data?.id ?? id}/suggest`, { params: { posting_id: id }, _auth: true }).catch(() => []),
     enabled: !!job.data,
   });
 
   const capture = useMutation({
     mutationFn: () =>
-      appFetch<any>("/capture", {
+      appFetch<{ application_id?: string }>("/capture", {
         method: "POST",
         body: { source: "manual", url: job.data!.url, page: { title: `${job.data!.title}, ${job.data!.company.name}`, company_guess: job.data!.company.name, text_excerpt: job.data!.description }, action: "create_draft" },
         _auth: true,
       }),
-    meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]] },
+    meta: { invalidates: [["applications"], ["jobs"], ["analytics"], ["streaks"]], errorFallback: "Capture failed" },
     onSuccess: (data) => {
       toast("Draft application created", "success");
       router.push(`/applications/${data.application_id}`);
     },
-    onError: (e: any) => toast(e.message ?? "Capture failed", "error"),
   });
 
   if (job.isPending) {

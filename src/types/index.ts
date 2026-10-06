@@ -74,7 +74,7 @@ export interface Application {
   next_action_at: string | null;
   notes: string | null;
   tags: string[];
-  capture: any;
+  capture?: Record<string, unknown> | null;
   cv_id: string | null;
   template_id: string | null;
   created_at: string;
@@ -87,7 +87,7 @@ export interface AppEvent {
   type: string;
   at: string;
   actor: string;
-  payload: any;
+  payload?: { to?: string; classification?: string; note?: string; [k: string]: unknown } | null;
 }
 
 export interface Kpi {
@@ -120,6 +120,22 @@ export interface Summary {
   funnel: { key: string; label: string; count: number }[];
   median_time_to_reply_days: number | null;
   p90_time_to_reply_days: number | null;
+}
+
+/** Analytics payloads (§22): timeseries buckets, source breakdown rows, heatmap days. */
+export type TimeseriesPoint = { bucket: string; count?: number; applied?: number; replied?: number };
+export type BreakdownRow = { key: string; sent: number; replied: number; interviews: number; rate: number };
+export type HeatmapDay = { day: string; count: number; goal: number; hit: boolean; streak: number };
+
+/** A saved contact (§19.1). The table stores `role` (never `title`) and has no phone column. */
+export interface Contact {
+  id: string;
+  name: string;
+  role: string | null;
+  email: string | null;
+  source_note?: string | null;
+  never_contact?: number;
+  created_at?: string;
 }
 
 export interface CV {
@@ -176,7 +192,8 @@ export interface Company {
   careers_url: string | null;
   notes: string | null;
   applications?: number;
-  contacts?: any[];
+  /** list endpoints return a contact *count*; the detail endpoint returns the rows (Contact[]) */
+  contacts?: number;
   stack?: string[];
 }
 

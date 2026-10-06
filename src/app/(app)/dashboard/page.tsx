@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Compass, Ghost, Sparkles } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { Application, Paged, Summary } from "@/types";
+import type { Application, BreakdownRow, HeatmapDay, Paged, Summary, TimeseriesPoint } from "@/types";
 import { KpiWall } from "@/features/analytics/kpi-wall";
 import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
@@ -38,14 +38,14 @@ function DashboardPageInner() {
     queryFn: () => appFetch("/analytics/summary", { params: { period }, _auth: true }),
   });
 
-  const heatmap = useQuery<{ year: number; days: any[] }>({
+  const heatmap = useQuery<{ year: number; days: HeatmapDay[] }>({
     queryKey: ["analytics", "heatmap"],
     queryFn: () => appFetch("/analytics/heatmap", { _auth: true }),
   });
 
   const series = useQuery({
     queryKey: ["analytics", "timeseries", period],
-    queryFn: () => appFetch<{ items: any[] }>("/analytics/timeseries", { params: { metric: "applied", bucket: period === "day" ? "day" : period === "week" ? "day" : "week" }, _auth: true }),
+    queryFn: () => appFetch<{ items: TimeseriesPoint[] }>("/analytics/timeseries", { params: { metric: "applied", bucket: period === "day" ? "day" : period === "week" ? "day" : "week" }, _auth: true }),
   });
 
   const ghosts = useQuery<Paged<Application>>({
@@ -55,10 +55,16 @@ function DashboardPageInner() {
 
   const breakdown = useQuery({
     queryKey: ["analytics", "breakdown", "source"],
-    queryFn: () => appFetch<{ items: any[] }>("/analytics/breakdown", { params: { by: "source" }, _auth: true }),
+    queryFn: () => appFetch<{ items: BreakdownRow[] }>("/analytics/breakdown", { params: { by: "source" }, _auth: true }),
   });
 
   const streak = summary.data?.kpis.streak;
+
+  /** a KPI number from the summary; Today-shaped entries (streak) count as 0 */
+  const kpiNum = (key: string): number => {
+    const v = summary.data?.kpis[key];
+    return v && "value" in v ? v.value : 0;
+  };
 
   // goal hit → confetti once per mount (§23.1)
   React.useEffect(() => {
@@ -181,7 +187,7 @@ function DashboardPageInner() {
           ) : (
             <ul className="space-y-2">
               {ghosts.data!.items.map((a, i) => (
-                <li key={a.id} className="animate-stagger flex items-center gap-3 rounded-xl border border-border px-3 py-2.5" style={{ ["--i" as any]: i }}>
+                <li key={a.id} className="animate-stagger flex items-center gap-3 rounded-xl border border-border px-3 py-2.5" style={{ "--i": i } as React.CSSProperties}>
                   <Ghost className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{a.role_title}</p>
@@ -200,8 +206,7 @@ function DashboardPageInner() {
 
       {!summary.isPending && summary.data && (
         <InlineBanner tone="info" title="Weekly digest preview">
-          {(summary.data.kpis.applications as any)?.value ?? 0} applied · {(summary.data.kpis.replies as any)?.value ?? 0} replied ·{" "}
-          {(summary.data.kpis.interviews as any)?.value ?? 0} interviews this {period}, median first reply {fmt.days(summary.data.median_time_to_reply_days)},
+          {kpiNum("applications")} applied · {kpiNum("replies")} replied · {kpiNum("interviews")} interviews this {period}, median first reply {fmt.days(summary.data.median_time_to_reply_days)},
           p90 {fmt.days(summary.data.p90_time_to_reply_days)}. The identical card ships in Monday’s email.
         </InlineBanner>
       )}

@@ -7,19 +7,26 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Command as CommandIcon, Compass, Crosshair, FilePlus2, Flame, LayoutDashboard, Mail, MousePointerClick, Search, Send, UserRound, Columns3, ChartLine, Trophy } from "lucide-react";
+import { Command as CommandIcon, Compass, Crosshair, FilePlus2, Flame, LayoutDashboard, Mail, MousePointerClick, Send, UserRound, Columns3, ChartLine, Trophy } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import type { Application, Paged } from "@/types";
 import { Kbd } from "@/components/ui/base";
 import { cn } from "@/lib/utils";
 
-type Cmd = { id: string; label: string; hint?: string; icon: any; run: () => void; group: string };
+type Cmd = { id: string; label: string; hint?: string; icon: React.ComponentType<{ className?: string }>; run: () => void; group: string };
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [q, setQ] = React.useState("");
   const [cursor, setCursor] = React.useState(0);
+  const [wasOpen, setWasOpen] = React.useState(open);
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // re-highlight the first row whenever the palette opens (adjust-during-render)
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setCursor(0);
+  }
 
   const { data: appResults } = useQuery({
     queryKey: ["palette", "apps", q],
@@ -65,10 +72,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const items = [...filteredCmds, ...appCmds].slice(0, 12);
 
   React.useEffect(() => {
-    if (open) {
-      setCursor(0);
-      setTimeout(() => inputRef.current?.focus(), 30);
-    }
+    if (!open) return;
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 30);
+    return () => clearTimeout(focusTimer);
   }, [open]);
 
   React.useEffect(() => {
@@ -126,7 +132,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                     "animate-stagger flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm",
                     i === cursor ? "bg-[image:var(--gradient-brand)] text-white" : "text-foreground hover:bg-muted"
                   )}
-                  style={{ ["--i" as any]: i }}
+                  style={{ "--i": i } as React.CSSProperties}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1 truncate">{item.label}</span>

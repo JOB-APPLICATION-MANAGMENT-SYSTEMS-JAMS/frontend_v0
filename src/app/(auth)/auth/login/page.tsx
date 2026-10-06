@@ -7,17 +7,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { LogIn, MailCheck, ShieldAlert } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
+import { setSession, type AuthSessionResponse } from "@/lib/api/session";
 import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
 import { InlineBanner } from "@/components/ui/feedback";
 import { toast } from "@/hooks/use-toast";
-
-async function setSession(data: any) {
-  await fetch("/api/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, role: "owner" }),
-  });
-}
 
 export default function LoginPage() {
   return (
@@ -38,9 +31,11 @@ function LoginPageInner() {
   const [verifyToken, setVerifyToken] = React.useState("");
 
   const login = useMutation({
-    mutationFn: () => appFetch<any>("/auth/login", { method: "POST", body: { email, password }, _auth: false }),
+    mutationFn: () => appFetch<AuthSessionResponse>("/auth/login", { method: "POST", body: { email, password }, _auth: false }),
+    // the page renders its own banners (verify / suspended) and its own toast — stay quiet centrally
+    meta: { silentError: true },
     onSuccess: async (data) => {
-      await setSession(data);
+      await setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
       router.replace(redirect);
       router.refresh();
     },
@@ -55,7 +50,8 @@ function LoginPageInner() {
   });
 
   const verify = useMutation({
-    mutationFn: () => appFetch<any>("/auth/verify-email", { method: "POST", body: { token: verifyToken }, _auth: false }),
+    mutationFn: () => appFetch<unknown>("/auth/verify-email", { method: "POST", body: { token: verifyToken }, _auth: false }),
+    meta: { silentError: true },
     onSuccess: () => {
       toast("Email verified, sign in now", "success");
       setNeedsVerify(false);
@@ -65,11 +61,15 @@ function LoginPageInner() {
   });
 
   const resend = useMutation({
-    mutationFn: () => appFetch<any>("/auth/resend-verification", { method: "POST", body: { email }, _auth: false }),
-    onSuccess: (data: any) => {
-      // no SMTP, the API hands the fresh token straight back, so pre-fill it
+    mutationFn: () => appFetch<{ sent: boolean; verification_token?: string }>("/auth/resend-verification", { method: "POST", body: { email }, _auth: false }),
+    meta: { silentError: true },
+    onSuccess: (data) => {
+      // local mode: the API returns the fresh token, so pre-fill it for a one-click verify
       if (data?.verification_token) setVerifyToken(data.verification_token);
-      toast("New verification code sent", "success");
+      toast(
+        data?.verification_token ? "New token ready — paste it below" : "New verification link sent, check your inbox",
+        "success"
+      );
     },
     onError: () => toast("Couldn’t resend, try again", "error"),
   });
@@ -84,11 +84,12 @@ function LoginPageInner() {
       {needsVerify && (
         <InlineBanner tone="warn" title="Email not verified yet">
           <p className="mb-2">
-            Enter the verification code for <span className="font-mono">{email}</span>. This deployment sends no email,{" "}
+            Enter the verification token for <span className="font-mono">{email}</span>. It arrives in the verification
+            email — or, when this deployment has no inbox, the API hands it straight back:{" "}
             <button className="underline" onClick={() => resend.mutate()} disabled={resend.isPending}>
-              {resend.isPending ? "sending…" : "get a new code"}
+              {resend.isPending ? "sending…" : "get a new token"}
             </button>{" "}
-            returns it straight to the API.
+            then paste it below.
           </p>
           <div className="flex gap-2">
             <Input value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} placeholder="paste verification token" aria-label="Verification token" />

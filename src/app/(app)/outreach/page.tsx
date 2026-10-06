@@ -10,7 +10,7 @@ import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { Application, Outreach, Paged, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea, buttonClass } from "@/components/ui/base";
-import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { EmptyState, InlineBanner } from "@/components/ui/feedback";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -53,19 +53,22 @@ function OutreachPageInner() {
     queryFn: () => appFetch("/outreach/cadence", { _auth: true }),
   });
 
-  const threads = useQuery<{ items: any[] }>({
+  const threads = useQuery<{
+    items: { id: string; subject: string; messages: number; company_name?: string | null; contact_email?: string | null; last_message_at?: string | null; created_at: string }[];
+  }>({
     queryKey: qk.threads(),
     queryFn: () => appFetch("/inbox/threads", { _auth: true }),
   });
 
-  // apply selected template client-side, then let the server merge variables
-  React.useEffect(() => {
-    const t = templates.data?.items.find((x) => x.id === templateId);
-    if (t) {
-      if (t.subject) setSubject(t.subject);
-      setBody(t.body);
-    }
-  }, [templateId, templates.data]);
+  // apply the selected template into the composer (adjust-during-render): each template
+  // is applied once, so a refetch can no longer wipe text the user has edited
+  const [appliedTemplate, setAppliedTemplate] = React.useState<string | null>(null);
+  const pickedTemplate = templateId ? templates.data?.items.find((x) => x.id === templateId) : undefined;
+  if (pickedTemplate && appliedTemplate !== templateId) {
+    setAppliedTemplate(templateId);
+    if (pickedTemplate.subject) setSubject(pickedTemplate.subject);
+    setBody(pickedTemplate.body);
+  }
 
   const createDraft = useMutation({
     mutationFn: () =>
@@ -80,12 +83,11 @@ function OutreachPageInner() {
 
   const send = useMutation({
     mutationFn: (id: string) => appFetch<{ compose_url: string; sent_today: number; daily_cap: number }>(`/outreach/${id}/send`, { method: "POST", body: { via: "gmail_open", confirm: true }, _auth: true }),
-    meta: { invalidates: [["outreach"], ["applications"], ["streaks"]] },
+    meta: { invalidates: [["outreach"], ["applications"], ["streaks"]], errorFallback: "Could not prepare send" },
     onSuccess: (res) => {
       toast(`Opening Gmail, ${res.sent_today}/${res.daily_cap} sends today`, "success");
       if (res.compose_url) window.open(res.compose_url, "_blank", "noopener");
     },
-    onError: (e: any) => toast(e?.error?.detail ?? e?.message ?? "Could not prepare send", "error"),
   });
 
   const pause = useMutation({
@@ -166,7 +168,7 @@ function OutreachPageInner() {
           ) : (
             <ul className="space-y-2">
               {messages.data!.items.map((o, i) => (
-                <li key={o.id} className="animate-stagger rounded-xl border border-border p-3" style={{ ["--i" as any]: i }}>
+                <li key={o.id} className="animate-stagger rounded-xl border border-border p-3" style={{ "--i": i } as React.CSSProperties}>
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-medium">
                       {o.step_no > 0 && <span className="mr-1.5 text-[10px] font-bold uppercase text-muted-foreground">step {o.step_no}</span>}
@@ -276,12 +278,31 @@ function OutreachPageInner() {
 
         <Card className="p-5">
           <h2 className="font-display mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">How sending works</h2>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            No paid SMTP: JAMS prepares the message, opens Gmail pre-filled, and you press Send. Inbound replies are ingested            through{" "}
-            <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
-              Inbox sync
-            </Link>{" "}
-            and classified deterministically, interview invite, rejection, OOO, bounce.
+          <ol className="mb-2 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+            <li>
+              <b className="text-foreground">1 · You write it.</b> JAMS drafts the message (templates merge the contact,
+              company and role for you) and you edit anything before it goes out.
+            </li>
+            <li>
+              <b className="text-foreground">2 · You press Send.</b> With no mailbox connected, a prefilled Gmail tab opens
+              and you press Send there — nothing ever leaves your account without you. Connect Gmail once in{" "}
+              <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
+                Inbox sync
+              </Link>{" "}
+              and sends go out straight from this app instead (daily cap applies).
+            </li>
+            <li>
+              <b className="text-foreground">3 · Replies come back.</b> Inbound replies are ingested through{" "}
+              <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
+                Inbox sync
+              </Link>{" "}
+              and classified deterministically — interview invite, rejection, OOO, bounce — which updates each application’s
+              status and your funnel.
+            </li>
+          </ol>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Nothing is ever auto-submitted or auto-sent without you. Gmail only accepts a 16-character app password for
+            direct sending — the Inbox sync page walks you through getting one.
           </p>
         </Card>
       </div>

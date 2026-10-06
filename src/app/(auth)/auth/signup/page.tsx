@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { appFetch, APIRequestError } from "@/lib/api";
+import { setSession, type AuthSessionResponse } from "@/lib/api/session";
 import { Button, Input, Label, PasswordInput } from "@/components/ui/base";
 import { toast } from "@/hooks/use-toast";
 
@@ -16,17 +17,13 @@ export default function SignupPage() {
 
   const signup = useMutation({
     mutationFn: async () => {
-      const data = await appFetch<any>("/auth/register", {
+      const data = await appFetch<AuthSessionResponse>("/auth/register", {
         method: "POST",
         body: { first_name: form.firstName.trim(), last_name: form.lastName.trim(), email: form.email, password: form.password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         _auth: false,
       });
       // keep the session the API just handed us
-      await fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token }),
-      });
+      await setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
       // no inbox step: the API returns the verification token, so verify right away and move on
       if (data.verification_token) {
         try {
@@ -41,6 +38,8 @@ export default function SignupPage() {
       toast("Account created. Welcome to JAMS!", "success");
       router.replace("/dashboard");
     },
+    // field-level messages are toasted below; the central cache would only repeat them
+    meta: { silentError: true },
     onError: (err) => {
       if (err instanceof APIRequestError) {
         const fieldMsg = Object.values(err.fieldErrors ?? {})[0];

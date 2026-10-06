@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, FileJson } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { Summary } from "@/types";
+import type { BreakdownRow, HeatmapDay, Summary, TimeseriesPoint } from "@/types";
 import { KpiWall } from "@/features/analytics/kpi-wall";
 import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
@@ -17,6 +17,9 @@ import { InfoButton } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
 const PERIODS = ["day", "week", "month", "year"] as const;
+
+/** dimensions /analytics/breakdown accepts (§22.3) */
+type BreakdownBy = "source" | "company" | "cv" | "template" | "category";
 
 export default function AnalyticsPage() {
   return (
@@ -30,13 +33,13 @@ function AnalyticsPageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const period = (params.get("period") ?? "week") as (typeof PERIODS)[number];
-  const [breakdownBy, setBreakdownBy] = React.useState<"source" | "company" | "cv" | "template" | "category">("source");
+  const [breakdownBy, setBreakdownBy] = React.useState<BreakdownBy>("source");
 
   const summary = useQuery<Summary>({ queryKey: qk.summary(period), queryFn: () => appFetch("/analytics/summary", { params: { period }, _auth: true }) });
-  const series = useQuery({ queryKey: ["analytics", "timeseries", period], queryFn: () => appFetch<{ items: any[] }>("/analytics/timeseries", { params: { metric: "applied", bucket: period === "year" ? "month" : period === "month" ? "week" : "day" }, _auth: true }) });
-  const replies = useQuery({ queryKey: ["analytics", "timeseries", period, "replied"], queryFn: () => appFetch<{ items: any[] }>("/analytics/timeseries", { params: { metric: "replied", bucket: period === "year" ? "month" : period === "month" ? "week" : "day" }, _auth: true }) });
-  const heatmap = useQuery({ queryKey: ["analytics", "heatmap"], queryFn: () => appFetch<{ year: number; days: any[] }>("/analytics/heatmap", { _auth: true }) });
-  const breakdown = useQuery({ queryKey: ["analytics", "breakdown", breakdownBy], queryFn: () => appFetch<{ items: any[] }>("/analytics/breakdown", { params: { by: breakdownBy }, _auth: true }) });
+  const series = useQuery({ queryKey: ["analytics", "timeseries", period], queryFn: () => appFetch<{ items: TimeseriesPoint[] }>("/analytics/timeseries", { params: { metric: "applied", bucket: period === "year" ? "month" : period === "month" ? "week" : "day" }, _auth: true }) });
+  const replies = useQuery({ queryKey: ["analytics", "timeseries", period, "replied"], queryFn: () => appFetch<{ items: TimeseriesPoint[] }>("/analytics/timeseries", { params: { metric: "replied", bucket: period === "year" ? "month" : period === "month" ? "week" : "day" }, _auth: true }) });
+  const heatmap = useQuery({ queryKey: ["analytics", "heatmap"], queryFn: () => appFetch<{ year: number; days: HeatmapDay[] }>("/analytics/heatmap", { _auth: true }) });
+  const breakdown = useQuery({ queryKey: ["analytics", "breakdown", breakdownBy], queryFn: () => appFetch<{ items: BreakdownRow[] }>("/analytics/breakdown", { params: { by: breakdownBy }, _auth: true }) });
   const ttr = useQuery<{ labels: string[]; counts: number[]; p50: number | null; p90: number | null; ghost_threshold: number }>({
     queryKey: ["analytics", "time-to-reply"],
     queryFn: () => appFetch("/analytics/time-to-reply", { _auth: true }),
@@ -183,7 +186,7 @@ function AnalyticsPageInner() {
           action={
             <div className="flex items-center gap-2">
               <InfoButton title="What's working" body="Rank your applications by any dimension: where they came from, which company, or which CV / template / category you sent. Reply share per row shows which combination actually gets answers." />
-              <Select className="h-8 w-36 text-xs" value={breakdownBy} onChange={(e) => setBreakdownBy(e.target.value as any)}>
+              <Select className="h-8 w-36 text-xs" value={breakdownBy} onChange={(e) => setBreakdownBy(e.target.value as BreakdownBy)}>
                 <option value="source">source</option>
                 <option value="company">company</option>
                 <option value="cv">CV</option>

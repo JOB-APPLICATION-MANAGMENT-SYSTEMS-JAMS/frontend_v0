@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 /** One toast policy (§9.2): mutations dispatch window "jams-toast", ToastHost renders them. */
 export type ToastItem = { id: number; message: string; kind: "success" | "error" | "info"; title?: string; leaving?: boolean };
@@ -19,31 +19,40 @@ export function useToasts(): ToastItem[] {
   const itemsRef = useRef<ToastItem[]>([]);
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>[]>());
 
-  const commit = (next: ToastItem[]) => {
+  // stable callbacks (deps stay empty → the listener effect below mounts exactly once)
+  const commit = useCallback((next: ToastItem[]) => {
     itemsRef.current = next;
     setItems(next);
-  };
+  }, []);
 
-  const clearTimers = (id: number) => {
+  const clearTimers = useCallback((id: number) => {
     for (const t of timers.current.get(id) ?? []) clearTimeout(t);
     timers.current.delete(id);
-  };
+  }, []);
 
-  const remove = (id: number) => {
-    clearTimers(id);
-    commit(itemsRef.current.filter((i) => i.id !== id));
-  };
+  const remove = useCallback(
+    (id: number) => {
+      clearTimers(id);
+      commit(itemsRef.current.filter((i) => i.id !== id));
+    },
+    [clearTimers, commit]
+  );
 
-  const schedule = (id: number) => {
-    clearTimers(id);
-    const leave = setTimeout(() => {
-      commit(itemsRef.current.map((i) => (i.id === id ? { ...i, leaving: true } : i)));
-    }, VISIBLE_MS);
-    const gone = setTimeout(() => remove(id), VISIBLE_MS + LEAVE_MS);
-    timers.current.set(id, [leave, gone]);
-  };
+  const schedule = useCallback(
+    (id: number) => {
+      clearTimers(id);
+      const leave = setTimeout(() => {
+        commit(itemsRef.current.map((i) => (i.id === id ? { ...i, leaving: true } : i)));
+      }, VISIBLE_MS);
+      const gone = setTimeout(() => remove(id), VISIBLE_MS + LEAVE_MS);
+      timers.current.set(id, [leave, gone]);
+    },
+    [clearTimers, commit, remove]
+  );
 
   useEffect(() => {
+    // copy the ref once: the cleanup must not depend on what it points to later
+    const activeTimers = timers.current;
     let n = 0;
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail ?? {};
@@ -76,9 +85,10 @@ export function useToasts(): ToastItem[] {
     return () => {
       window.removeEventListener("jams-toast", handler);
       window.removeEventListener("jams-toast-dismiss", dismiss);
-      for (const id of [...timers.current.keys()]) clearTimers(id);
+      for (const [, list] of activeTimers) for (const t of list) clearTimeout(t);
+      activeTimers.clear();
     };
-  }, []);
+  }, [clearTimers, commit, remove, schedule]);
 
   return items;
 }

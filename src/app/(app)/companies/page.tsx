@@ -68,7 +68,7 @@ export default function CompaniesPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {companies.data!.items.map((c, i) => (
             <Link key={c.id} href={`/companies/${c.id}`}>
-              <Card className="animate-stagger h-full p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{ ["--i" as any]: i }}>
+              <Card className="animate-stagger h-full p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{ "--i": i } as React.CSSProperties}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-display text-base font-bold">{c.name}</p>

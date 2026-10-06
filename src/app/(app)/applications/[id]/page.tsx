@@ -8,9 +8,9 @@ import { ArrowLeft, CalendarClock, ExternalLink, FileText, Mail, MessageSquare, 
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { AppStatus, Application, AppEvent, Outreach } from "@/types";
-import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
+import { Badge, Button, Card, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
-import { BOARD_COLUMNS, STATUS_META, cn, fmt } from "@/lib/utils";
+import { STATUS_META, cn, fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 export default function ApplicationDetailPage() {
@@ -19,16 +19,15 @@ export default function ApplicationDetailPage() {
   const [note, setNote] = React.useState("");
   const [followUp, setFollowUp] = React.useState("");
 
-  const detail = useQuery<Application & { events: AppEvent[]; outreach: Outreach[]; messages: any[] }>({
+  const detail = useQuery<Application & { events: AppEvent[]; outreach: Outreach[]; messages: { id: string | number; from_addr: string; classification: string | null; body: string }[] }>({
     queryKey: qk.application(id),
     queryFn: () => appFetch(`/applications/${id}`, { _auth: true }),
   });
 
   const move = useMutation({
     mutationFn: (status: AppStatus) => appFetch(`/applications/${id}/status`, { method: "POST", body: { status }, _auth: true }),
-    meta: { invalidates: [["applications"], ["analytics"], ["streaks"], ["outreach"]] },
+    meta: { invalidates: [["applications"], ["analytics"], ["streaks"], ["outreach"]], errorFallback: "Invalid transition" },
     onSuccess: (_d, s) => toast(`Status → ${STATUS_META[s]?.label}`, "success"),
-    onError: (e: any) => toast(e.detail ?? e.message ?? "Invalid transition", "error"),
   });
 
   const saveNote = useMutation({
