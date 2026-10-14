@@ -78,10 +78,10 @@ function EmailJobCard({ job }: { job: Job }) {
 
       <button
         onClick={copy}
-        className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-left text-xs hover:border-emerald-500/60"
+        className="glass-ember flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-left text-xs transition-all duration-[var(--dur-2)] hover:border-ember/60"
         title="Click to copy the apply address"
       >
-        <Mail className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <Mail className="h-3.5 w-3.5 shrink-0 text-ember-deep dark:text-ember-soft" />
         <span className="truncate font-medium">{job.contact_email}</span>
         <Copy className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
       </button>
@@ -100,7 +100,7 @@ function EmailJobCard({ job }: { job: Job }) {
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
-        <Button size="sm" variant="azure" onClick={() => apply.mutate()} disabled={apply.isPending || job.applied}>
+        <Button size="sm" variant="azure" onClick={() => apply.mutate()} disabled={apply.isPending || job.applied} title="Send your letter to that address and track it like any application">
           <Send className="h-3.5 w-3.5" /> {apply.isPending ? "Sending…" : job.applied ? "In tracker" : "Apply by email"}
         </Button>
         <a
@@ -139,11 +139,15 @@ export function EmailJobs() {
     retry: 1,
   });
 
+  // the delayed re-index refetch is cancelled if the tab is left before it fires
+  const refreshTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  React.useEffect(() => () => clearTimeout(refreshTimer.current), []);
   const refresh = useMutation({
     mutationFn: () => appFetch<unknown>("/jobs/refresh", { method: "POST", body: {}, _auth: true }),
     onSuccess: () => {
       toast("Indexing free sources: addresses land in seconds", "info");
-      setTimeout(() => search.refetch(), 6000);
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => search.refetch(), 6000);
     },
     meta: { errorFallback: "Refresh failed" },
   });
@@ -155,11 +159,11 @@ export function EmailJobs() {
     <div className="space-y-4">
       <div className="glass-sheet rounded-2xl p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative min-w-0 grow basis-full sm:basis-auto">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter jobs you can email: react, backend, Lagos…" className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter jobs you can email: react, backend, Lagos…" aria-label="Filter jobs with a published email address" className="pl-9" />
           </div>
-          <Button variant="azure" size="sm" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+          <Button variant="azure" size="sm" className="shrink-0" onClick={() => refresh.mutate()} disabled={refresh.isPending}>
             <RefreshCw className={cn("h-3.5 w-3.5", refresh.isPending && "animate-spin")} /> Refresh sources
           </Button>
           <InfoButton

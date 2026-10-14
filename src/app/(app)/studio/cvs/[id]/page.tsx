@@ -1,27 +1,38 @@
 "use client";
 
-/** CV editor (§24.1): block editing, live A4 preview via the print-HTML route, ATS match panel. */
+/**
+ * CV editor (§24.1) — two panes, the way FlowCV works: sections you open one at a
+ * time on the left, the printed sheet on the right.
+ *
+ * The preview is the *same HTML the print pipeline sends*, served with `?frame=1`
+ * so it arrives as a real A4 sheet. That means what you look at is what comes out
+ * of the printer, at any zoom, with no second renderer to keep in sync.
+ *
+ * Saving is automatic (500ms after you stop typing, plus ⌘S), because losing a
+ * tailored CV to a missed Save click is the worst possible failure here.
+ */
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Download, Eye, RefreshCw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, Eye, Printer, RefreshCw, Trash2, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { CV, CVBlock } from "@/types";
-import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea } from "@/components/ui/base";
-import { ErrorState, InlineBanner } from "@/components/ui/feedback";
+import type { CV } from "@/types";
+import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton } from "@/components/ui/base";
+import { ConfirmDialog, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Portal } from "@/components/ui/modal";
+import { SegmentedControl } from "@/components/ui/layout";
+import { CvEditor } from "@/features/studio/cv-editor";
+import { CvPreview } from "@/features/studio/cv-preview";
 import { toast } from "@/hooks/use-toast";
 
-const BLOCK_LABEL: Record<string, string> = {
-  summary: "Summary",
-  experience: "Experience",
-  skills: "Skills",
-  projects: "Projects",
-  education: "Education",
-  awards: "Awards",
-  custom: "Custom section",
-};
+const ACCENTS = [
+  { value: "ember", label: "Ember" },
+  { value: "ink", label: "Ink" },
+  { value: "graphite", label: "Graphite" },
+] as const;
+
+type Accent = (typeof ACCENTS)[number]["value"];
 
 export default function CVEditorPage() {
   return (
@@ -35,20 +46,20 @@ function CVEditorPageInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const search = useSearchParams();
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const frameRef = React.useRef<HTMLIFrameElement | null>(null);
 
   const [draft, setDraft] = React.useState<CV | null>(null);
+  /**
+   * `baseline` is the payload we last confirmed saved, not the server's copy.
+   * Comparing against the refetch would make autosave loop forever the day the
+   * backend starts normalising blocks on write; comparing against what we sent
+   * cannot.
+   */
+  const [baseline, setBaseline] = React.useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = React.useState(false);
-
-  // fullscreen A4 preview overlay, Esc closes it
-  React.useEffect(() => {
-    if (!previewOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreviewOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [previewOpen]);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [accent, setAccent] = React.useState<Accent>("ember");
+  const [showMatch, setShowMatch] = React.useState(false);
 
   const detail = useQuery<CV>({
     queryKey: qk.cv(id),
@@ -60,6 +71,7 @@ function CVEditorPageInner() {
   if (!seeded && detail.data) {
     setSeeded(true);
     setDraft(structuredClone(detail.data));
+    setBaseline(serialise(detail.data));
   }
 
   const match = useQuery<{
@@ -70,36 +82,33 @@ function CVEditorPageInner() {
   }>({
     queryKey: qk.cv(`${id}-match`),
     queryFn: () => appFetch(`/cvs/${id}/match`, { _auth: true }),
-    enabled: !!detail.data,
+    enabled: !!detail.data && showMatch,
   });
 
-  /**
-   * A4 preview as its own query: React Query fetches, caches and — via the
-   * ["cvs"] invalidation after Save — reloads it, so no setState-in-effect.
-   */
   const previewQuery = useQuery<string>({
-    queryKey: qk.cv(`${id}-html`),
-    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { _auth: true }),
+    queryKey: qk.cv(`${id}-html-${accent}`),
+    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { params: { frame: 1, accent }, _auth: true }),
     enabled: !!detail.data,
   });
   const preview = previewQuery.data ?? "";
-  const previewBusy = previewQuery.isFetching;
-  const refreshPreview = React.useCallback(() => {
-    void previewQuery.refetch();
-  }, [previewQuery]);
+  const refreshPreview = React.useCallback(() => void previewQuery.refetch(), [previewQuery]);
 
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (body: CV) =>
       appFetch(`/cvs/${id}`, {
         method: "PUT",
-        body: { name: draft!.name, archetype: draft!.archetype, career_category: draft!.career_category, blocks: draft!.blocks },
+        body: { name: body.name, archetype: body.archetype, career_category: body.career_category, blocks: body.blocks },
         _auth: true,
       }),
-    meta: { invalidates: [["cvs"]] },
-    onSuccess: () => {
-      toast("Saved", "success");
-      void refreshPreview();
+    // the detail is the saved state; the previews are re-rendered by the explicit
+    // refresh below, which runs the moment the PUT resolves instead of after an
+    // invalidation round-trip (that is what keeps the sheet feeling live)
+    meta: { invalidates: [["cvs", "detail", id]], silentError: true },
+    onSuccess: (_data, body) => {
+      setBaseline(serialise(body));
+      refreshPreview();
     },
+    onError: () => toast("Autosave failed, your edits are still here, press Save", "error"),
   });
 
   const duplicate = useMutation({
@@ -117,11 +126,50 @@ function CVEditorPageInner() {
     },
   });
 
+  const dirty = !!draft && baseline !== null && serialise(draft) !== baseline;
+
+  // autosave: half a second after the last keystroke, and again if the server copy
+  // moved underneath us. `save.mutate` is stable across renders in React Query.
+  React.useEffect(() => {
+    if (!dirty || !draft || save.isPending) return;
+    const t = setTimeout(() => save.mutate(draft), 500);
+    return () => clearTimeout(t);
+  }, [dirty, draft, save.isPending, save.mutate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ⌘S / Ctrl+S saves immediately instead of scheduling
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (dirty && draft && !save.isPending) save.mutate(draft);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dirty, draft, save]);
+
+  // Esc closes the fullscreen sheet
+  React.useEffect(() => {
+    if (!previewOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewOpen]);
+
   // print pipeline (§24.1): Chromium's own print → Save as PDF, no paid renderer.
-  // Must stay above the early returns below, hooks are unconditional (Rules of Hooks).
+  const printCv = React.useCallback(() => {
+    const win = frameRef.current?.contentWindow;
+    if (!win || !preview) return void refreshPreview();
+    win.focus();
+    win.print();
+  }, [preview, refreshPreview]);
+
+  // ?print=1 deep link from the studio list
   React.useEffect(() => {
     if (search.get("print") === "1" && preview) {
-      const t = setTimeout(() => iframeRef.current?.contentWindow?.print(), 400);
+      const t = setTimeout(() => frameRef.current?.contentWindow?.print(), 500);
       return () => clearTimeout(t);
     }
   }, [preview, search]);
@@ -129,266 +177,270 @@ function CVEditorPageInner() {
   if (detail.isPending || !draft) return <Skeleton className="h-[70vh] w-full" />;
   if (detail.error) return <ErrorState error={detail.error} onRetry={() => detail.refetch()} />;
 
-  const dirty = JSON.stringify({ n: draft.name, b: draft.blocks }) !== JSON.stringify({ n: detail.data!.name, b: detail.data!.blocks });
+  const status = save.isPending ? "saving" : dirty ? "dirty" : "saved";
 
-  const patchBlock = (i: number, patch: Partial<CVBlock>) =>
-    setDraft({ ...draft, blocks: draft.blocks.map((b, idx) => (idx === i ? { ...b, ...patch } : b)) });
+  const previewFooter = (
+    <span>
+      Prints through the browser&rsquo;s own PDF pipeline, free and pixel-exact. The sheet above is that exact page.
+    </span>
+  );
 
-  const addBlock = (type: CVBlock["type"]) =>
-    setDraft({
-      ...draft,
-      blocks: [...draft.blocks, type === "skills" ? { type, groups: [] } : { type, title: BLOCK_LABEL[type], text: "" }],
-    });
-
-  // print pipeline (§24.1), hook lives above the early returns (see note next to its definition)
-  const printCv = () => {
-    if (!preview) return void refreshPreview();
-    iframeRef.current?.contentWindow?.print();
-  };
+  const previewActions = (
+    <>
+      <Button size="sm" variant="ghost" onClick={refreshPreview} disabled={previewQuery.isFetching} title="Re-render">
+        <RefreshCw className={`h-3.5 w-3.5 ${previewQuery.isFetching ? "animate-spin" : ""}`} />
+      </Button>
+      <Button size="sm" variant="azure" onClick={printCv} className="hidden sm:inline-flex">
+        <Printer className="h-3.5 w-3.5" /> PDF
+      </Button>
+    </>
+  );
 
   return (
     <>
-      <div className="mx-auto grid max-w-7xl gap-5 xl:grid-cols-[1fr_460px]">
-      {/* left: editing + match */}
-      <div className="space-y-5">
-        <button onClick={() => router.push("/studio")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> CV Studio
-        </button>
-
-        <Card className="p-5">
-          <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-            <div>
-              <Label>CV name</Label>
-              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-            </div>
-            <div>
-              <Label>Archetype</Label>
-              <Select value={draft.archetype} onChange={(e) => setDraft({ ...draft, archetype: e.target.value as CV["archetype"] })}>
-                <option value="opening">Opening</option>
-                <option value="pitch">Pitch</option>
-              </Select>
-            </div>
-          </div>
-          <div className="mt-3">
-            <Label>Career category</Label>
-            <Input value={draft.career_category ?? ""} onChange={(e) => setDraft({ ...draft, career_category: e.target.value })} placeholder="frontend, data…" />
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-              <Check className="h-4 w-4" /> {save.isPending ? "Saving…" : dirty ? "Save changes" : "Saved"}
-            </Button>
-            <Button variant="outline" onClick={() => setDraft(structuredClone(detail.data!))} disabled={!dirty}>
-              <X className="h-4 w-4" /> Revert
-            </Button>
-            <Button variant="outline" onClick={() => duplicate.mutate()} disabled={duplicate.isPending}>
-              <Copy className="h-4 w-4" /> Fork
-            </Button>
-            <Button variant="outline" onClick={() => remove.mutate()} disabled={remove.isPending}>
-              <Trash2 className="h-4 w-4" /> Delete
-            </Button>
-            <Button variant="outline" onClick={() => setPreviewOpen(true)}>
-              <Eye className="h-4 w-4" /> A4 preview
-            </Button>
-            <Button variant="azure" onClick={printCv}>
-              <Download className="h-4 w-4" /> Print / PDF
-            </Button>
-          </div>
-        </Card>
-
-        {/* blocks */}
-        <Card className="space-y-4 p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Blocks</h2>
-            <Select
-              className="h-8 w-44 text-xs"
-              value=""
-              onChange={(e) => {
-                if (e.target.value) addBlock(e.target.value as CVBlock["type"]);
-              }}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,480px)]">
+        <div className="min-w-0 space-y-4">
+          {/* header: identity + the one irreversible action */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => router.push("/studio")}
+              className="press inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <option value="">+ Add block…</option>
-              <option value="summary">Summary</option>
-              <option value="skills">Skills</option>
-              <option value="projects">Projects</option>
-              <option value="awards">Awards</option>
-              <option value="custom">Custom section</option>
-            </Select>
+              <ArrowLeft className="h-4 w-4" /> Studio
+            </button>
+
+            <SaveState status={status} onSave={() => dirty && save.mutate(draft)} />
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)} className="xl:hidden">
+                <Eye className="h-3.5 w-3.5" /> Preview
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => duplicate.mutate()} disabled={duplicate.isPending}>
+                <Copy className="h-3.5 w-3.5" /> Fork
+              </Button>
+              <Button size="sm" variant="azure" onClick={printCv} className="xl:hidden">
+                <Printer className="h-3.5 w-3.5" /> PDF
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(true)} disabled={remove.isPending} title="Delete this CV">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
-          {draft.blocks.map((b, i) => (
-            <div key={i} className="rounded-xl border border-border p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{BLOCK_LABEL[b.type] ?? b.type}</span>
-                  <Badge tone={b.source === "profile" ? "mint" : "neutral"}>{b.source === "profile" ? "from profile" : "local"}</Badge>
-                </div>
-                <button
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => setDraft({ ...draft, blocks: draft.blocks.filter((_, idx) => idx !== i) })}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+          {/* document identity */}
+          <Card className="p-4">
+            <div className="grid gap-3 sm:grid-cols-[1.6fr_1fr_1fr]">
+              <div className="min-w-0">
+                <Label htmlFor="cv-name">CV name</Label>
+                <Input id="cv-name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
               </div>
-
-              {b.type === "skills" ? (
-                <Textarea
-                  value={(b.groups ?? []).join("\n")}
-                  onChange={(e) => patchBlock(i, { groups: e.target.value.split("\n").filter(Boolean) })}
-                  placeholder={"One skill group per line:\nTypeScript, React, Next.js\nNode.js, Express, SQLite"}
-                  className="min-h-[70px]"
+              <div className="min-w-0">
+                <Label htmlFor="cv-arch">Archetype</Label>
+                <Select id="cv-arch" value={draft.archetype} onChange={(e) => setDraft({ ...draft, archetype: e.target.value as CV["archetype"] })}>
+                  <option value="opening">Opening (broad, ATS-safe)</option>
+                  <option value="pitch">Pitch (tailored, dense)</option>
+                </Select>
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="cv-cat">Career category</Label>
+                <Input
+                  id="cv-cat"
+                  value={draft.career_category ?? ""}
+                  onChange={(e) => setDraft({ ...draft, career_category: e.target.value })}
+                  placeholder="frontend, data…"
                 />
-              ) : b.type === "experience" || b.type === "education" || b.type === "projects" ? (
-                <>
-                  {b.title != null && (
-                    <Input className="mb-2" value={b.title ?? ""} onChange={(e) => patchBlock(i, { title: e.target.value })} placeholder="Section title" />
-                  )}
-                  <Textarea
-                    value={b.text ?? ""}
-                    onChange={(e) => patchBlock(i, { text: e.target.value })}
-                    placeholder="One bullet per line…"
-                    className="min-h-[90px]"
-                  />
-                </>
-              ) : (
-                <>
-                  <Input className="mb-2" value={b.title ?? BLOCK_LABEL[b.type]} onChange={(e) => patchBlock(i, { title: e.target.value })} />
-                  <Textarea value={b.text ?? ""} onChange={(e) => patchBlock(i, { text: e.target.value })} placeholder="Write the section text…" />
-                </>
-              )}
-            </div>
-          ))}
-        </Card>
-
-        {/* match panel (§20.1) */}
-        <Card className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">ATS & keyword match</h2>
-            <Button size="sm" variant="ghost" onClick={() => match.refetch()}>
-              <RefreshCw className="h-3.5 w-3.5" /> Re-run
-            </Button>
-          </div>
-
-          {match.isPending ? (
-            <Skeleton className="h-24 w-full" />
-          ) : match.error ? (
-            <ErrorState error={match.error} onRetry={() => match.refetch()} />
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <p className="font-display text-3xl font-extrabold">{match.data!.ats.score}%</p>
-                <div className="flex-1">
-                  <ProgressBar value={match.data!.ats.score} />
-                  <p className="mt-1 text-[11px] text-muted-foreground">parse-ability checks passed</p>
-                </div>
-                {match.data!.keywords.coverage_pct != null && (
-                  <div className="text-right">
-                    <p className="font-display text-xl font-bold">{match.data!.keywords.coverage_pct}%</p>
-                    <p className="text-[11px] text-muted-foreground">JD coverage</p>
-                  </div>
-                )}
               </div>
-
-              <ul className="grid gap-1.5 sm:grid-cols-2">
-                {match.data!.ats.checks.map((c) => (
-                  <li key={c.key} className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${c.ok ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
-                    {c.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                    {c.label}
-                  </li>
-                ))}
-              </ul>
-
-              {match.data!.keywords.missing.length > 0 && (
-                <div>
-                  <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Missing JD keywords (only add if true)</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {match.data!.keywords.missing.map((k) => (
-                      <Badge key={k} tone="rose">
-                        {k}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {match.data!.suggestions.length > 0 && (
-                <InlineBanner tone="info" title="Advisory suggestions">
-                  <ul className="list-disc space-y-1 pl-4">
-                    {match.data!.suggestions.map((s, i) => (
-                      <li key={i}>{s}</li>
-                    ))}
-                  </ul>
-                </InlineBanner>
-              )}
             </div>
-          )}
-        </Card>
-      </div>
+            <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
+              The page header, contact row and profile sections come from your{" "}
+              <button onClick={() => router.push("/profile")} className="font-semibold text-accent hover:underline">
+                Profile
+              </button>
+              . Sections marked <span className="font-semibold text-foreground">profile</span> stay in sync with it; the rest belong to this CV only.
+            </p>
+          </Card>
 
-      {/* right: A4 preview */}
-      <div className="xl:sticky xl:top-20 xl:h-[calc(100vh-6rem)]">
-        <Card className="flex h-full flex-col p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">A4 preview</h2>
-            <Button size="sm" variant="outline" onClick={() => void refreshPreview()} disabled={previewBusy}>
-              <RefreshCw className={`h-3.5 w-3.5 ${previewBusy ? "animate-spin" : ""}`} /> Refresh
-            </Button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-white">
-            {preview ? (
-              <iframe ref={iframeRef} title="CV preview" srcDoc={preview} className="h-full w-full" />
-            ) : (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">Rendering…</div>
+          {/* the editor */}
+          <CvEditor draft={draft} onChange={setDraft} />
+
+          {/* match panel (§20.1), collapsed until asked for */}
+          <Card className="p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="eyebrow">ATS &amp; keyword match</h2>
+              <div className="flex items-center gap-2">
+                {match.data && <Badge tone={match.data.ats.score >= 80 ? "mint" : "amber"}>{match.data.ats.score}% ATS</Badge>}
+                <Button size="sm" variant="ghost" onClick={() => setShowMatch((v) => !v)}>
+                  {showMatch ? "Hide" : "Check this CV"}
+                </Button>
+              </div>
+            </div>
+
+            {showMatch && (
+              <div className="mt-3">
+                {match.isPending ? (
+                  <Skeleton className="h-24 w-full" />
+                ) : match.error ? (
+                  <ErrorState error={match.error} onRetry={() => match.refetch()} />
+                ) : match.data ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <p className="hero-num text-3xl">{match.data.ats.score}%</p>
+                      <div className="min-w-0 flex-1">
+                        <ProgressBar value={match.data.ats.score} />
+                        <p className="mt-1 text-[11px] text-muted-foreground">parse-ability checks passed</p>
+                      </div>
+                      {match.data.keywords.coverage_pct != null && (
+                        <div className="shrink-0 text-right">
+                          <p className="hero-num text-xl">{match.data.keywords.coverage_pct}%</p>
+                          <p className="text-[11px] text-muted-foreground">JD coverage</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <ul className="grid gap-1.5 sm:grid-cols-2">
+                      {match.data.ats.checks.map((c) => (
+                        <li
+                          key={c.key}
+                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${c.ok ? "bg-ember/12 text-ember-deep dark:text-ember-soft" : "bg-ink/8 text-foreground"}`}
+                          title={c.ok ? undefined : c.fix}
+                        >
+                          {c.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                          {c.label}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {match.data.keywords.missing.length > 0 && (
+                      <div>
+                        <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Missing JD keywords (only add if true)</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {match.data.keywords.missing.map((k) => (
+                            <Badge key={k} tone="rose">
+                              {k}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {match.data.suggestions.length > 0 && (
+                      <InlineBanner tone="info" title="Advisory suggestions">
+                        <ul className="list-disc space-y-1 pl-4">
+                          {match.data.suggestions.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ul>
+                      </InlineBanner>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             )}
-          </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Print/PDF uses the browser’s own pipeline, free, pixel-exact, no renderer service.
-          </p>
-        </Card>
-      </div>
+          </Card>
+        </div>
+
+        {/* right: the sheet — sticky on large screens only, a modal below xl */}
+        <div className="hidden xl:sticky xl:top-20 xl:block xl:h-[calc(100vh-6rem)]">
+          <CvPreview html={preview} busy={previewQuery.isFetching} frameRef={frameRef} actions={previewActions} footer={previewFooter} className="h-full" />
+        </div>
       </div>
 
-      {/* fullscreen A4 preview, opened from the toolbar */}
+      {/* accent + a persistent action bar only on phones, where the sheet is hidden */}
+      <div className="glass-sheet mt-4 flex flex-wrap items-center gap-2 rounded-2xl p-2.5 xl:hidden">
+        <span className="eyebrow px-1">Accent</span>
+        <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setPreviewOpen(true)}>
+          <Eye className="h-3.5 w-3.5" /> Open A4
+        </Button>
+      </div>
+
+      {/* desktop accent switch, next to the sheet it controls */}
+      <div className="mt-3 hidden items-center gap-2 xl:flex">
+        <span className="eyebrow">Document accent</span>
+        <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+        <span className="text-[11px] text-muted-foreground">one hue, darker rungs, so it stays legible on paper</span>
+      </div>
+
+      {/* destructive action behind a confirm, the shape the rest of the app uses */}
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete this CV?"
+        description={`“${draft.name}” and its tailoring are removed for good. Applications already sent keep their record.`}
+        confirmLabel={remove.isPending ? "Deleting…" : "Delete CV"}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => remove.mutate()}
+      />
+
+      {/* fullscreen sheet: the phone/tablet preview */}
       {previewOpen && (
         <Portal>
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label="A4 preview"
-        >
-          <div className="flex h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 px-4 py-2.5">
-              <span className="font-display text-sm font-bold text-neutral-900">A4 preview</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void refreshPreview()}
-                  disabled={previewBusy}
-                  className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-100 disabled:opacity-60"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${previewBusy ? "animate-spin" : ""}`} /> Refresh
-                </button>
-                <button
-                  type="button"
-                  aria-label="Close preview"
-                  onClick={() => setPreviewOpen(false)}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+          <div className="scrim-in fixed inset-0 z-[120] flex flex-col bg-black/75 p-2 backdrop-blur-md sm:p-4" role="dialog" aria-modal="true" aria-label="A4 preview">
+            <div className="glass-panel sheet-in flex min-h-0 flex-1 flex-col rounded-2xl p-2.5">
+              <CvPreview
+                html={preview}
+                busy={previewQuery.isFetching}
+                frameRef={frameRef}
+                actions={
+                  <>
+                    <Button size="sm" variant="ghost" onClick={refreshPreview} disabled={previewQuery.isFetching} title="Re-render">
+                      <RefreshCw className={`h-3.5 w-3.5 ${previewQuery.isFetching ? "animate-spin" : ""}`} />
+                    </Button>
+                    <Button size="sm" variant="azure" onClick={printCv}>
+                      <Printer className="h-3.5 w-3.5" /> Print / PDF
+                    </Button>
+                  </>
+                }
+                footer={previewFooter}
+                className="min-h-0 flex-1"
+              />
+              <div className="mt-2 flex shrink-0 flex-wrap items-center gap-2 border-t border-border px-1 pt-2">
+                <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+                <Button size="sm" variant="outline" className="ml-auto" onClick={() => setPreviewOpen(false)}>
+                  <X className="h-3.5 w-3.5" /> Close
+                </Button>
               </div>
             </div>
-            <div className="min-h-0 flex-1 bg-neutral-200 p-3">
-              {preview ? (
-                <iframe title="Fullscreen A4 preview" srcDoc={preview} className="h-full w-full rounded-lg bg-white shadow" />
-              ) : (
-                <div className="grid h-full place-items-center text-sm text-neutral-500">Rendering…</div>
-              )}
-            </div>
           </div>
-        </div>
         </Portal>
       )}
     </>
+  );
+}
+
+/** The fields that make a CV a CV. `lineage` and `targeting` are preserved as-is. */
+function serialise(cv: CV) {
+  return JSON.stringify({ n: cv.name, a: cv.archetype, c: cv.career_category, b: cv.blocks });
+}
+
+/** Save state + a manual escape hatch. Autosave is the default, this is the proof. */
+function SaveState({ status, onSave }: { status: "saving" | "dirty" | "saved"; onSave: () => void }) {
+  const tone =
+    status === "saving"
+      ? "border-border text-muted-foreground"
+      : status === "dirty"
+        ? "border-ember/50 bg-ember/12 text-ember-deep dark:text-ember-soft"
+        : "border-border text-muted-foreground";
+  return (
+    <button
+      type="button"
+      onClick={onSave}
+      disabled={status === "saved"}
+      title={status === "saved" ? "Everything is saved" : "Save now (⌘S)"}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${tone} ${status === "saved" ? "cursor-default" : "cursor-pointer hover:border-ember/60"}`}
+    >
+      {status === "saving" ? (
+        <>
+          <RefreshCw className="h-3 w-3 animate-spin" /> Saving…
+        </>
+      ) : status === "dirty" ? (
+        <>
+          <Download className="h-3 w-3" /> Save (⌘S)
+        </>
+      ) : (
+        <>
+          <Check className="h-3 w-3" /> Saved
+        </>
+      )}
+    </button>
   );
 }

@@ -2,7 +2,8 @@
  * fireConfetti, three-burst choreography with brand colours (§41.5), dynamically
  * imported so it never burdens initial load. Called on: goal hit · offer · victory.
  */
-const BRAND = ["#ff7a1a", "#ffb020", "#ffe9d2", "#e2571f"];
+/* one hue, four rungs: the celebration is on-palette, not a rainbow */
+const BRAND = ["#ff9933", "#ffc266", "#ffdca8", "#cc6b00"];
 
 export async function fireConfetti(opts: { slowmo?: boolean } = {}) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; // layer 1 gate

@@ -66,7 +66,7 @@ export default function CompanyDetailPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-display mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="eyebrow mb-3 flex items-center gap-2">
           <Users className="h-4 w-4" /> Contacts
         </h2>
         {c.contacts.length === 0 ? (
@@ -92,7 +92,7 @@ export default function CompanyDetailPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Applications ({c.applications.length})</h2>
+        <h2 className="eyebrow mb-3">Applications ({c.applications.length})</h2>
         {c.applications.length === 0 ? (
           <EmptyState title="Nothing here yet" description="Applications linked to this company show up automatically." />
         ) : (
@@ -103,7 +103,7 @@ export default function CompanyDetailPage() {
                   <p className="truncate text-sm font-medium">{a.role_title}</p>
                   <p className="text-xs text-muted-foreground">applied {fmt.date(a.applied_at ?? a.created_at)}</p>
                 </div>
-                <span className="rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: `${STATUS_META[a.status]?.color}66`, background: `${STATUS_META[a.status]?.color}14` }}>
+                <span className="rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: STATUS_META[a.status]?.borderColor, background: STATUS_META[a.status]?.bgColor }}>
                   {STATUS_META[a.status]?.label}
                 </span>
                 <Button size="sm" variant="ghost" onClick={() => router.push(`/applications/${a.id}`)}>

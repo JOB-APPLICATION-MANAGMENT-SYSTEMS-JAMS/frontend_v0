@@ -13,6 +13,7 @@ import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
 import { BreakdownTable, ChartCard, Donut, DualSeries, Histogram } from "@/features/analytics/charts";
 import { Button, Card, Select, Skeleton } from "@/components/ui/base";
+import { PageHeader, SegmentedControl } from "@/components/ui/layout";
 import { InfoButton } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
@@ -53,8 +54,8 @@ function AnalyticsPageInner() {
     const offers = items.find((f) => f.key === "offer")?.count ?? 0;
     return {
       segments: [
-        { label: "Replied", value: replied, color: "hsl(22 92% 52%)" },
-        { label: "No reply", value: Math.max(0, applied - replied), color: "hsl(30 10% 82%)" },
+        { label: "Replied", value: replied, color: "hsl(var(--ember))" },
+        { label: "No reply", value: Math.max(0, applied - replied), color: "hsl(var(--muted-foreground) / 0.35)" },
       ],
       replyRate: (replied / applied) * 100,
       interviews,
@@ -94,42 +95,36 @@ function AnalyticsPageInner() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-        <div className="flex items-center gap-2">
-          <h1 className="font-display text-2xl font-extrabold">Analytics</h1>
-          <InfoButton
-            title="Analytics"
-            body={
-              <>
-                <p>Honest numbers: every tile and chart compares the selected window against the one directly before it, so a dip can never hide behind a longer timeframe.</p>
-                <p>Click any tile to jump to the tracker filtered by that stat; export dumps every table you own in CSV or JSON.</p>
-              </>
-            }
-          />
-        </div>
-          <p className="text-sm text-muted-foreground">Honest numbers, comparison against the previous window (§22).</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-full border border-border bg-muted/60 p-1">
-            {PERIODS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors ${period === p ? "bg-white text-foreground shadow dark:bg-white/15" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <Button size="sm" variant="outline" onClick={() => download("csv")}>
-            <Download className="h-3.5 w-3.5" /> CSV
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => download("json")}>
-            <FileJson className="h-3.5 w-3.5" /> JSON
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Analytics"
+        title="Every number, honest"
+        description="Each tile and chart compares the selected window against the one directly before it, so a dip can never hide behind a longer timeframe. Click a tile to open the tracker filtered by that stat."
+        actions={
+          <>
+            <SegmentedControl
+              ariaLabel="Analytics period"
+              value={period}
+              onChange={setPeriod}
+              options={PERIODS.map((p) => ({ value: p, label: p }))}
+            />
+            <InfoButton
+              title="Analytics"
+              body={
+                <>
+                  <p>Honest numbers: every tile and chart compares the selected window against the one directly before it, so a dip can never hide behind a longer timeframe.</p>
+                  <p>Click any tile to jump to the tracker filtered by that stat; export dumps every table you own in CSV or JSON.</p>
+                </>
+              }
+            />
+            <Button size="sm" variant="outline" onClick={() => download("csv")}>
+              <Download className="h-3.5 w-3.5" /> CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => download("json")}>
+              <FileJson className="h-3.5 w-3.5" /> JSON
+            </Button>
+          </>
+        }
+      />
 
       <KpiWall summary={summary.data} isPending={summary.isPending} error={summary.error} onRetry={() => summary.refetch()} onDrill={(k) => router.push(`/tracker?status=${k}`)} />
 

@@ -100,7 +100,7 @@ export default function JobDetailPage() {
 
       {/* explainability */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Why it ranked here</h2>
+        <h2 className="eyebrow mb-3">Why it ranked here</h2>
         <div className="space-y-3">
           {(j.explain ?? []).map((e) => (
             <div key={e.factor}>
@@ -122,11 +122,11 @@ export default function JobDetailPage() {
       {/* JD match (§24.1) */}
       {suggestions.data && suggestions.data.length > 0 && (
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Best CV for this posting</h2>
+          <h2 className="eyebrow mb-3">Best CV for this posting</h2>
           <div className="space-y-2">
             {suggestions.data.slice(0, 3).map(({ cv, match }) => (
               <Link key={cv.id} href={`/studio/cvs/${cv.id}?posting=${id}`} className="flex items-center gap-3 rounded-xl border border-border px-3 py-2.5 hover:bg-muted">
-                <FileText className="h-4 w-4 text-orange-500" />
+                <FileText className="h-4 w-4 text-ember" />
                 <span className="flex-1 text-sm font-medium">{cv.name}</span>
                 <Badge tone={cv.archetype === "pitch" ? "orchid" : "azure"} className="capitalize">
                   {cv.archetype}
@@ -140,7 +140,7 @@ export default function JobDetailPage() {
 
       {j.description && (
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Description</h2>
+          <h2 className="eyebrow mb-3">Description</h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{j.description}</p>
         </Card>
       )}

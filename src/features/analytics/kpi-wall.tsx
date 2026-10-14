@@ -12,6 +12,9 @@ import type { Kpi, Summary, Today } from "@/types";
 
 type TileDef = { key: string; label: string; icon: React.ComponentType<{ className?: string }>; tone: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate" };
 
+/* Read the wall as a funnel, not a rainbow: the two warm rungs go to the numbers
+   that mean progress, the grey rung to the one that means "nothing happened",
+   and the hue-free ink rung to rejection. */
 const TILES: TileDef[] = [
   { key: "applications", label: "Applications", icon: AppWindow, tone: "azure" },
   { key: "replies", label: "Replied via email", icon: Mail, tone: "orchid" },
@@ -19,7 +22,7 @@ const TILES: TileDef[] = [
   { key: "rejected", label: "Rejected", icon: XCircle, tone: "rose" },
   { key: "interviews", label: "Interviews", icon: MessagesSquare, tone: "orchid" },
   { key: "offers", label: "Offers", icon: Trophy, tone: "mint" },
-  { key: "response_rate", label: "Response rate", icon: Timer, tone: "azure" },
+  { key: "response_rate", label: "Response rate", icon: Timer, tone: "amber" },
   { key: "streak", label: "Current streak", icon: Flame, tone: "amber" },
 ];
 
@@ -63,14 +66,14 @@ export function KpiWall({
   const tiles = keys ? TILES.filter((t) => keys.includes(t.key)) : TILES;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {tiles.map((tile, i) => (
         <div key={tile.key} className="animate-stagger" style={{ "--i": i } as React.CSSProperties}>
           {isPending || !summary ? (
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-9 w-9 rounded-xl" />
+                <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
               </div>
               <Skeleton className="mt-4 h-10 w-28" />
               <Skeleton className="mt-3 h-4 w-36" />
@@ -103,38 +106,42 @@ function StatTile({ tile, summary, onClick }: { tile: TileDef; summary: Summary;
   return (
     <Card
       onClick={() => onClick?.(tile.key)}
-      className={cn("glass-card hairline-brand cursor-pointer overflow-hidden p-5")}
+      interactive
+      className={cn("glass-card hairline-brand group overflow-hidden p-4 sm:p-5")}
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{tile.label}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-1.5">
+            <p className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground sm:text-[11px]">{tile.label}</p>
             <InfoButton title={tile.label} body={TILE_INFO[tile.key] ?? "How this number is calculated."} />
           </div>
-          <p className="tnum font-display mt-2 text-[42px] font-extrabold leading-none text-foreground">
+          {/* phones drop the wall to two columns: scale the hero number so 5-digit
+              counts still fit a ~100px content box */}              <p className="tnum hero-num mt-1.5 text-[28px] text-foreground sm:mt-2 sm:text-4xl lg:text-[42px]">
             {isStreak ? (
               <>
-                {streak?.streak ?? 0} <span className="text-[22px]">🔥</span>
+                {streak?.streak ?? 0} <span className="text-[18px] sm:text-[22px]">🔥</span>
               </>
             ) : (
               <>
                 <Odometer value={value} />
-                {unit && <span className="text-[20px]">{unit}</span>}
+                {unit && <span className="text-[16px] sm:text-[20px]">{unit}</span>}
               </>
             )}
           </p>
         </div>
-        <IconChip tone={tile.tone}>
-          <tile.icon className="h-5 w-5" />
-        </IconChip>
+        <span className="transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)] group-hover:-translate-y-0.5 group-hover:scale-105">
+          <IconChip tone={tile.tone}>
+            <tile.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          </IconChip>
+        </span>
       </div>
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-2.5 flex flex-col items-start gap-1 sm:mt-3 sm:flex-row sm:items-center sm:gap-2">
         {delta != null && (
           <Badge tone={up ? "mint" : "rose"} className="tnum">
             {fmt.delta(delta)}
           </Badge>
         )}
-        <span className="truncate text-[11px] text-muted-foreground">{subtitle}</span>
+        <span className="w-full truncate text-[11px] text-muted-foreground">{subtitle}</span>
       </div>
     </Card>
   );

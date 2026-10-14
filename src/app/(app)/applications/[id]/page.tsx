@@ -67,7 +67,7 @@ export default function ApplicationDetailPage() {
               <p className="text-sm text-muted-foreground">{a.company_name}</p>
             </div>
             <div className="flex flex-col items-end gap-1.5">
-              <span className="rounded-full border px-3 py-1 text-xs font-bold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: `${STATUS_META[a.status]?.color}66`, background: `${STATUS_META[a.status]?.color}14` }}>
+              <span className="rounded-full border px-3 py-1 text-xs font-bold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: STATUS_META[a.status]?.borderColor, background: STATUS_META[a.status]?.bgColor }}>
                 {STATUS_META[a.status]?.label}
               </span>
               <Badge tone={a.kind === "pitch" ? "orchid" : "azure"} className="capitalize">
@@ -108,8 +108,8 @@ export default function ApplicationDetailPage() {
                   key={s}
                   onClick={() => move.mutate(s as AppStatus)}
                   disabled={move.isPending}
-                  className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition-colors hover:brightness-110", "bg-white/50 dark:bg-white/5")}
-                  style={{ color: STATUS_META[s].color, borderColor: `${STATUS_META[s].color}55` }}
+                  className={cn("rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition-colors hover:brightness-110", "bg-muted/60")}
+                  style={{ color: STATUS_META[s].color, borderColor: STATUS_META[s].borderColor }}
                 >
                   {STATUS_META[s].label}
                 </button>
@@ -120,11 +120,11 @@ export default function ApplicationDetailPage() {
 
         {/* timeline (append-only event log) */}
         <Card className="p-5">
-          <h2 className="font-display mb-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">Timeline</h2>
+          <h2 className="eyebrow mb-4">Timeline</h2>
           <ol className="relative space-y-4 border-l border-border pl-5">
             {a.events.map((ev) => (
               <li key={ev.id} className="relative">
-                <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-white bg-[image:var(--gradient-brand)] shadow" />
+                <span className="absolute -left-[26px] top-1 h-3 w-3 rounded-full border-2 border-background bg-[image:var(--gradient-brand)] shadow-[0_0_0_3px_hsl(var(--ember)/0.18)]" />
                 <p className="text-sm font-medium capitalize">
                   {ev.type.replace(/_/g, " ")}
                   {ev.payload?.to ? ` → ${ev.payload.to}` : ""}
@@ -144,10 +144,10 @@ export default function ApplicationDetailPage() {
       {/* right rail */}
       <div className="space-y-5">
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Next action</h2>
+          <h2 className="eyebrow mb-3">Next action</h2>
           {a.next_action_at ? (
             <div className="glass-amber flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm">
-              <CalendarClock className="h-4 w-4 text-amber-600" />
+              <CalendarClock className="h-4 w-4 text-ember-deep dark:text-ember-soft" />
               Follow-up due {fmt.date(a.next_action_at)}
             </div>
           ) : (
@@ -166,7 +166,7 @@ export default function ApplicationDetailPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Notes</h2>
+          <h2 className="eyebrow mb-3">Notes</h2>
           {a.notes && <p className="mb-3 whitespace-pre-wrap rounded-xl bg-muted/60 p-3 text-sm">{a.notes}</p>}
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened? What worked? Referral contact…" />
           <Button size="sm" className="mt-2" disabled={!note || saveNote.isPending} onClick={() => saveNote.mutate()}>
@@ -175,7 +175,7 @@ export default function ApplicationDetailPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Outreach & threads</h2>
+          <h2 className="eyebrow mb-3">Outreach & threads</h2>
           {a.outreach.length === 0 ? (
             <p className="text-sm text-muted-foreground">No messages yet.</p>
           ) : (
@@ -220,7 +220,7 @@ export default function ApplicationDetailPage() {
 
         {a.capture && (
           <Card className="p-5">
-            <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Captured snapshot</h2>
+            <h2 className="eyebrow mb-3">Captured snapshot</h2>
             <p className="text-xs leading-relaxed text-muted-foreground">{String(a.capture.description ?? "").slice(0, 600) || "No description captured."}</p>
             {Array.isArray(a.capture.form_fields) && a.capture.form_fields.length > 0 && (
               <InlineBanner tone="info" className="mt-3" title={`${a.capture.form_fields.length} form fields seen`}>

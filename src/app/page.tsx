@@ -39,14 +39,20 @@ export default function SplashPage() {
   }, []);
 
   return (
-    <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-[#0f0e0d]">
-      <div className="absolute inset-0 opacity-80" style={{ background: "radial-gradient(40rem 30rem at 50% 0%, hsl(22 92% 52% / .28), transparent 62%), radial-gradient(36rem 26rem at 85% 95%, hsl(14 76% 46% / .2), transparent 60%)" }} />
+    <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-background">
+      <div
+        className="absolute inset-0 opacity-80"
+        style={{
+          background:
+            "radial-gradient(40rem 30rem at 50% 0%, hsl(30 100% 60% / .28), transparent 62%), radial-gradient(36rem 26rem at 85% 95%, hsl(30 100% 44% / .2), transparent 60%)",
+        }}
+      />
       <div className="relative text-center">
         <div className="flex justify-center gap-1">
           {LETTERS.map((l, i) => (
             <span
               key={`${l}-${i}`}
-              className="animate-fade-in-up font-display text-6xl font-extrabold tracking-tight text-white md:text-7xl"
+              className="animate-focus-in font-display text-6xl font-extrabold tracking-tight text-foreground md:text-7xl"
               style={{ animationDelay: `${0.12 + i * 0.06}s`, animationDuration: "0.6s" }}
             >
               {l}
@@ -54,8 +60,8 @@ export default function SplashPage() {
           ))}
         </div>
         <div className="mx-auto mt-3 h-1 w-56 rounded-full bg-[image:var(--gradient-brand)]" />
-        <p className="mt-4 font-mono text-sm tracking-wide text-white/70">Job Application Management System</p>
-        <p className="mt-1 font-mono text-[11px] text-white/45">{status === "checking" ? "restoring your session…" : "redirecting…"}</p>
+        <p className="mt-4 font-mono text-sm tracking-wide text-muted-foreground">Job Application Management System</p>
+        <p className="mt-1 font-mono text-[11px] text-muted-foreground/70">{status === "checking" ? "restoring your session…" : "redirecting…"}</p>
       </div>
     </div>
   );

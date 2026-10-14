@@ -263,9 +263,9 @@ export function PitchTargets({ className }: { className?: string }) {
     <div className={cn("space-y-4", className)}>
       <div className="glass-sheet rounded-2xl p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+          <div className="relative min-w-0 grow basis-full sm:basis-auto">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by company name…" className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by company name…" aria-label="Filter pitch targets by company name" className="pl-9" />
           </div>
           <Select value={sector} onChange={(e) => setSector(e.target.value)}>
             {(meta.data?.sectors ?? [{ key: "supermarket", label: "Supermarkets & retail" }]).map((s) => (
@@ -354,7 +354,7 @@ export function PitchTargets({ className }: { className?: string }) {
             </span>
             {running && <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><div className="h-full w-1/3 animate-pulse bg-[image:var(--gradient-brand)]" /></div>}
             {rescanState.data.progress.errors.length > 0 && (
-              <span className="text-rose-500">{rescanState.data.progress.errors.length} pages failed (retries are free)</span>
+              <span className="font-semibold text-destructive">{rescanState.data.progress.errors.length} pages failed (retries are free)</span>
             )}
           </div>
         )}
@@ -423,7 +423,7 @@ export function PitchTargets({ className }: { className?: string }) {
                 )}
               </div>
 
-              <div className="mt-auto flex items-center gap-2 pt-1">
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
                 <Button size="sm" variant="azure" onClick={() => prepare.mutate(t)} disabled={!t.email || (prepare.isPending && prepare.variables?.external_id === t.external_id)} title={t.email ? "Preview the pitch email, edit it, then send" : "No email known yet: use find email, then capture the page"}>
                   <Rocket className="h-3.5 w-3.5" /> Pitch this company
                 </Button>
@@ -514,7 +514,7 @@ export function PitchTargets({ className }: { className?: string }) {
                   <span key={a.id} className="flex items-center gap-1.5 rounded-lg border border-border px-2 py-1 text-[11px]">
                     <FileText className="h-3 w-3 text-muted-foreground" />
                     <span className="max-w-[180px] truncate">{a.filename}</span>
-                    <button onClick={() => detach(a)} aria-label={`Remove ${a.filename}`} className="text-muted-foreground hover:text-rose-500">
+                    <button onClick={() => detach(a)} aria-label={`Remove ${a.filename}`} className="text-muted-foreground hover:text-destructive">
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -526,13 +526,13 @@ export function PitchTargets({ className }: { className?: string }) {
             )}
 
             {draft.compose && (
-              <details className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px]">
+              <details className="glass-inset rounded-xl px-3 py-2 text-[11px]">
                 <summary className="cursor-pointer font-semibold">
                   Wording quality {draft.compose.score}/100 · “{draft.compose.category}” variant #{draft.compose.variant}
                 </summary>
                 <ul className="mt-1.5 space-y-0.5">
                   {draft.compose.checks.map((c) => (
-                    <li key={c.label} className={cn("flex justify-between gap-3", c.pass ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400")}>
+                    <li key={c.label} className={cn("flex justify-between gap-3", c.pass ? "text-muted-foreground" : "text-ember-deep dark:text-ember-soft")}>
                       <span>
                         {c.pass ? "✓" : "·"} {c.label}
                       </span>
@@ -543,19 +543,27 @@ export function PitchTargets({ className }: { className?: string }) {
               </details>
             )}
 
-            <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 shrink-0" />
-                {draft.smtp_ready ? (
-                  <span>
-                    Auto-send on: the email leaves this app when you press Send. No Gmail tab, no redirect.
+            {/* how this email actually leaves the building. Rendered as a labelled
+                state, not a bare switch: the control that changes it is connecting
+                Gmail, so a toggle you can flip here would be a lie. */}
+            <div className="glass-inset rounded-xl px-3 py-2.5 text-[11px] text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <span aria-hidden data-on={draft.smtp_ready ? "true" : undefined} className="glass-switch relative mt-0.5 h-6 w-11 shrink-0 rounded-full" />
+                <span className="min-w-0 leading-relaxed">
+                  <span className="block text-xs font-semibold text-foreground">
+                    {draft.smtp_ready ? "Sends straight from here" : "Opens a Gmail draft"}
                   </span>
-                ) : (
-                  <span>
-                    Send would open a prefilled Gmail tab. Connect your Gmail <b>once</b> below and every pitch and auto-apply sends
-                    automatically from here.
-                  </span>
-                )}
+                  {draft.smtp_ready ? (
+                    <>
+                      The email leaves this app the moment you press Send, no Gmail tab and no redirect. Replies still land in your Inbox.
+                    </>
+                  ) : (
+                    <>
+                      Pressing Send opens a prefilled Gmail tab you have to click through. Connect your Gmail <b>once</b> below and every pitch
+                      and auto-apply sends automatically instead.
+                    </>
+                  )}
+                </span>
               </div>
               {!draft.smtp_ready && (
                 <div className="mt-3 space-y-2.5 border-t border-border pt-3">

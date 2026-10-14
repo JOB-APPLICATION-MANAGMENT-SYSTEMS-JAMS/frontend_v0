@@ -9,6 +9,7 @@ import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { Company } from "@/types";
 import { Badge, Card, Input, Select, Skeleton } from "@/components/ui/base";
+import { PageHeader } from "@/components/ui/layout";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 
 const TIER_TONE = { dream: "orchid", reach: "azure", safety: "mint" } as const;
@@ -32,10 +33,11 @@ export default function CompaniesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <header>
-        <h1 className="font-display text-2xl font-extrabold">Companies</h1>
-        <p className="text-sm text-muted-foreground">Pitch-target mode: rank the places you want, track who you know (§19.1).</p>
-      </header>
+      <PageHeader
+        eyebrow="Pitch targets"
+        title="Companies"
+        description="Rank the places you actually want to work, and track who you know inside them."
+      />
 
       <div className="flex flex-wrap gap-3">
         <div className="relative min-w-56 flex-1">

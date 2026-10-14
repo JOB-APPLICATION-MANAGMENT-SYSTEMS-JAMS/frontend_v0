@@ -99,10 +99,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   let lastGroup = "";
   return (
-    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-black/40 px-4 pt-[12vh] backdrop-blur-xl" onClick={onClose}>
+    <div className="scrim-in fixed inset-0 z-[90] flex items-start justify-center bg-black/40 px-4 pt-[12vh] backdrop-blur-xl" onClick={onClose}>
       <div
-        className="route-fade w-full max-w-xl overflow-hidden rounded-2xl border border-white/20 shadow-2xl"
-        style={{ background: "hsl(var(--surface) / 0.92)", transform: "scale(1)", animation: "fadeInUp .18s cubic-bezier(.23,1,.32,1)" }}
+        className="glass-panel sheet-in w-full max-w-xl overflow-hidden rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-border px-4">
@@ -124,25 +123,27 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             const Icon = item.icon;
             return (
               <React.Fragment key={item.id}>
-                {header && <p className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{header}</p>}
+                {header && <p className="eyebrow px-3 pb-1 pt-3">{header}</p>}
                 <button
                   onMouseEnter={() => setCursor(i)}
                   onClick={item.run}
                   className={cn(
                     "animate-stagger flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm",
-                    i === cursor ? "bg-[image:var(--gradient-brand)] text-white" : "text-foreground hover:bg-muted"
+                    i === cursor
+                      ? "bg-[image:var(--gradient-brand)] text-primary-foreground shadow-[0_10px_24px_-14px_hsl(var(--ember)/0.9)]"
+                      : "text-foreground hover:bg-muted"
                   )}
                   style={{ "--i": i } as React.CSSProperties}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1 truncate">{item.label}</span>
-                  {item.hint && <span className={cn("text-[10px] uppercase", i === cursor ? "text-white/80" : "text-muted-foreground")}>{item.hint}</span>}
+                  {item.hint && <span className={cn("text-[10px] uppercase tracking-wider", i === cursor ? "text-primary-foreground/75" : "text-muted-foreground")}>{item.hint}</span>}
                 </button>
               </React.Fragment>
             );
           })}
         </div>
-        <div className="flex items-center gap-3 border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-3 border-t border-border bg-muted/40 px-4 py-2 text-[11px] text-muted-foreground">
           <Kbd>↑</Kbd>
           <Kbd>↓</Kbd> navigate <Kbd className="ml-2">↵</Kbd> open <Kbd className="ml-2">esc</Kbd> close
         </div>

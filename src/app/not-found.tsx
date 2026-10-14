@@ -11,7 +11,7 @@ export default function NotFound() {
         from the dashboard, or pick a destination.
       </p>
       <nav className="mt-6 flex flex-wrap justify-center gap-2">
-        <Link href="/dashboard" className="rounded-full bg-[image:var(--gradient-brand)] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-900/25 transition hover:opacity-90">
+        <Link href="/dashboard" className="rounded-full bg-[image:var(--gradient-brand)] px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_12px_28px_-14px_hsl(var(--ember)/0.9)] transition-all duration-[var(--dur-2)] hover:scale-[1.03] active:scale-[0.97]">
           Dashboard
         </Link>
         <Link href="/discover" className="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-muted">

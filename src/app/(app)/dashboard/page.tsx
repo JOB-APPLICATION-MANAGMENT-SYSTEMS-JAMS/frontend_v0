@@ -13,8 +13,9 @@ import { KpiWall } from "@/features/analytics/kpi-wall";
 import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
 import { ChartCard, BreakdownTable, DualSeries } from "@/features/analytics/charts";
-import { Card, Button, Badge, Skeleton } from "@/components/ui/base";
+import { Button, Badge, Skeleton, ProgressBar } from "@/components/ui/base";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
+import { PageHeader } from "@/components/ui/layout";
 import { InfoButton } from "@/components/ui/modal";
 import { fireConfetti } from "@/lib/confetti";
 import { fmt } from "@/lib/utils";
@@ -76,11 +77,11 @@ function DashboardPageInner() {
 
   return (
     <div className="space-y-6">
-      {/* hero strip */}
-      <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Today</p>
+      {/* masthead: today's goal is the headline, the three moves are the actions */}
+      <PageHeader
+        eyebrow={
+          <>
+            Today
             <InfoButton
               title="Today"
               body={
@@ -90,34 +91,46 @@ function DashboardPageInner() {
                 </>
               }
             />
-          </div>
-          <h2 className="font-display text-2xl font-extrabold">
-            {streak?.hit ? (
-              <>
-                Goal smashed <span className="text-gradient-brand">{streak.count}/{streak.goal}</span> 🎯
-              </>
-            ) : streak ? (
-              <>
-                <span className="tnum text-gradient-brand">{streak.count}/{streak.goal}</span> applications, {streak.remaining} to go
-              </>
-            ) : (
-              "Loading your day…"
-            )}
-          </h2>
+          </>
+        }
+        title={
+          streak?.hit ? (
+            <>
+              Goal smashed <span className="text-gradient-brand">{streak.count}/{streak.goal}</span> 🎯
+            </>
+          ) : streak ? (
+            <>
+              <span className="tnum text-gradient-brand">{streak.count}/{streak.goal}</span> applications, {streak.remaining} to go
+            </>
+          ) : (
+            "Loading your day…"
+          )
+        }
+        description="Discovery, pipeline, outreach and streaks, all in one command centre."
+        actions={
+          <>
+            <Button variant="azure" onClick={() => router.push("/discover")}>
+              <Compass className="h-4 w-4" /> Find roles
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/capture?new=1")}>
+              <Sparkles className="h-4 w-4" /> Quick capture
+            </Button>
+            {/* celebration entry point, kept reachable now that the rail is seven items */}
+            <Button variant="ghost" onClick={() => router.push("/victory")}>
+              🎉 I got a job
+            </Button>
+          </>
+        }
+      />
+
+      {streak && (
+        <div className="animate-fade-in flex items-center gap-3">
+          <ProgressBar value={streak.percent ?? 0} className="h-1.5 flex-1" />
+          <span className="tnum shrink-0 text-[11px] font-semibold text-muted-foreground">
+            {streak.count}/{streak.goal} today · {streak.streak ?? 0} day streak 🔥
+          </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="azure" onClick={() => router.push("/discover")}>
-            <Compass className="h-4 w-4" /> Find roles
-          </Button>
-          <Button variant="outline" onClick={() => router.push("/capture?new=1")}>
-            <Sparkles className="h-4 w-4" /> Quick capture
-          </Button>
-          {/* celebration entry point, kept reachable now that the rail is seven items */}
-          <Button variant="ghost" onClick={() => router.push("/victory")}>
-            🎉 I got a job
-          </Button>
-        </div>
-      </Card>
+      )}
 
       {/* KPI wall: dashboard shows the first four tiles; all eight live on the analytics page */}
       <KpiWall summary={summary.data} isPending={summary.isPending} error={summary.error} onRetry={() => summary.refetch()} onDrill={(key) => router.push(`/analytics?focus=${key}`)} keys={["applications", "replies", "ghosted", "rejected"]} />

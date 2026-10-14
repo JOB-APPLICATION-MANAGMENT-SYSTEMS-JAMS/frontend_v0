@@ -8,17 +8,27 @@
 import * as React from "react";
 import { cn, fmt } from "@/lib/utils";
 import { InfoButton } from "@/components/ui/modal";
+import { SegmentedControl } from "@/components/ui/layout";
 import type { Summary } from "@/types";
 
 type Band = { key: string; label: string; from: string; to: string; text: string };
 
+/*
+ * The funnel is a temperature chart, not a palette test.
+ *
+ * Progressing stages climb the ember ladder from mid to full; the two dead ends
+ * (ghosted, rejected) fall out of the hue entirely into grey and ink, which is
+ * what makes them read as "stopped" rather than as another step. Every band is
+ * OPAQUE with a fixed text colour, so the diagram is legible on white and on
+ * black without a single theme-specific value.
+ */
 const BANDS: Band[] = [
-  { key: "applied", label: "Applications", from: "#ff7a1a", to: "#ffa257", text: "#241103" },
-  { key: "ghosted", label: "Ghosted / no reply", from: "#57524d", to: "#948d86", text: "#14110f" },
-  { key: "rejected", label: "Rejected", from: "#a33f2b", to: "#d9705a", text: "#fff" },
-  { key: "replied", label: "Replied", from: "#f0a012", to: "#ffd073", text: "#2a1c00" },
-  { key: "interview", label: "1st Interview", from: "#7d6a4e", to: "#b8a077", text: "#191409" },
-  { key: "offer", label: "Offers 🎉", from: "#efe6da", to: "#ffffff", text: "#1a1613" },
+  { key: "applied", label: "Applications", from: "hsl(30 100% 56%)", to: "hsl(30 100% 70%)", text: "#1a1005" },
+  { key: "ghosted", label: "Ghosted / no reply", from: "hsl(0 0% 38%)", to: "hsl(0 0% 52%)", text: "#ffffff" },
+  { key: "rejected", label: "Rejected", from: "hsl(0 0% 14%)", to: "hsl(0 0% 28%)", text: "#ffffff" },
+  { key: "replied", label: "Replied", from: "hsl(30 100% 44%)", to: "hsl(30 100% 58%)", text: "#1a1005" },
+  { key: "interview", label: "1st Interview", from: "hsl(30 100% 28%)", to: "hsl(30 100% 40%)", text: "#ffffff" },
+  { key: "offer", label: "Offers 🎉", from: "hsl(30 100% 92%)", to: "hsl(30 100% 76%)", text: "#1a1005" },
 ];
 
 function wavePath(y0: number, h: number, w: number, amp = 6) {
@@ -57,7 +67,7 @@ export function FunnelField({
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
         <div className="flex items-center gap-1.5">
-          <h3 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Funnel</h3>
+          <h3 className="eyebrow">Funnel</h3>
           <InfoButton
             title="Funnel"
             body={
@@ -75,20 +85,18 @@ export function FunnelField({
           </p>
         </div>
         {onPeriodChange && (
-          <div className="glass-tab flex rounded-full p-0.5">
-            {["day", "week", "month", "year"].map((p) => (
-              <button
-                key={p}
-                onClick={() => onPeriodChange(p)}
-                className={cn(
-                  "rounded-full px-3 py-1 text-[11px] font-semibold capitalize transition-colors",
-                  p === period ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            ariaLabel="Funnel period"
+            size="sm"
+            value={period}
+            onChange={onPeriodChange}
+            options={[
+              { value: "day", label: "day" },
+              { value: "week", label: "week" },
+              { value: "month", label: "month" },
+              { value: "year", label: "year" },
+            ]}
+          />
         )}
       </header>
 
@@ -111,12 +119,14 @@ export function FunnelField({
           </defs>
           {BANDS.map((b, i) => {
             const count = counts[b.key] ?? 0;
-            const w = Math.max(96, (count / max) * 700);
+            // min width must fit the longest label + its counter, otherwise tiny
+            // stages render as a sliver with their text spilling onto the page
+            const w = Math.max(250, (count / max) * 700);
             const y = 16 + i * (rowH + gap);
             return (
               <g
                 key={b.key}
-                className="funnel-band cursor-pointer"
+                className="funnel-band cursor-pointer transition-[filter] duration-[var(--dur-2)] hover:brightness-[1.08]"
                 style={{ "--i": i } as React.CSSProperties}
                 onClick={() => onDrill?.(b.key)}
                 role="button"

@@ -7,6 +7,7 @@ import { Inbox, Link2, Mail, MessageSquare, Send } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton, Textarea } from "@/components/ui/base";
+import { PageHeader } from "@/components/ui/layout";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
 import { AppPasswordHelp, AppPasswordLink } from "@/components/gmail-setup";
 import { fmt } from "@/lib/utils";
@@ -90,14 +91,15 @@ export default function InboxSyncPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <header>
-        <h1 className="font-display text-2xl font-extrabold">Inbox sync</h1>
-        <p className="text-sm text-muted-foreground">Replies are classified deterministically, no paid email API (§36.2).</p>
-      </header>
+      <PageHeader
+        eyebrow="Mailbox"
+        title="Inbox sync"
+        description="Replies are classified deterministically and matched to the application they belong to. No paid email API involved."
+      />
 
       {/* mailbox */}
       <Card className="p-5">
-        <h2 className="font-display mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="eyebrow mb-1 flex items-center gap-2">
           <Link2 className="h-4 w-4" /> Mailbox
         </h2>
         <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
@@ -112,7 +114,7 @@ export default function InboxSyncPage() {
             {mailbox.data?.connected && (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-ember/12 text-ember-deep dark:text-ember-soft">
                     <Mail className="h-5 w-5" />
                   </span>
                   <div>
@@ -227,7 +229,7 @@ export default function InboxSyncPage() {
 
       {/* ingest */}
       <Card className="space-y-3 p-5">
-        <h2 className="font-display flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="eyebrow flex items-center gap-2">
           <Inbox className="h-4 w-4" /> Ingest a message
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -256,7 +258,7 @@ export default function InboxSyncPage() {
 
       {/* threads */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="eyebrow mb-3 flex items-center gap-2">
           <MessageSquare className="h-4 w-4" /> Threads
         </h2>
         {threads.isPending ? (

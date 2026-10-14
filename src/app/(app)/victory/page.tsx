@@ -46,7 +46,7 @@ export default function VictoryPage() {
     <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center text-center">
       {result ? (
         <Card className="w-full p-8">
-          <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[image:var(--gradient-brand)] text-white shadow-xl shadow-orange-900/30">
+          <span className="animate-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-[image:var(--gradient-brand)] text-primary-foreground shadow-[0_20px_50px_-18px_hsl(var(--ember)/0.95)]">
             <Trophy className="h-10 w-10" />
           </span>
           <h1 className="font-display mt-5 text-4xl font-extrabold">
@@ -105,8 +105,8 @@ export default function VictoryPage() {
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-xl bg-muted/60 p-3">
-      <p className="tnum font-display text-2xl font-extrabold">{value}</p>
+    <div className="animate-stagger rounded-xl border border-border bg-muted/50 p-3">
+      <p className="tnum hero-num text-2xl">{value}</p>
       <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>
   );

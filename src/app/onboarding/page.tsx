@@ -47,7 +47,7 @@ export default function OnboardingPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center bg-[radial-gradient(1200px_600px_at_20%_-10%,hsl(22_92%_52%/.14),transparent),radial-gradient(900px_500px_at_90%_10%,hsl(14_76%_46%/.1),transparent)] px-4">
       <div className="w-full max-w-lg">
         <div className="mb-6 flex items-center gap-3">
-          <span className="h-8 w-8 rounded-lg bg-[image:var(--gradient-brand)] shadow-lg shadow-orange-900/20" />
+          <span className="h-8 w-8 rounded-lg bg-[image:var(--gradient-brand)] shadow-[0_10px_24px_-14px_hsl(var(--ember)/0.85)]" />
           <span className="font-display text-xl font-extrabold tracking-tight">JAMS</span>
           <span className="ml-auto text-xs text-muted-foreground">
             step {step + 1}/{STEPS.length}
@@ -59,7 +59,7 @@ export default function OnboardingPage() {
         <Card className="p-6">
           {step === 0 && (
             <>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-ember/12 text-ember-deep dark:text-ember-soft">
                 <UserRound className="h-5 w-5" />
               </span>
               <h1 className="font-display mt-4 text-2xl font-extrabold">Who’s hunting?</h1>
@@ -93,7 +93,7 @@ export default function OnboardingPage() {
 
           {step === 2 && (
             <>
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-amber-500/12 text-amber-700 dark:text-amber-400">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-ember-soft/24 text-ember-ink dark:text-ember-soft">
                 <Compass className="h-5 w-5" />
               </span>
               <h1 className="font-display mt-4 text-2xl font-extrabold">You’re ready</h1>

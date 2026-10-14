@@ -68,7 +68,7 @@ export default function StreaksPage() {
             <GoalRing today={t} size={110} />
             <div>
               <div className="flex items-center gap-1.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t?.day ?? "today"}</p>
+                <p className="eyebrow">{t?.day ?? "today"}</p>
                 <InfoButton
                   title="Your goal ring"
                   body={
@@ -79,7 +79,7 @@ export default function StreaksPage() {
                   }
                 />
               </div>
-              <h1 className="font-display text-3xl font-extrabold">
+              <h1 className="font-display text-[30px] font-extrabold leading-tight tracking-tight sm:text-4xl">
                 {t?.hit ? (
                   <span className="text-gradient-brand">Goal smashed 🎯</span>
                 ) : (
@@ -90,7 +90,7 @@ export default function StreaksPage() {
               </h1>
               <p className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1 font-semibold text-foreground">
-                  <Flame className="h-4 w-4 text-orange-500" /> {t?.streak ?? 0} day streak
+                  <Flame className="h-4 w-4 text-ember" /> {t?.streak ?? 0} day streak
                 </span>
                 <span>longest {t?.longest_streak ?? 0}</span>
                 <span>any-effort {t?.any_effort_streak ?? 0}</span>
@@ -133,7 +133,7 @@ export default function StreaksPage() {
 
       {/* badges */}
       <Card className="p-5">
-        <h2 className="font-display mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+        <h2 className="eyebrow mb-4 flex items-center gap-2">
           <Award className="h-4 w-4" /> Badges
           <InfoButton
             title="Badges"
@@ -147,10 +147,10 @@ export default function StreaksPage() {
             {badges.data!.items.map((b, i) => (
               <div
                 key={b.key}
-                className={`animate-stagger rounded-xl border p-4 text-center transition-all ${b.unlocked ? "border-amber-500/45 bg-amber-500/10" : "border-border opacity-55 grayscale"}`}
+                className={`animate-stagger rounded-xl border p-4 text-center transition-all ${b.unlocked ? "border-ember/45 bg-ember/10 shadow-[0_14px_32px_-20px_hsl(var(--ember)/0.8)]" : "border-border opacity-50 grayscale"}`}
                 style={{ "--i": i } as React.CSSProperties}
               >
-                <span className={`mx-auto grid h-10 w-10 place-items-center rounded-full ${b.unlocked ? "bg-[image:var(--gradient-brand)] text-white" : "bg-muted"}`}>
+                <span className={`mx-auto grid h-10 w-10 place-items-center rounded-full ${b.unlocked ? "bg-[image:var(--gradient-brand)] text-primary-foreground" : "bg-muted"}`}>
                   <Trophy className="h-5 w-5" />
                 </span>
                 <p className="mt-2 text-xs font-semibold">{b.label}</p>
@@ -164,7 +164,7 @@ export default function StreaksPage() {
       {/* history */}
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display flex items-center gap-1.5 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <h2 className="eyebrow flex items-center gap-1.5">
             Last 120 days
             <InfoButton
               title="Day-by-day history"
@@ -201,18 +201,26 @@ export default function StreaksPage() {
         )}
       </Card>
 
-      {/* freeze explainer */}
-      <Card className="flex items-center gap-4 p-5">
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
-          <Minus className="h-5 w-5" />
-        </span>
-        <div>
-          <p className="text-sm font-semibold">One freeze per week</p>
-          <p className="text-xs text-muted-foreground">
-            Miss a day? Spend a freeze to keep the streak alive, earned again by hitting tomorrow’s goal. No paywalls, no energy mechanics.
-          </p>
+      {/* freeze explainer — stacks on phones: a single row squeezed the icon to a
+          sliver and clipped the button (flex children default to min-width:0) */}
+      <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ember/12 text-ember-deep dark:text-ember-soft">
+            <Minus className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">One freeze per week</p>
+            <p className="text-xs text-muted-foreground">
+              Miss a day? Spend a freeze to keep the streak alive, earned again by hitting tomorrow’s goal. No paywalls, no energy mechanics.
+            </p>
+          </div>
         </div>
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => toast("Freezes are spent automatically when you miss a day", "info")}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full shrink-0 sm:ml-auto sm:w-auto"
+          onClick={() => toast("Freezes are spent automatically when you miss a day", "info")}
+        >
           <Snowflake className="h-3.5 w-3.5" /> How freezes work
         </Button>
       </Card>

@@ -10,8 +10,8 @@ import { useToasts, type ToastItem } from "@/hooks/use-toast";
 
 export function EmptyState({ icon, title, description, action }: { icon?: React.ReactNode; title: string; description?: string; action?: React.ReactNode }) {
   return (
-    <Card className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-muted text-muted-foreground">{icon ?? <Inbox className="h-6 w-6" />}</span>
+    <Card className="glass-card flex flex-col items-center gap-3 px-6 py-12 text-center">
+      <span className="animate-floaty grid h-12 w-12 place-items-center rounded-2xl bg-ember/12 text-ember-deep dark:text-ember-soft">{icon ?? <Inbox className="h-6 w-6" />}</span>
       <div>
         <p className="font-display text-base font-semibold text-foreground">{title}</p>
         {description && <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{description}</p>}
@@ -24,7 +24,7 @@ export function EmptyState({ icon, title, description, action }: { icon?: React.
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const message = error instanceof Error ? error.message : "Something went wrong";
   return (
-    <Card className="border-destructive/50 px-6 py-8 text-center">
+    <Card className="border-destructive/40 px-6 py-8 text-center">
       <p className="font-display text-base font-semibold text-destructive">Couldn’t load this view</p>
       <p className="mt-1 font-mono text-sm text-muted-foreground">{message}</p>
       {onRetry && (
@@ -39,9 +39,9 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 export function InlineBanner({ tone = "info", title, children, className }: { tone?: "info" | "warn" | "danger" | "success"; title?: string; children: React.ReactNode; className?: string }) {
   const tones = {
     info: "glass-azure text-foreground",
-    warn: "glass-amber text-amber-800 dark:text-amber-100",
-    danger: "glass-rose text-rose-800 dark:text-rose-100",
-    success: "glass-mint text-emerald-800 dark:text-emerald-100",
+    warn: "glass-amber text-ember-ink dark:text-ember-soft",
+    danger: "glass-rose text-foreground",
+    success: "glass-mint text-ember-ink dark:text-ember-soft",
   };
   const Icon = tone === "warn" ? AlertTriangle : tone === "success" ? CheckCircle2 : Info;
   return (
@@ -115,10 +115,13 @@ function ToastCard({ item }: { item: ToastItem }) {
     <div
       role="status"
       className={cn(
-        "pointer-events-auto flex w-full items-start gap-3 rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-card-foreground shadow-2xl",
+        "glass-panel pointer-events-auto flex w-full items-start gap-3 rounded-2xl px-4 py-2.5 text-sm text-foreground",
         item.leaving ? "toast-out" : "toast-in",
-        item.kind === "success" && "border-l-4 border-l-[image:var(--gradient-brand)]",
-        item.kind === "error" && "border-l-4 border-l-destructive"
+        // the semantic stripe is a real border colour: an ember bar for good news,
+        // an ink bar for bad. `border-l-[image:…]` rendered nothing, it was a URL,
+        // not a colour.
+        item.kind === "success" && "border-l-4 border-l-ember",
+        item.kind === "error" && "border-l-4 border-l-ink"
       )}
     >
       <div className="min-w-0 flex-1">

@@ -48,14 +48,14 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] grid place-items-center bg-black/55 p-4 backdrop-blur-sm"
+      className="scrim-in fixed inset-0 z-[110] grid place-items-center bg-black/55 p-4 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-label={label}
       onClick={onClose}
     >
       <div
-        className={cn("glass-panel route-fade max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl p-5 shadow-2xl", className)}
+        className={cn("glass-panel sheet-in max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl p-5", className)}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
@@ -85,14 +85,21 @@ export function InfoButton({ title, body, className }: { title: string; body: Re
           e.stopPropagation();
           setOpen(true);
         }}
-        className={cn("inline-grid h-5 w-5 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground", className)}
+        className={cn(
+          "touch-slop inline-grid h-5 w-5 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition-all duration-[var(--dur-2)] hover:border-ember/60 hover:bg-ember/10 hover:text-ember-deep dark:hover:text-ember-soft",
+          className
+        )}
       >
         <Info className="h-3.5 w-3.5" />
       </button>
       <Modal open={open} onClose={() => setOpen(false)} label={title} className="max-w-md">
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-base font-bold">{title}</p>
-          <button onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

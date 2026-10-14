@@ -11,6 +11,7 @@ import type { CV, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { Portal } from "@/components/ui/modal";
+import { PageHeader } from "@/components/ui/layout";
 import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 
@@ -102,18 +103,15 @@ export default function StudioPage() {
   return (
     <>
       <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold">CV Studio</h1>
-          <p className="text-sm text-muted-foreground">
-            One CV per archetype, forked per application, never mutate the master (§24.1).
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Documents"
+        title="CV Studio"
+        description="One CV per archetype, forked per application. Your master CV is never mutated."
+      />
 
       {/* create */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">New CV</h2>
+        <h2 className="eyebrow mb-3">New CV</h2>
         <div className="grid gap-3 sm:grid-cols-[1.5fr_1fr_1fr_auto] sm:items-end">
           <div>
             <Label>Name</Label>
@@ -199,7 +197,7 @@ export default function StudioPage() {
 
       {/* template library */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">CV templates</h2>
+        <h2 className="eyebrow mb-3">CV templates</h2>
         {templates.isPending ? (
           <Skeleton className="h-20 w-full" />
         ) : (templates.data?.items?.length ?? 0) === 0 ? (
@@ -226,14 +224,14 @@ export default function StudioPage() {
       {previewId && (
         <Portal>
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-6"
+          className="scrim-in fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-3 backdrop-blur-md sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="A4 preview"
         >
-          <div className="flex h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-black/10 px-4 py-2.5">
-              <span className="truncate font-display text-sm font-bold text-neutral-900">
+          <div className="glass-panel sheet-in flex h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+              <span className="truncate font-display text-sm font-bold text-foreground">
                 A4 preview{cvs.data?.items.find((c) => c.id === previewId)?.name ? `, ${cvs.data!.items.find((c) => c.id === previewId)!.name}` : ""}
               </span>
               <div className="flex items-center gap-2">
@@ -241,7 +239,7 @@ export default function StudioPage() {
                   type="button"
                   onClick={() => void loadPreview(previewId)}
                   disabled={previewBusy}
-                  className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-300 px-2.5 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-100 disabled:opacity-60"
+                  className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-ember/45 hover:bg-ember/10 disabled:opacity-60"
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${previewBusy ? "animate-spin" : ""}`} /> Refresh
                 </button>
@@ -249,17 +247,17 @@ export default function StudioPage() {
                   type="button"
                   aria-label="Close preview"
                   onClick={() => setPreviewId(null)}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="min-h-0 flex-1 bg-neutral-200 p-3">
+            <div className="min-h-0 flex-1 bg-muted p-3">
               {previewHtml ? (
                 <iframe title="A4 preview" srcDoc={previewHtml} className="h-full w-full rounded-lg bg-white shadow" />
               ) : (
-                <div className="grid h-full place-items-center text-sm text-neutral-500">Rendering…</div>
+                <div className="grid h-full place-items-center text-sm text-muted-foreground">Rendering…</div>
               )}
             </div>
           </div>

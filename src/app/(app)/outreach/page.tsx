@@ -10,6 +10,7 @@ import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { Application, Outreach, Paged, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton, Textarea, buttonClass } from "@/components/ui/base";
+import { PageHeader } from "@/components/ui/layout";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
 import { fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -99,15 +100,16 @@ function OutreachPageInner() {
     <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[1.4fr_1fr]">
       {/* composer */}
       <div className="space-y-5">
-        <header className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold">Outreach</h1>
-            <p className="text-sm text-muted-foreground">Compose once, merge variables, hand off to Gmail, you press Send (§26.4).</p>
-          </div>
-          <Link href="/inbox-sync" className={buttonClass("outline", "sm")}>
-            <Mail className="h-4 w-4" /> Inbox &amp; Sync
-          </Link>
-        </header>
+        <PageHeader
+          eyebrow="Cold email"
+          title="Outreach"
+          description="Compose once, merge your variables, hand off to Gmail. You press Send."
+          actions={
+            <Link href="/inbox-sync" className={buttonClass("outline", "sm")}>
+              <Mail className="h-4 w-4" /> Inbox &amp; Sync
+            </Link>
+          }
+        />
 
         <Card className="space-y-4 p-5">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -158,7 +160,7 @@ function OutreachPageInner() {
         {/* messages / sequence */}
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Messages & sequence steps</h2>
+            <h2 className="eyebrow ">Messages & sequence steps</h2>
             <Badge tone="azure">{messages.data?.items.length ?? 0}</Badge>
           </div>
           {messages.isPending ? (
@@ -209,7 +211,7 @@ function OutreachPageInner() {
       {/* right rail */}
       <div className="space-y-5">
         <Card className="p-5">
-          <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Cadence health</h2>
+          <h2 className="eyebrow mb-3">Cadence health</h2>
           {cadence.isPending ? (
             <Skeleton className="h-20 w-full" />
           ) : (
@@ -252,7 +254,7 @@ function OutreachPageInner() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="font-display mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <h2 className="eyebrow mb-3 flex items-center gap-2">
             <Layers className="h-4 w-4" /> Inbox threads
           </h2>
           {threads.isPending ? (
@@ -277,7 +279,7 @@ function OutreachPageInner() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="font-display mb-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">How sending works</h2>
+          <h2 className="eyebrow mb-2">How sending works</h2>
           <ol className="mb-2 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
             <li>
               <b className="text-foreground">1 · You write it.</b> JAMS drafts the message (templates merge the contact,

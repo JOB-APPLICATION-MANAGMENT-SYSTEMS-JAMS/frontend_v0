@@ -11,9 +11,10 @@ import type { SearchResponse } from "@/types";
 import { JobCard } from "@/features/jobs/job-card";
 import { PitchTargets } from "@/features/jobs/pitch-targets";
 import { EmailJobs } from "@/features/jobs/email-jobs";
-import { Card, Button, Badge, Input, Skeleton, Kbd } from "@/components/ui/base";
+import { Card, Button, Input, Skeleton, Kbd } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { InfoButton } from "@/components/ui/modal";
+import { Chip, SegmentedControl } from "@/components/ui/layout";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -23,7 +24,9 @@ function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, delay
   // latest-ref pattern: write in an effect, never during render (react-hooks/refs)
   React.useEffect(() => {
     ref.current = fn;
-  });
+  }, [fn]);
+  // never let a pending keystroke fire a navigation after unmount
+  React.useEffect(() => () => clearTimeout(t.current), []);
   return React.useCallback(
     (...args: Parameters<T>) => {
       clearTimeout(t.current);
@@ -41,12 +44,56 @@ export default function DiscoverPage() {
   );
 }
 
+/** Every source the chips can show: the configured crawlers plus whatever the result facets report. */
+function useSourceChips(
+  configured: { name: string; last_error?: string | null; last_run_at?: string | null; items_found?: number | null }[] | undefined,
+  facets: Record<string, number>
+) {
+  return React.useMemo(() => {
+    const seen = new Set<string>();
+    const names: string[] = [];
+    const add = (name: string) => {
+      if (seen.has(name)) return;
+      seen.add(name);
+      names.push(name);
+    };
+    for (const s of configured ?? []) add(s.name);
+    for (const name of Object.keys(facets)) add(name);
+    return names.map((name) => {
+      const meta = configured?.find((s) => s.name === name);
+      const count = facets[name];
+      return {
+        name,
+        meta,
+        // results in the current search beat "how many this source ever indexed"
+        label: count !== undefined ? ` · ${count}` : meta?.last_run_at ? ` · ${meta.items_found ?? 0}` : " · idle",
+      };
+    });
+  }, [configured, facets]);
+}
+
 function DiscoverPageInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const [text, setText] = React.useState(params.get("q") ?? "");
+  const qParam = params.get("q") ?? "";
+  const [text, setText] = React.useState(qParam);
   const [showFilters, setShowFilters] = React.useState(false);
   const mode = ((params.get("mode") ?? "jobs") === "social" ? "email" : (params.get("mode") ?? "jobs")) as "jobs" | "pitch" | "email";
+
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // The URL is the source of truth: quick-filter chips, reset and history navigation all
+  // change `q` without going through the input. Sync back down unless the user is typing —
+  // otherwise a chip click leaves the box showing the old query.
+  React.useEffect(() => {
+    if (document.activeElement === inputRef.current) return;
+    setText(qParam);
+  }, [qParam]);
+
+  // Autofocus is a desktop nicety; on a phone it opens the keyboard over half the results.
+  React.useEffect(() => {
+    if (window.matchMedia("(min-width: 768px)").matches) inputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const patch = React.useCallback(
     (next: Record<string, string | undefined>) => {
@@ -87,36 +134,77 @@ function DiscoverPageInner() {
     staleTime: 60_000,
   });
 
-  const facetSource = search.data?.facets?.source ?? {};
+  // stable identity so the chip memo does not rebuild on every render
+  const facetSource = React.useMemo(() => search.data?.facets?.source ?? {}, [search.data]);
+  const sourceChips = useSourceChips(sources.data?.items, facetSource);
   const activeFilters = Object.entries(queryParams).filter(([k, v]) => v && k !== "page" && k !== "page_size");
+  const failed = search.data?.sources_failed ?? [];
+
+  // Refresh drives its own spinner: `search.isFetching` is also true on every keystroke
+  // (placeholderData keeps the old page while the new one loads), which made the icon spin
+  // while typing and then go quiet during the real re-index.
+  const [refreshing, setRefreshing] = React.useState(false);
+  const refreshTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  React.useEffect(() => () => clearTimeout(refreshTimer.current), []);
+  const runRefresh = async () => {
+    try {
+      await appFetch("/jobs/refresh", { method: "POST", body: {}, _auth: true });
+      setRefreshing(true);
+      toast("Aggregating free sources…", "info");
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(() => {
+        setRefreshing(false);
+        void search.refetch();
+        void sources.refetch(); // chip counters (last run · items found) are stale after a crawl
+      }, 6000);
+    } catch {
+      toast("Refresh failed", "error");
+    }
+  };
 
   return (
     <div className="space-y-5">
-      {/* mode tabs: jobs (free boards) · pitch targets (companies with no opening) · apply by email */}
+      {/* mode tabs: jobs (free boards) · pitch targets (companies with no opening) ·
+          apply by email. Labels shorten under sm — three equal segments carrying
+          "Pitch targets" and "Apply by email" overflow a 342px track and push the
+          travelling indicator off its own label. */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="glass-tab flex rounded-full p-0.5">
-          {([[
-            "jobs",
-            "Jobs",
-            Briefcase,
-          ], [
-            "pitch",
-            "Pitch targets",
-            Building2,
-          ], [
-            "email",
-            "Apply by email",
-            Mail,
-          ]] as const).map(([key, label, Icon]) => (
-            <button
-              key={key}
-              onClick={() => patch({ mode: key === "jobs" ? undefined : key })}
-              className={cn("flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold", mode === key ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground hover:text-foreground")}
-            >
-              <Icon className="h-3.5 w-3.5" /> {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          className="max-w-full sm:max-w-none"
+          ariaLabel="Discover mode"
+          value={mode}
+          onChange={(m) => patch({ mode: m === "jobs" ? undefined : m })}
+          options={[
+            {
+              value: "jobs" as const,
+              label: (
+                <>
+                  <Briefcase className="h-3.5 w-3.5 shrink-0" /> Jobs
+                </>
+              ),
+            },
+            {
+              value: "pitch" as const,
+              label: (
+                <>
+                  <Building2 className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Pitch targets</span>
+                  <span className="sm:hidden">Pitch</span>
+                </>
+              ),
+            },
+            {
+              value: "email" as const,
+              label: (
+                <>
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Apply by email</span>
+                  <span className="sm:hidden">Email</span>
+                </>
+              ),
+            },
+          ]}
+        />
         <InfoButton
           title="Three ways to find your next role"
           body={
@@ -140,58 +228,113 @@ function DiscoverPageInner() {
       {mode === "email" && <EmailJobs />}
       {mode === "jobs" && (
         <>
-      {/* query bar */}
+      {/* Query bar: only the input row sticks. The chip rows below used to travel with it and
+          ate more than half of a phone viewport once they wrapped. */}
       <div className="glass-sheet sticky top-20 z-20 rounded-2xl p-3">
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+              ref={inputRef}
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
                 pushText(e.target.value);
               }}
               placeholder="python · react · payments…   (try: react remote)"
+              aria-label="Search jobs"
               className="pl-9"
-              autoFocus
             />
           </div>
-          <Button variant="outline" size="icon" onClick={() => setShowFilters((v) => !v)} title="Filters">
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setShowFilters((v) => !v)}
+            title="Filters"
+            aria-label="Filters"
+            aria-expanded={showFilters}
+          >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
-          <Button
-            variant="azure"
-            onClick={async () => {
-              try {
-                await appFetch("/jobs/refresh", { method: "POST", body: {}, _auth: true });
-                toast("Aggregating free sources…", "info");
-                setTimeout(() => search.refetch(), 6000);
-              } catch {
-                toast("Refresh failed", "error");
-              }
-            }}
-          >
-            <RefreshCw className={cn("h-4 w-4", search.isFetching && "animate-spin")} /> Refresh
+          <Button variant="azure" className="shrink-0 px-3 sm:px-4" onClick={runRefresh} aria-label="Refresh sources">
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
+      </div>
 
-        {/* source chips (progressive rendering signal, §25.1) */}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {(sources.data?.items ?? []).map((s) => (
-            <button
-              key={s.name}
-              onClick={() => patch({ source: queryParams.source === s.name ? undefined : s.name })}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize transition-colors",
-                queryParams.source === s.name ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : s.last_error ? "border-rose-400/50 bg-rose-500/10 text-rose-600" : "border-border text-muted-foreground hover:bg-muted"
-              )}
-              title={s.last_error ?? `last run ${s.last_run_at ?? "never"} · ${s.items_found} items`}
+      {/* filters panel lives OUTSIDE the sticky bar: pinned open it measured 235px on a
+          812px phone viewport and hid the results the user was filtering. */}
+      {showFilters && (
+        <div className="glass-sheet route-fade rounded-2xl p-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <label className="min-w-0 text-xs">
+              <span className="mb-1 block font-semibold text-muted-foreground">Location</span>
+              {/* keyed on the URL so a chip or reset outside this panel re-syncs the field */}
+              <Input key={queryParams.location ?? ""} defaultValue={queryParams.location ?? ""} onBlur={(e) => patch({ location: e.target.value })} placeholder="Remote, Lagos, Berlin…" />
+            </label>
+            <div className="min-w-0 text-xs">
+              <span className="mb-1 block font-semibold text-muted-foreground">Remote only</span>
+              <SegmentedControl
+                ariaLabel="Remote only"
+                size="sm"
+                stretch
+                value={queryParams.remote === "true" ? "yes" : "any"}
+                onChange={(v) => patch({ remote: v === "yes" ? "true" : undefined })}
+                options={[
+                  { value: "any" as const, label: "Any" },
+                  { value: "yes" as const, label: "Remote" },
+                ]}
+              />
+            </div>
+            <div className="min-w-0 text-xs">
+              <span className="mb-1 block font-semibold text-muted-foreground">Seniority</span>
+              <div className="flex flex-wrap gap-1">
+                {["junior", "mid", "senior", "staff"].map((s) => (
+                  <Chip key={s} active={queryParams.seniority === s} onClick={() => patch({ seniority: queryParams.seniority === s ? undefined : s })}>
+                    {s}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+            <div className="min-w-0 text-xs">
+              <span className="mb-1 block font-semibold text-muted-foreground">Sort</span>
+              <SegmentedControl
+                ariaLabel="Sort order"
+                size="sm"
+                stretch
+                value={queryParams.sort === "recent" ? "recent" : "score"}
+                onChange={(v) => patch({ sort: v === "recent" ? "recent" : undefined })}
+                options={[
+                  { value: "score" as const, label: "Score" },
+                  { value: "recent" as const, label: "Newest" },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* facets + quick filters: scrolls away so the sticky bar stays one row tall */}
+      <div className="glass-sheet rounded-2xl p-3">
+        {/* source chips (progressive rendering signal, §25.1) — one row, facet counts folded in */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {sourceChips.map(({ name, meta, label }) => (
+            <Chip
+              key={name}
+              active={queryParams.source === name}
+              onClick={() => patch({ source: queryParams.source === name ? undefined : name })}
+              className={cn(!queryParams.source && meta?.last_error && "border-ink/40 text-foreground")}
+              title={meta?.last_error ?? `last run ${meta?.last_run_at ?? "never"} · ${meta?.items_found ?? 0} items`}
             >
-              {s.name} {s.last_run_at ? `· ${s.items_found}` : "· idle"}
-            </button>
+              {name}
+              {label}
+            </Chip>
           ))}
-          <span className="ml-auto text-[11px] text-muted-foreground">
-            {search.data ? `${search.data.pagination.total_count} results in ${search.data.took_ms}ms` : "searching…"} {activeFilters.length > 0 && `· ${activeFilters.length} filters`}
+          <span className="w-full text-[11px] text-muted-foreground sm:ml-auto sm:w-auto">
+            {search.data ? `${search.data.pagination.total_count} results in ${search.data.took_ms}ms` : "searching…"}{" "}
+            {activeFilters.length > 0 && `· ${activeFilters.length} filters`}
             {activeFilters.length > 0 && (
               <button className="ml-2 font-semibold text-accent" onClick={() => router.replace("/discover")}>
                 reset
@@ -202,93 +345,32 @@ function DiscoverPageInner() {
 
         {/* Nigeria quick filters: the search scope, one click away */}
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground">Nigeria:</span>
+          <span className="shrink-0 text-[11px] text-muted-foreground">Nigeria:</span>
           {["Lagos", "Abuja", "Ogun", "Nigeria"].map((loc) => {
             const active = (queryParams.location ?? "").toLowerCase() === loc.toLowerCase();
             return (
-              <button
-                key={loc}
-                onClick={() => patch({ location: active ? undefined : loc })}
-                className={cn(
-                  "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                  active ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                )}
-              >
+              <Chip key={loc} active={active} onClick={() => patch({ location: active ? undefined : loc })}>
                 {loc}
-              </button>
+              </Chip>
             );
           })}
-          <span className="ml-1 text-[11px] text-muted-foreground">role:</span>
-          {["software engineer", "frontend", "backend", "full stack", "devops"].map((term) => (
-            <button
-              key={term}
-              onClick={() => patch({ q: (queryParams.q ?? "").toLowerCase() === term ? undefined : term })}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
-                (queryParams.q ?? "").toLowerCase() === term ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-              )}
-            >
-              {term}
-            </button>
-          ))}
+          <span className="ml-1 shrink-0 text-[11px] text-muted-foreground">role:</span>
+          {["software engineer", "frontend", "backend", "full stack", "devops"].map((term) => {
+            const active = (queryParams.q ?? "").toLowerCase() === term;
+            return (
+              <Chip key={term} active={active} onClick={() => patch({ q: active ? undefined : term })}>
+                {term}
+              </Chip>
+            );
+          })}
         </div>
-
-        {showFilters && (
-          <div className="route-fade mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="text-xs">
-              <span className="mb-1 block font-semibold text-muted-foreground">Location</span>
-              <Input defaultValue={queryParams.location ?? ""} onBlur={(e) => patch({ location: e.target.value })} placeholder="Remote, Lagos, Berlin…" />
-            </label>
-            <label className="text-xs">
-              <span className="mb-1 block font-semibold text-muted-foreground">Remote only</span>
-              <div className="glass-tab flex rounded-full p-0.5">
-                {[["any", undefined], ["yes", "true"]].map(([label, value]) => (
-                  <button key={String(label)} onClick={() => patch({ remote: value })} className={cn("flex-1 rounded-full px-3 py-1.5 text-xs font-semibold", (queryParams.remote ?? undefined) === value ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </label>
-            <label className="text-xs">
-              <span className="mb-1 block font-semibold text-muted-foreground">Seniority</span>
-              <div className="flex flex-wrap gap-1">
-                {["junior", "mid", "senior", "staff"].map((s) => (
-                  <button key={s} onClick={() => patch({ seniority: queryParams.seniority === s ? undefined : s })} className={cn("rounded-full border px-2.5 py-1 text-[11px] capitalize", queryParams.seniority === s ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground")}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </label>
-            <label className="text-xs">
-              <span className="mb-1 block font-semibold text-muted-foreground">Sort</span>
-              <div className="glass-tab flex rounded-full p-0.5">
-                {[["score", "score"], ["recent", "newest"]].map(([value, label]) => (
-                  <button key={value} onClick={() => patch({ sort: value === "score" ? undefined : value })} className={cn("flex-1 rounded-full px-3 py-1.5 text-xs font-semibold", (queryParams.sort ?? "score") === value ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </label>
-          </div>
-        )}
       </div>
 
-      {search.data && search.data.sources_failed.length > 0 && (
+      {failed.length > 0 && (
         <InlineBanner tone="warn" title="Partial results">
-          {search.data.sources_failed.map((s) => s.source).join(", ")} didn’t respond, the rest of your results are complete.{" "}
+          {failed.map((s) => s.source).join(", ")} didn’t respond, the rest of your results are complete.{" "}
           <Kbd className="ml-1">live sources retry on refresh</Kbd>
         </InlineBanner>
-      )}
-
-      {/* facet chips */}
-      {Object.keys(facetSource).length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {Object.entries(facetSource).map(([src, count]) => (
-            <Badge key={src} tone={queryParams.source === src ? "azure" : "neutral"} className="cursor-pointer capitalize" onClick={() => patch({ source: queryParams.source === src ? undefined : src })}>
-              {src} · {count}
-            </Badge>
-          ))}
-        </div>
       )}
 
       {/* results */}

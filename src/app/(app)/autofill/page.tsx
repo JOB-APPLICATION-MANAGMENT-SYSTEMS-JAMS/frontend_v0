@@ -12,6 +12,7 @@ import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/base";
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { Portal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 
 type Profile = {
@@ -225,8 +226,10 @@ export default function AutofillPage() {
   const guardrails = schema.data?.guardrails?.never_fill ?? ["password", "credit_card", "ssn", "cvv"];
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-      <div className="space-y-5">
+    <>
+      {/* pb clears the phone-only save dock below */}
+      <div className="grid gap-5 pb-24 xl:grid-cols-[1fr_320px] xl:pb-0">
+        <div className="space-y-5">
         {/* header explainer */}
         <Card className="p-5">
           <h2 className="font-display text-lg font-bold">What the extension fills — and what it refuses to</h2>
@@ -317,7 +320,7 @@ export default function AutofillPage() {
                   />
                 </Field>
                 <button
-                  className="mb-1 grid h-9 w-9 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-rose-600"
+                  className="mb-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:text-destructive"
                   onClick={() => setCustom(custom.filter((_, j) => j !== i))}
                   aria-label="Remove answer"
                 >
@@ -366,14 +369,27 @@ export default function AutofillPage() {
             <li>· Nothing ever submits — you press Submit yourself.</li>
           </ul>
         </Card>
+        </div>
       </div>
-    </div>
+
+      {/* Phones: ~70 fields make this page ~10 screens deep, so the primary action
+          rides the bottom of the viewport instead of hiding at the very end.
+          Portalled out of <main>, whose route-fade transform would otherwise become
+          its containing block. */}
+      <Portal>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md xl:hidden">
+          <Button className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>
+            <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save autofill details"}
+          </Button>
+        </div>
+      </Portal>
+    </>
   );
 }
 
 function Section({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <h2 className="font-display mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+    <h2 className="eyebrow mb-4 flex items-center gap-2">
       <span className="text-primary">{icon}</span>
       {title}
     </h2>

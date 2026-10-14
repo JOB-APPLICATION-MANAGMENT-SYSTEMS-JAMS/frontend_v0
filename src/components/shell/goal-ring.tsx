@@ -9,11 +9,16 @@ import { Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Today } from "@/types";
 
-const STATE_STYLE: Record<string, { ring: string; flame: string; label: string }> = {
-  cold: { ring: "hsl(30 8% 58%)", flame: "text-muted-foreground", label: "Cold" },
-  warming: { ring: "hsl(38 92% 50%)", flame: "text-amber-500", label: "Warming" },
-  burning: { ring: "hsl(24 95% 54%)", flame: "text-orange-500", label: "Burning" },
-  blazing: { ring: "hsl(12 92% 52%)", flame: "text-orange-600", label: "Blazing" },
+/**
+ * The four states are four rungs of one hue, so the ring literally heats up as
+ * the day progresses: grey (no fire) → pale ember → the brand → deep ember with
+ * a glow. The glow is what separates "Blazing" from "Burning", not a new colour.
+ */
+const STATE_STYLE: Record<string, { ring: string; flame: string; label: string; glow?: string }> = {
+  cold: { ring: "hsl(0 0% 58%)", flame: "text-muted-foreground", label: "Cold" },
+  warming: { ring: "hsl(30 100% 74%)", flame: "text-ember-soft", label: "Warming" },
+  burning: { ring: "hsl(30 100% 60%)", flame: "text-ember", label: "Burning" },
+  blazing: { ring: "hsl(30 100% 52%)", flame: "text-ember-deep", label: "Blazing", glow: "0 0 14px hsl(30 100% 60% / 0.65)" },
 };
 
 export function GoalRing({ today, size = 56, showLabel = false, className }: { today: Today | undefined; size?: number; showLabel?: boolean; className?: string }) {
@@ -22,11 +27,12 @@ export function GoalRing({ today, size = 56, showLabel = false, className }: { t
   const stroke = size >= 90 ? 8 : 6;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
+  const lit = today?.state && today.state !== "cold";
 
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div className="relative grid place-items-center" style={{ width: size, height: size }} title={showLabel ? `${today?.count ?? 0}/${today?.goal ?? 20} today` : undefined}>
-        <svg width={size} height={size} className="absolute inset-0 -rotate-90" aria-hidden>
+        <svg width={size} height={size} className="absolute inset-0 -rotate-90" aria-hidden style={{ filter: lit ? `drop-shadow(0 0 6px hsl(30 100% 60% / 0.35))` : undefined }}>
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--line))" strokeWidth={stroke} />
           <circle
             cx={size / 2}
@@ -38,7 +44,7 @@ export function GoalRing({ today, size = 56, showLabel = false, className }: { t
             strokeLinecap="round"
             strokeDasharray={c}
             strokeDashoffset={c - (c * pct) / 100}
-            style={{ transition: "stroke-dashoffset 700ms cubic-bezier(.23,1,.32,1)" }}
+            style={{ transition: "stroke-dashoffset 700ms var(--ease-out), stroke 400ms var(--ease-out)" }}
           />
         </svg>
         {/* in-flow so it is centred by the grid on every engine (the old absolute span drifted) */}

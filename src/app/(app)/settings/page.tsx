@@ -10,6 +10,7 @@ import { appFetch } from "@/lib/api";
 import { clearSession } from "@/lib/api/session";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton } from "@/components/ui/base";
+import { PageHeader, SegmentedControl } from "@/components/ui/layout";
 import { useMounted } from "@/hooks/use-mounted";
 import { InlineBanner } from "@/components/ui/feedback";
 import { fmt } from "@/lib/utils";
@@ -80,14 +81,11 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <header>
-        <h1 className="font-display text-2xl font-extrabold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Account, defaults, appearance, and your data, all exportable (§31).</p>
-      </header>
+      <PageHeader eyebrow="Preferences" title="Settings" description="Account, defaults, appearance and your data. Everything is exportable and nothing is locked in." />
 
       {/* account */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Account</h2>
+        <h2 className="eyebrow mb-3">Account</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <Label>Email</Label>
@@ -120,7 +118,7 @@ export default function SettingsPage() {
 
       {/* goals */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Defaults</h2>
+        <h2 className="eyebrow mb-3">Defaults</h2>
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <Label>Daily application goal</Label>
@@ -138,23 +136,25 @@ export default function SettingsPage() {
 
       {/* appearance */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Appearance</h2>
-        <div className="flex gap-2">
-          <Button variant={activeTheme === "light" ? "default" : "outline"} size="sm" onClick={() => setTheme("light")}>
-            <Sun className="h-4 w-4" /> Light
-          </Button>
-          <Button variant={activeTheme === "dark" ? "default" : "outline"} size="sm" onClick={() => setTheme("dark")}>
-            <Moon className="h-4 w-4" /> Dark
-          </Button>
-          <Button variant={activeTheme === "system" ? "default" : "outline"} size="sm" onClick={() => setTheme("system")}>
-            <Zap className="h-4 w-4" /> System
-          </Button>
-        </div>
+        <h2 className="eyebrow mb-3">Appearance</h2>
+        {/* three exclusive choices → one segmented control, like every other
+            exclusive choice in the app (three side-by-side buttons read as three
+            independent actions) */}
+        <SegmentedControl
+          ariaLabel="Colour theme"
+          value={activeTheme === "light" || activeTheme === "dark" ? activeTheme : "system"}
+          onChange={(v) => setTheme(v)}
+          options={[
+            { value: "light" as const, label: (<><Sun className="h-4 w-4" /> Light</>) },
+            { value: "dark" as const, label: (<><Moon className="h-4 w-4" /> Dark</>) },
+            { value: "system" as const, label: (<><Zap className="h-4 w-4" /> System</>) },
+          ]}
+        />
       </Card>
 
       {/* data */}
       <Card className="p-5">
-        <h2 className="font-display mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Your data</h2>
+        <h2 className="eyebrow mb-3">Your data</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => download("json")}>
             <FileJson className="h-4 w-4" /> Export JSON
@@ -171,7 +171,7 @@ export default function SettingsPage() {
       {/* source health */}
       <Card className="p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+          <h2 className="eyebrow flex items-center gap-2">
             <Database className="h-4 w-4" /> Free source health
           </h2>
           <Button size="sm" variant="ghost" onClick={() => sources.refetch()}>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {sources.data!.items.map((s) => (
-              <li key={s.name} className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2">
+              <li key={s.name} className="glass-inset flex items-center justify-between gap-2 rounded-xl px-3 py-2">
                 <span className="text-sm font-medium capitalize">{String(s.name).replace(/_/g, " ")}</span>
                 <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
                   {s.last_run_at ? fmt.ago(s.last_run_at) : "never"}

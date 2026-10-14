@@ -65,22 +65,29 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
       <Link
         key={href}
         href={href}
+        aria-current={active ? "page" : undefined}
         onClick={() => {
           if (!isDesktop) onClose();
         }}
+        data-active={active}
         className={cn(
-          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-200",
+          "ember-edge group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-[var(--dur-2)] ease-[var(--ease-out)]",
           active
-            ? "bg-white/70 text-ink shadow-sm dark:bg-white/10 dark:text-white"
-            : "text-muted-foreground hover:bg-white/50 hover:text-foreground dark:hover:bg-white/5"
+            ? "bg-ember/12 text-foreground shadow-[inset_0_1px_0_var(--glass-lip)] dark:bg-ember/10"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )}
       >
-        <span className={cn("grid h-6 w-6 shrink-0 place-items-center", active && "text-primary")}>
+        <span
+          className={cn(
+            "grid h-6 w-6 shrink-0 place-items-center transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)] group-hover:scale-110",
+            active && "text-ember-deep dark:text-ember"
+          )}
+        >
           <Icon className="h-[18px] w-[18px]" />
         </span>
-        <span className="flex-1">{label}</span>
-        {kbd && <Kbd>{kbd}</Kbd>}
-        {active && <span className="h-1.5 w-1.5 rounded-full bg-[image:var(--gradient-brand)]" />}
+        <span className="flex-1 truncate">{label}</span>
+        {kbd && <Kbd className="opacity-55 transition-opacity duration-200 group-hover:opacity-100">{kbd}</Kbd>}
+        {active && <span className="animate-ember h-1.5 w-1.5 shrink-0 rounded-full bg-ember" />}
       </Link>
     );
   };
@@ -88,7 +95,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
   return (
     <>
       {/* scrim, the rail overlays on small screens, pushes content from md up */}
-      {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" />}
+      {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="scrim-in fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" />}
 
       <aside
         inert={!open}
@@ -98,12 +105,13 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="mb-4 flex items-center gap-2 px-2">
-          <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-8 w-auto shrink-0" />
+        <div className="mb-4 flex items-center gap-2.5 px-2 py-1">
+          <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-8 w-auto shrink-0 drop-shadow-[0_4px_12px_hsl(30_100%_60%/0.35)]" />
           <span className="font-display text-lg font-extrabold tracking-tight">JAMS</span>
+          <span className="ml-auto rounded-full bg-ember/12 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-ember-deep dark:text-ember">v1</span>
         </div>
 
-        <nav className="mt-3 flex flex-col gap-1.5">
+        <nav className="stagger-children mt-3 flex flex-col gap-1.5">
           {NAV.map((r) => item(r.href, r.label, r.icon, r.kbd))}
         </nav>
 
@@ -112,9 +120,9 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             type="button"
             onClick={() => setConfirmOut(true)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-danger transition-colors hover:bg-danger/10"
+            className="press group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-foreground transition-colors hover:bg-ink/10"
           >
-            <span className="grid h-6 w-6 shrink-0 place-items-center">
+            <span className="grid h-6 w-6 shrink-0 place-items-center transition-transform duration-[var(--dur-3)] ease-[var(--ease-out)] group-hover:translate-x-0.5">
               <LogOut className="h-[18px] w-[18px]" />
             </span>
             Log out

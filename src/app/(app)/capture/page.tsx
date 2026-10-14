@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, ClipboardPaste, Crosshair, Loader2, Rocket } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { Badge, Button, Card, Input, Label, Select, Skeleton, Textarea } from "@/components/ui/base";
+import { PageHeader } from "@/components/ui/layout";
 import { InlineBanner } from "@/components/ui/feedback";
 import { fmt, cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -79,10 +80,11 @@ function CapturePageInner() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <header>
-        <h1 className="font-display text-2xl font-extrabold">Quick capture</h1>
-        <p className="text-sm text-muted-foreground">Paste a posting URL, JSON-LD, OpenGraph and text patterns are parsed server-side (§19.2).</p>
-      </header>
+      <PageHeader
+        eyebrow="Capture"
+        title="Quick capture"
+        description="Paste a posting URL. JSON-LD, OpenGraph and text patterns are parsed server-side, and nothing is submitted until you say so."
+      />
 
       <Card className="space-y-4 p-5">
         <div>
@@ -168,7 +170,7 @@ function CapturePageInner() {
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   <span className="text-[11px] text-muted-foreground">found on page:</span>
                   {foundEmails.map((em) => (
-                    <button key={em} onClick={() => setContactEmail(em)} className={cn("rounded-full border px-2 py-0.5 text-[11px]", contactEmail === em ? "border-orange-600 text-orange-700" : "border-border text-muted-foreground hover:border-foreground/30")}>
+                    <button key={em} onClick={() => setContactEmail(em)} className={cn("rounded-full border px-2 py-0.5 text-[11px]", contactEmail === em ? "border-ember/60 bg-ember/12 text-ember-deep dark:text-ember-soft" : "border-border text-muted-foreground hover:border-ember/40 hover:text-foreground")}>
                       {em}
                     </button>
                   ))}
@@ -201,7 +203,7 @@ function CapturePageInner() {
 
       {!parsed && !preview.isPending && (
         <Card className="flex items-center gap-4 p-5">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500/12 text-orange-700 dark:text-orange-400">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ember/12 text-ember-deep dark:text-ember-soft">
             <ClipboardPaste className="h-5 w-5" />
           </span>
           <p className="text-xs leading-relaxed text-muted-foreground">

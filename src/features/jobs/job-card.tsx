@@ -3,7 +3,7 @@
 /** Result card (§25.1): title · company · salary · posted-ago · source badge · explainable score. */
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Check, ExternalLink, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { Check, ExternalLink, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { Badge, Button } from "@/components/ui/base";
 import { cn, fmt } from "@/lib/utils";
@@ -59,13 +59,13 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
       className={cn(
         "glass-card glass-hover group relative flex flex-col gap-3 rounded-2xl p-4",
         job.ignored && "opacity-45",
-        job.applied && "ring-1 ring-emerald-500/40"
+        job.applied && "ring-1 ring-ember/40"
       )}
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <button onClick={onOpen} className="truncate font-display text-[15px] font-bold hover:text-accent">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <button onClick={onOpen} className="min-w-0 max-w-full truncate text-left font-display text-[15px] font-bold hover:text-accent">
               {job.title}
             </button>
         {job.applied && <Badge tone="mint">applied ✓</Badge>}
@@ -89,13 +89,13 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
             onFocus={() => setExplaining(true)}
             onBlur={() => setExplaining(false)}
             onClick={() => setExplaining((v) => !v)}
-            className={cn("rounded-full border px-2.5 py-1 font-mono text-xs font-bold", scoreTone === "mint" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", scoreTone === "azure" && "border-orange-600/35 bg-orange-600/12 text-orange-700 dark:text-orange-400", scoreTone === "amber" && "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400")}
+            className={cn("rounded-full border px-2.5 py-1 font-mono text-xs font-bold", scoreTone === "mint" && "border-ember/45 bg-ember/16 text-ember-deep dark:text-ember-soft", scoreTone === "azure" && "border-ember/35 bg-ember/12 text-ember-deep dark:text-ember-soft", scoreTone === "amber" && "border-ember-soft/50 bg-ember-soft/16 text-ember-ink dark:text-ember-soft")}
             title="Why this ranked here"
           >
             {job.score.toFixed(0)}
           </button>
           {explaining && (
-            <div className="glass-panel absolute right-0 top-8 z-20 w-72 rounded-2xl p-3.5">
+            <div className="glass-panel absolute right-0 top-8 z-20 w-72 max-w-[calc(100vw-4rem)] rounded-2xl p-3.5">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Why {job.score.toFixed(0)}?</p>
               {job.explain.slice(0, 5).map((e) => (
                 <div key={e.factor} className="mb-2.5 text-xs">
@@ -134,7 +134,7 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
 
       {!dense && job.description_snippet && <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{job.description_snippet}</p>}
 
-      <div className="mt-auto flex items-center gap-1.5 border-t border-border pt-2.5">
+      <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
         <Button size="sm" variant={job.applied ? "success" : "azure"} onClick={() => capture.mutate()} disabled={capture.isPending || job.applied}>
           <Check className="h-3.5 w-3.5" /> {job.applied ? "In tracker" : "Track this"}
         </Button>
@@ -144,18 +144,17 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
         <a href={job.url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted">
           <ExternalLink className="h-3.5 w-3.5" /> Open
         </a>
+        {/* one action per intent: "ignore" removes the posting from every future search, so a
+            second, differently-labelled control for the same vote would be a lie. */}
         <div className="ml-auto flex items-center">
-          <button onClick={() => vote.mutate("up")} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600" title="More like this">
+          <button onClick={() => vote.mutate("up")} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-ember/12 hover:text-ember-deep dark:hover:text-ember-soft" title="More like this" aria-label="More like this">
             <ThumbsUp className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => vote.mutate("down")} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600" title="Less like this">
+          <button onClick={() => vote.mutate("down")} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-ink/10 hover:text-destructive" title="Less like this" aria-label="Less like this">
             <ThumbsDown className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => vote.mutate("ignore")} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-muted" title="Ignore">
+          <button onClick={() => vote.mutate("ignore")} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted" title="Not interested: hide this posting" aria-label="Not interested: hide this posting">
             <X className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={() => vote.mutate("ignore")} className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-ink/10 hover:text-foreground" title="Save for later">
-            {job.ignored ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
           </button>
         </div>
       </div>

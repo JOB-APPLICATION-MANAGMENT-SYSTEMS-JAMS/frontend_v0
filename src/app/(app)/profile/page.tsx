@@ -8,6 +8,7 @@ import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton, Textarea } from "@/components/ui/base";
 import { ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { Portal } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -85,11 +86,13 @@ export default function ProfilePage() {
   const setPref = (k: string, v: unknown) => setDraft({ ...draft, prefs: { ...pref, [k]: v } });
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-      <div className="space-y-5">
+    <>
+      {/* pb clears the phone-only save dock below */}
+      <div className="grid gap-5 pb-24 xl:grid-cols-[1fr_320px] xl:pb-0">
+        <div className="space-y-5">
         {/* completeness */}
         <Card className="flex items-center gap-5 p-5">
-          <div className="relative grid h-20 w-20 place-items-center">
+          <div className="relative grid h-20 w-20 shrink-0 place-items-center">
             <svg viewBox="0 0 80 80" className="absolute inset-0 -rotate-90">
               <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--line))" strokeWidth="8" />
               <circle
@@ -192,12 +195,12 @@ export default function ProfilePage() {
                 />
                 <button
                   onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, j) => j !== i) })}
-                  className={cn("grid h-9 w-9 place-items-center rounded-xl border", s.is_top5 ? "border-orange-600 bg-orange-600/12 text-orange-700 dark:border-orange-500 dark:bg-orange-500/12 dark:text-orange-400" : "border-border text-muted-foreground")}
+                  className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl border", s.is_top5 ? "border-ember/60 bg-ember/14 text-ember-deep dark:text-ember-soft" : "border-border text-muted-foreground hover:border-ember/40 hover:text-foreground")}
                   title="Top-5 skill (weights ×1.5 in scoring)"
                 >
                   ★
                 </button>
-                <button onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, j) => j !== i) })} className="grid h-9 w-9 place-items-center rounded-xl text-muted-foreground hover:text-rose-600">
+                <button onClick={() => setDraft({ ...draft, skills: draft.skills.filter((_, j) => j !== i) })} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-muted-foreground hover:text-destructive">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -233,7 +236,7 @@ export default function ProfilePage() {
                     onChange={(ev) => upd({ bullets: ev.target.value.split("\n").filter(Boolean) })}
                     placeholder={"One bullet per line\nLed migration of…"}
                   />
-                  <button className="mt-1 text-xs text-rose-600 hover:underline" onClick={() => setDraft({ ...draft, experiences: draft.experiences.filter((_, j) => j !== i) })}>
+                  <button className="mt-1 text-xs text-destructive hover:underline" onClick={() => setDraft({ ...draft, experiences: draft.experiences.filter((_, j) => j !== i) })}>
                     remove
                   </button>
                 </div>
@@ -260,7 +263,7 @@ export default function ProfilePage() {
                   <Input value={e.school} placeholder="School" onChange={(ev) => upd({ school: ev.target.value })} className="min-w-[180px] flex-1" />
                   <Input value={e.degree ?? ""} placeholder="Degree" onChange={(ev) => upd({ degree: ev.target.value })} className="w-32" />
                   <Input value={e.field ?? ""} placeholder="Field" onChange={(ev) => upd({ field: ev.target.value })} className="w-40" />
-                  <button className="text-xs text-rose-600" onClick={() => setDraft({ ...draft, education: draft.education.filter((_, j) => j !== i) })}>
+                  <button className="text-xs text-destructive" onClick={() => setDraft({ ...draft, education: draft.education.filter((_, j) => j !== i) })}>
                     remove
                   </button>
                 </div>
@@ -296,14 +299,26 @@ export default function ProfilePage() {
             }}
           />
         </Card>
+        </div>
       </div>
-    </div>
+
+      {/* Phones: the form runs ~2,500px, so the primary action rides the bottom of the
+          viewport instead of hiding at the end of the page. Portalled out of <main>,
+          whose route-fade transform would otherwise become its containing block. */}
+      <Portal>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md xl:hidden">
+          <Button className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>
+            <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save profile"}
+          </Button>
+        </div>
+      </Portal>
+    </>
   );
 }
 
 function Section({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <h2 className="font-display mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+    <h2 className="eyebrow mb-4 flex items-center gap-2">
       <span className="text-primary">{icon}</span>
       {title}
     </h2>

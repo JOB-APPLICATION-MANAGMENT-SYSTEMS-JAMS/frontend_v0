@@ -12,6 +12,7 @@ import type { AppStatus, Application, Paged } from "@/types";
 import { Badge, Button, Card, Input, Label, Pager, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Modal, InfoButton } from "@/components/ui/modal";
+import { Checkbox, SegmentedControl } from "@/components/ui/layout";
 import { BOARD_COLUMNS, STATUS_META, cn, fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -84,14 +85,15 @@ function TrackerPageInner() {
     <div className="space-y-4">
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="glass-tab flex rounded-full p-0.5">
-          <button onClick={() => setParam("view", "board")} className={cn("flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold", view === "board" ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
-            <Columns3 className="h-3.5 w-3.5" /> Board
-          </button>
-          <button onClick={() => setParam("view", "list")} className={cn("flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold", view === "list" ? "bg-[image:var(--gradient-brand)] text-white" : "text-muted-foreground")}>
-            <List className="h-3.5 w-3.5" /> List
-          </button>
-        </div>
+        <SegmentedControl
+          ariaLabel="Tracker view"
+          value={view as "board" | "list"}
+          onChange={(v) => setParam("view", v)}
+          options={[
+            { value: "board" as const, label: (<><Columns3 className="h-3.5 w-3.5" /> Board</>) },
+            { value: "list" as const, label: (<><List className="h-3.5 w-3.5" /> List</>) },
+          ]}
+        />
         <InfoButton
           title="Board vs list"
           body={
@@ -102,7 +104,9 @@ function TrackerPageInner() {
           }
         />
 
-        <div className="flex flex-wrap gap-1.5">
+        {/* status chips: one scrollable rail on phones, a wrap on desktop. Wrapped
+            on a 390px screen they pushed the results below the fold. */}
+        <div className="no-scrollbar -mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0">
           <InfoButton
             title="Status filters"
             body={
@@ -112,17 +116,17 @@ function TrackerPageInner() {
               </>
             }
           />
-          <Badge tone={statusFilter ? "neutral" : "azure"} className="cursor-pointer" onClick={() => setStatus(undefined)}>
+          <Badge tone={statusFilter ? "neutral" : "azure"} className="shrink-0 cursor-pointer" onClick={() => setStatus(undefined)}>
             all
           </Badge>
           {BOARD_COLUMNS.map((s) => (
-            <Badge key={s} tone={statusFilter === s ? "azure" : "neutral"} className="cursor-pointer capitalize" onClick={() => setStatus(statusFilter === s ? undefined : s)}>
+            <Badge key={s} tone={statusFilter === s ? "azure" : "neutral"} className="shrink-0 cursor-pointer capitalize" onClick={() => setStatus(statusFilter === s ? undefined : s)}>
               {STATUS_META[s].label} · {byStatus[s]?.length ?? 0}
             </Badge>
           ))}
         </div>
 
-        <Button className="ml-auto" onClick={() => setParam("new", "1")}>
+        <Button className="w-full sm:ml-auto sm:w-auto" onClick={() => setParam("new", "1")}>
           <Plus className="h-4 w-4" /> Log application <span className="ml-1 hidden opacity-70 sm:inline">c</span>
         </Button>
       </div>
@@ -172,8 +176,12 @@ function TrackerPageInner() {
       ) : view === "list" ? (
         <ListView items={list.data!.items} selected={selected} onToggle={(id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))} />
       ) : (
-        /* ─────────── board ─────────── */
-        <div className="grid gap-3 overflow-x-auto pb-4 md:grid-cols-3 xl:grid-cols-4 [grid-auto-flow:column] [grid-auto-columns:minmax(240px,1fr)]">
+        /* ─────────── board ───────────
+           One track per status, all equal, 240px minimum. Mixing a fixed
+           grid-cols-4 into this grid made the first four tracks minmax(0,1fr),
+           which collapse to ~44px while the auto tracks held their 240px floor,
+           so the lanes overlapped each other on laptop widths. Keep it auto-only. */
+        <div className="grid snap-x snap-proximity gap-3 overflow-x-auto pb-4 [grid-auto-flow:column] [grid-auto-columns:minmax(240px,1fr)]">
           {BOARD_COLUMNS.map((col) => (
             <section
               key={col}
@@ -187,7 +195,7 @@ function TrackerPageInner() {
                 setDragId(null);
                 setDropCol(null);
               }}
-              className={cn("glass-card min-h-[220px] rounded-2xl p-3 transition-shadow", dropCol === col && "ring-2 ring-orange-500/70")}
+              className={cn("glass-card min-h-[220px] snap-start rounded-2xl p-3 transition-shadow", dropCol === col && "ring-2 ring-ember/70")}
             >
               <header className="mb-2.5 flex items-center justify-between">
                 <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider" style={{ color: STATUS_META[col].color }}>
@@ -205,9 +213,9 @@ function TrackerPageInner() {
                     onDragStart={() => setDragId(a.id)}
                     onDragEnd={() => setDragId(null)}
                     className={cn(
-                      "animate-stagger cursor-grab rounded-xl border border-white/40 bg-white/60 p-2.5 transition-transform duration-200 hover:-translate-y-0.5 active:cursor-grabbing dark:border-white/10 dark:bg-black/30",
+                      "glass-card animate-stagger cursor-grab rounded-xl p-2.5 transition-all duration-[var(--dur-2)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-ember/40 active:cursor-grabbing",
                       dragId === a.id && "opacity-50",
-                      ["interview", "offer"].includes(a.status) && "border-orange-400/50"
+                      ["interview", "offer"].includes(a.status) && "border-ember/50"
                     )}
                     style={{ "--i": Math.min(i, 6) } as React.CSSProperties}
                   >
@@ -250,10 +258,15 @@ function TrackerPageInner() {
 }
 
 /* ------------------------------- list view ------------------------------- */
+/**
+ * Two presentations of the same rows: a table from md up, a card list below it.
+ * The 840px table inside a 342px scroller meant every phone row had to be dragged
+ * sideways to reach its status — correct data, unusable shape.
+ */
 function ListView({ items, selected, onToggle }: { items: Application[]; selected: string[]; onToggle: (id: string) => void }) {
   return (
-    <Card className="overflow-x-auto p-0">
-      <table className="w-full min-w-[840px] text-sm">
+    <Card className="overflow-hidden p-0">
+      <table className="hidden w-full min-w-[840px] text-sm md:table">
         <thead>
           <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-muted-foreground">
             <th className="w-10 px-4 py-3" />
@@ -270,7 +283,7 @@ function ListView({ items, selected, onToggle }: { items: Application[]; selecte
           {items.map((a, i) => (
             <tr key={a.id} className="animate-stagger border-b border-border/40 last:border-0 hover:bg-muted/50" style={{ "--i": Math.min(i, 10) } as React.CSSProperties}>
               <td className="px-4 py-2.5">
-                <input type="checkbox" checked={selected.includes(a.id)} onChange={() => onToggle(a.id)} className="accent-orange-600" />
+                <Checkbox checked={selected.includes(a.id)} onChange={() => onToggle(a.id)} aria-label={`Select ${a.role_title}`} />
               </td>
               <td className="max-w-[240px] truncate px-2 py-2.5 font-medium">
                 <Link href={`/applications/${a.id}`} className="hover:text-accent">
@@ -279,7 +292,7 @@ function ListView({ items, selected, onToggle }: { items: Application[]; selecte
               </td>
               <td className="max-w-[160px] truncate px-2 py-2.5 text-muted-foreground">{a.company_name}</td>
               <td className="px-2 py-2.5">
-                <span className="rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: `${STATUS_META[a.status]?.color}55` }}>
+                <span className="rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize" style={{ color: STATUS_META[a.status]?.color, borderColor: STATUS_META[a.status]?.borderColor }}>
                   {STATUS_META[a.status]?.label ?? a.status}
                 </span>
               </td>
@@ -295,6 +308,35 @@ function ListView({ items, selected, onToggle }: { items: Application[]; selecte
           ))}
         </tbody>
       </table>
+
+      {/* phones: one card per application, nothing to drag sideways */}
+      <ul className="divide-y divide-border md:hidden">
+        {items.map((a, i) => (
+          <li key={a.id} className="animate-stagger flex items-start gap-3 p-3" style={{ "--i": Math.min(i, 10) } as React.CSSProperties}>
+            <Checkbox
+              checked={selected.includes(a.id)}
+              onChange={() => onToggle(a.id)}
+              aria-label={`Select ${a.role_title}`}
+              className="mt-0.5"
+            />
+            <Link href={`/applications/${a.id}`} className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-foreground">{a.role_title}</p>
+              <p className="truncate text-xs text-muted-foreground">{a.company_name}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                <span
+                  className="rounded-full border px-2 py-0.5 font-semibold capitalize"
+                  style={{ color: STATUS_META[a.status]?.color, borderColor: STATUS_META[a.status]?.borderColor }}
+                >
+                  {STATUS_META[a.status]?.label ?? a.status}
+                </span>
+                <span className="tnum">{fmt.date(a.applied_at ?? a.created_at)}</span>
+                {a.kind === "pitch" && <span>· pitch</span>}
+                {a.first_reply_days != null ? <span>· replied in {a.first_reply_days}d</span> : a.replied_at ? <span>· replied</span> : null}
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </Card>
   );
 }

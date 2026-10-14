@@ -29,16 +29,65 @@ export const fmt = {
   days: (n: number | null | undefined) => (n == null ? "n/a" : `${Math.round(n)}d`),
 };
 
-export const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  saved: { label: "Saved", color: "#7a736c", bg: "bg-stone-500/10", border: "border-stone-500/30" },
-  applied: { label: "Applied", color: "#e2571f", bg: "bg-orange-600/12", border: "border-orange-600/35" },
-  viewed: { label: "Viewed", color: "#8a6f52", bg: "bg-stone-500/12", border: "border-stone-500/35" },
-  screen: { label: "Screen", color: "#b45309", bg: "bg-amber-600/12", border: "border-amber-600/35" },
-  interview: { label: "Interview", color: "#c2410c", bg: "bg-orange-700/12", border: "border-orange-700/35" },
-  offer: { label: "Offer", color: "#15803d", bg: "bg-emerald-600/12", border: "border-emerald-600/35" },
-  rejected: { label: "Rejected", color: "#dc2626", bg: "bg-rose-600/12", border: "border-rose-600/35" },
-  ghosted: { label: "Ghosted", color: "#57534e", bg: "bg-stone-600/10", border: "border-stone-600/30" },
-  withdrawn: { label: "Withdrawn", color: "#a16207", bg: "bg-amber-700/10", border: "border-amber-700/30" },
+/*
+ * Pipeline status, expressed as HEAT rather than as eight unrelated hues.
+ *
+ * Every progressing stage is the same hue (#ff9933, hue 30) at rising lightness,
+ * so the tracker reads as a temperature scale: cold grey for something you never
+ * touched, hotter as you get closer to an offer. The two dead ends (rejected,
+ * ghosted) and the one you pulled yourself (withdrawn) drop out of the ramp into
+ * pure grey/ink — the only hue-free steps, which is what makes them read as "off".
+ *
+ * The steps are mid-range on purpose so they stay legible on white AND on black.
+ * `color` is a plain CSS colour string, `borderColor`/`bgColor` bake in the alpha
+ * (call sites used to do `${color}66`, which cannot work with a var() colour).
+ */
+/* The rungs live in globals.css as `--st-*` so each theme can pick the lightness
+   that actually clears its background — a dark rung is readable on white and
+   invisible on black, so a single literal cannot serve both. */
+const step = {
+  saved: "--st-saved",
+  applied: "--st-applied",
+  viewed: "--st-viewed",
+  screen: "--st-screen",
+  interview: "--st-interview",
+  offer: "--st-offer",
+  rejected: "--st-rejected",
+  ghosted: "--st-ghosted",
+  withdrawn: "--st-withdrawn",
+} as const;
+
+export type StatusMeta = { label: string; color: string; borderColor: string; bgColor: string; bg: string; border: string };
+
+const h = (v: string, a = 1) => (a === 1 ? `hsl(var(${v}))` : `hsl(var(${v}) / ${a})`);
+
+/* bg/border are real, literal Tailwind classes (never string-built: Tailwind only
+   emits classes it can see in the source). The exact rung is carried by the
+   inline colour, which is allowed to be dynamic. */
+const meta = (label: string, s: string, bg: string, border: string): StatusMeta => ({
+  label,
+  color: h(s),
+  borderColor: h(s, 0.42),
+  bgColor: h(s, 0.12),
+  bg,
+  border,
+});
+
+/** Keyed loosely on purpose: the stage always arrives as a string from the API. */
+export const STATUS_META: Record<string, StatusMeta> = {
+  saved: meta("Saved", step.saved, "bg-muted", "border-border"),
+  applied: meta("Applied", step.applied, "bg-ember/12", "border-ember/35"),
+  viewed: meta("Viewed", step.viewed, "bg-ember/14", "border-ember/40"),
+  screen: meta("Screen", step.screen, "bg-ember/16", "border-ember/45"),
+  interview: meta("Interview", step.interview, "bg-ember/20", "border-ember/50"),
+  offer: meta("Offer", step.offer, "bg-ember/25", "border-ember/60"),
+  rejected: meta("Rejected", step.rejected, "bg-ink/8", "border-ink/30"),
+  ghosted: meta("Ghosted", step.ghosted, "bg-muted", "border-border"),
+  withdrawn: meta("Withdrawn", step.withdrawn, "bg-muted", "border-border"),
 };
+
+export function statusMeta(status: string): StatusMeta | undefined {
+  return STATUS_META[status];
+}
 
 export const BOARD_COLUMNS = ["saved", "applied", "viewed", "screen", "interview", "offer", "rejected", "ghosted"] as const;

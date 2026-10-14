@@ -13,11 +13,11 @@ export function Heatmap({ days, year, onPick, className }: { days?: Day[]; year:
   const cells = React.useMemo(() => buildYear(year, days ?? []), [year, days]);
 
   return (
-    <section className={cn("glass-card rounded-2xl p-4 md:p-5", className)}>
+    <section className={cn("glass-card animate-fade-in rounded-2xl p-4 sm:p-5", className)}>
       <header className="mb-3 flex items-center justify-between">
         <div>
         <div className="flex items-center gap-1.5">
-          <h3 className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground">Consistency</h3>
+          <h3 className="eyebrow">Consistency</h3>
           <InfoButton
             title="Consistency heatmap"
             body={
@@ -48,7 +48,7 @@ export function Heatmap({ days, year, onPick, className }: { days?: Day[]; year:
             return (
               <div
                 key={c?.day ?? `x-${idx}`}
-                className={cn("heat-cell h-3.5 w-3.5 cursor-pointer rounded-[4px] transition-transform hover:scale-125", isToday && "today-ring")}
+                className={cn("heat-cell h-3.5 w-3.5 cursor-pointer rounded-[4px] transition-transform duration-[var(--dur-1)] hover:z-10 hover:scale-125", isToday && "today-ring")}
                 style={{
                   background: c ? intensity(pct) : "hsl(var(--line) / 0.4)",
                   "--c": col,
@@ -69,13 +69,15 @@ export function Heatmap({ days, year, onPick, className }: { days?: Day[]; year:
   );
 }
 
+/* Five rungs, one hue. A day you hit your goal is the only fully saturated cell
+   on the grid, so "goal day" is legible at a glance without a sixth colour. */
 function intensity(p: number) {
   if (p <= 0) return "hsl(var(--line) / 0.45)";
   if (p < 0.25) return "hsl(var(--ember) / 0.25)";
   if (p < 0.5) return "hsl(var(--ember) / 0.45)";
   if (p < 0.75) return "hsl(var(--ember) / 0.7)";
   if (p < 1) return "hsl(var(--ember) / 0.9)";
-  return "hsl(var(--gold) / 0.95)"; // goal day reads white-hot
+  return "hsl(var(--ember)) ";
 }
 
 function buildYear(year: number, days: Day[]): (Day | null)[] {

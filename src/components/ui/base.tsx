@@ -9,17 +9,20 @@ import { cn } from "@/lib/utils";
 type ButtonVariant = "default" | "destructive" | "outline" | "ghost" | "link" | "secondary" | "success" | "warning" | "azure";
 type ButtonSize = "sm" | "default" | "lg" | "icon";
 
+/* ink on ember, never white on ember: #ff9933 is bright, so the readable pairing
+   is the near-black end of the ramp (8.6:1) rather than white (2.0:1). Applied to
+   every filled variant so the whole app shares one contrast rule. */
 const buttonVariants: Record<ButtonVariant, string> = {
-  default: "bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-black/10 dark:shadow-black/40",
-  destructive: "bg-destructive text-white hover:opacity-90",
-  outline: "border border-border bg-transparent hover:bg-muted text-foreground",
+  default: "sheen bg-primary text-primary-foreground hover:brightness-105 shadow-[0_12px_26px_-14px_hsl(var(--ember)/0.9)]",
+  destructive: "sheen bg-destructive text-destructive-foreground hover:opacity-90",
+  outline: "border border-border bg-transparent text-foreground hover:border-ember/50 hover:bg-ember/10 hover:text-ember-deep dark:hover:text-ember-soft",
   ghost: "hover:bg-muted text-foreground",
   link: "text-accent underline-offset-4 hover:underline",
   secondary: "bg-muted text-foreground hover:bg-muted/70",
-  success: "bg-success text-white hover:opacity-90",
-  warning: "bg-warning text-white hover:opacity-90",
-  /* the primary CTA everywhere: inverse pill, no hue (Giga-style) */
-  azure: "bg-foreground text-background hover:opacity-90 shadow-lg shadow-black/10 dark:shadow-black/40",
+  success: "sheen bg-success text-success-foreground hover:opacity-90",
+  warning: "sheen bg-warning text-warning-foreground hover:opacity-90",
+  /* the primary CTA everywhere: inverse pill, no hue at all */
+  azure: "sheen bg-foreground text-background hover:opacity-90 shadow-[0_12px_28px_-16px_rgb(0_0_0/0.75)]",
 };
 const buttonSizes: Record<ButtonSize, string> = {
   sm: "h-8 px-3 text-[13px]",
@@ -31,9 +34,11 @@ const buttonSizes: Record<ButtonSize, string> = {
 /** Same classes as <Button>, for <Link>/<a> navigation that must not wrap a <button>. */
 export function buttonClass(variant: ButtonVariant = "default", size: ButtonSize = "default") {
   return cn(
-    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium transition-all duration-200",
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-medium transition-all duration-[var(--dur-2)] ease-[var(--ease-out)]",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-    "active:scale-95 disabled:pointer-events-none disabled:opacity-50",
+    "active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
+    // sm/icon are thumb-marginal: coarse-pointer CSS raises them to a 44px floor
+    (size === "sm" || size === "icon") && "touch-target",
     buttonVariants[variant],
     buttonSizes[size]
   );
@@ -233,8 +238,8 @@ export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLab
 }
 
 /* -------------------------------- Card --------------------------------- */
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("glass-card rounded-2xl", className)} {...props} />;
+export function Card({ className, interactive, ...props }: React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean }) {
+  return <div className={cn("glass-card rounded-2xl", interactive && "glass-hover cursor-pointer", className)} {...props} />;
 }
 
 /* -------------------------------- Badge -------------------------------- */
@@ -243,13 +248,15 @@ export function Badge({
   tone = "neutral",
   ...props
 }: React.HTMLAttributes<HTMLSpanElement> & { tone?: "neutral" | "mint" | "azure" | "orchid" | "amber" | "rose" }) {
+  /* every tone is a rung of the same hue: the badge reads as a *level* of
+     emphasis, and the neutral rung is the only hue-free one (used for "stop"). */
   const tones = {
     neutral: "bg-muted text-muted-foreground border-border",
-    mint: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-    azure: "bg-orange-600/12 text-orange-700 dark:text-orange-400 border-orange-600/35",
+    mint: "bg-ember/14 text-ember-ink dark:text-ember-soft border-ember/35",
+    azure: "bg-ember/16 text-ember-deep dark:text-ember border-ember/45",
     orchid: "bg-ink/10 text-ink border-ink/25",
-    amber: "bg-amber-500/12 text-amber-700 dark:text-amber-300 border-amber-500/35",
-    rose: "bg-rose-500/12 text-rose-700 dark:text-rose-300 border-rose-500/30",
+    amber: "bg-ember-soft/22 text-ember-ink dark:text-ember-soft border-ember/30",
+    rose: "bg-ink/8 text-foreground border-ink/30",
   };
   return (
     <span
@@ -288,14 +295,14 @@ export function ProgressBar({ value, className, gradient = true }: { value: numb
 /* ------------------------------ StatTile -------------------------------- */
 export function IconChip({ children, tone = "mint" }: { children: React.ReactNode; tone?: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate" }) {
   const tones = {
-    mint: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-    azure: "bg-orange-600/15 text-orange-700 dark:text-orange-400",
+    mint: "bg-ember/16 text-ember-ink dark:text-ember-soft",
+    azure: "bg-ember/20 text-ember-deep dark:text-ember",
     orchid: "bg-ink/10 text-ink",
-    amber: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-    rose: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
+    amber: "bg-ember-soft/24 text-ember-ink dark:text-ember-soft",
+    rose: "bg-ink/8 text-foreground",
     slate: "bg-muted text-muted-foreground",
   };
-  return <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)]", tones[tone])}>{children}</span>;
 }
 
 /** Prev / numbered pages / next, plus a "showing x–y of z" line. Reused by every list view. */
