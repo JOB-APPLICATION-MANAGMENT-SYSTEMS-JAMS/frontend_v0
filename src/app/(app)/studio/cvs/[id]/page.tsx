@@ -26,9 +26,11 @@ import { CvEditor } from "@/features/studio/cv-editor";
 import { CvPreview } from "@/features/studio/cv-preview";
 import { toast } from "@/hooks/use-toast";
 
+/** Ink is the document's own black and the default: the reference CV is
+ * monochrome, so an accent is an opt-in, not something you have to undo. */
 const ACCENTS = [
-  { value: "ember", label: "Ember" },
   { value: "ink", label: "Ink" },
+  { value: "ember", label: "Ember" },
   { value: "graphite", label: "Graphite" },
 ] as const;
 
@@ -58,7 +60,7 @@ function CVEditorPageInner() {
   const [baseline, setBaseline] = React.useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
-  const [accent, setAccent] = React.useState<Accent>("ember");
+  const [accent, setAccent] = React.useState<Accent>("ink");
   const [showMatch, setShowMatch] = React.useState(false);
 
   const detail = useQuery<CV>({
@@ -358,7 +360,7 @@ function CVEditorPageInner() {
       <div className="mt-3 hidden items-center gap-2 xl:flex">
         <span className="eyebrow">Document accent</span>
         <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
-        <span className="text-[11px] text-muted-foreground">one hue, darker rungs, so it stays legible on paper</span>
+        <span className="text-[11px] text-muted-foreground">rules and skill markers only; the text stays paper black</span>
       </div>
 
       {/* destructive action behind a confirm, the shape the rest of the app uses */}
