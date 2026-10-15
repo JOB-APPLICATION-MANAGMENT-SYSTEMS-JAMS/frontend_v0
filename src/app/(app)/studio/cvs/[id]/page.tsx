@@ -21,9 +21,12 @@ import type { CV } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton } from "@/components/ui/base";
 import { ConfirmDialog, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Portal } from "@/components/ui/modal";
-import { SegmentedControl } from "@/components/ui/layout";
+import { SegmentedControl } from "@/components/ui/menu";
+import { Muted, Num } from "@/components/ui/text";
 import { CvEditor } from "@/features/studio/cv-editor";
 import { CvPreview } from "@/features/studio/cv-preview";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { toast } from "@/hooks/use-toast";
 
 /** Ink is the document's own black and the default: the reference CV is
@@ -77,7 +80,23 @@ function CVEditorPageInner() {
   }
 
   const match = useQuery<{
-    ats: { score: number; checks: { key: string; label: string; ok: boolean; fix: string }[] };
+    ats: {
+      score: number;
+      checks: {
+        key: string;
+        label: string;
+        ok: boolean;
+        severity: "critical" | "important" | "polish";
+        /** what was actually looked at, and what it found */
+        evidence: string;
+        fix: string;
+      }[];
+      /** pages the sheet actually prints as */
+      pages: number;
+      band: "strong" | "decent" | "weak";
+      blockers: number;
+      summary: string;
+    };
     keywords: { matched: string[]; missing: string[]; coverage_pct: number | null; jd_total: number };
     jd_match: unknown;
     suggestions: string[];
@@ -149,6 +168,16 @@ function CVEditorPageInner() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [dirty, draft, save]);
+
+  // the page behind the fullscreen sheet must not scroll under it — and because
+  // the gutter is reserved in CSS, locking cannot reflow the sheet's well
+  useScrollLock(previewOpen);
+
+  /* Below xl the sheet pane is hidden by CSS, but a `display: none` iframe still
+     loads and lays out its document — i.e. the whole CV rendered a second time for
+     nothing, on the devices least able to afford it. The pane is mounted for the
+     breakpoint instead, and only one sheet exists at any moment. */
+  const wideEnoughForPane = useMediaQuery("(min-width: 1280px)");
 
   // Esc closes the fullscreen sheet
   React.useEffect(() => {
@@ -270,7 +299,11 @@ function CVEditorPageInner() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="eyebrow">ATS &amp; keyword match</h2>
               <div className="flex items-center gap-2">
-                {match.data && <Badge tone={match.data.ats.score >= 80 ? "mint" : "amber"}>{match.data.ats.score}% ATS</Badge>}
+                {match.data && (
+                  <Badge tone={match.data.ats.band === "strong" ? "mint" : "rose"}>
+                    {match.data.ats.score}% ATS · {match.data.ats.pages}p
+                  </Badge>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => setShowMatch((v) => !v)}>
                   {showMatch ? "Hide" : "Check this CV"}
                 </Button>
@@ -286,15 +319,22 @@ function CVEditorPageInner() {
                 ) : match.data ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <p className="hero-num text-3xl">{match.data.ats.score}%</p>
+                      <p className="hero-num text-3xl">
+                        <Num>{match.data.ats.score}%</Num>
+                      </p>
                       <div className="min-w-0 flex-1">
                         <ProgressBar value={match.data.ats.score} />
-                        <p className="mt-1 text-[11px] text-muted-foreground">parse-ability checks passed</p>
+                        <Muted className="mt-1">
+                          {match.data.ats.summary} Prints as <Num>{match.data.ats.pages}</Num> page
+                          {match.data.ats.pages === 1 ? "" : "s"}.
+                        </Muted>
                       </div>
                       {match.data.keywords.coverage_pct != null && (
                         <div className="shrink-0 text-right">
-                          <p className="hero-num text-xl">{match.data.keywords.coverage_pct}%</p>
-                          <p className="text-[11px] text-muted-foreground">JD coverage</p>
+                          <p className="hero-num text-xl">
+                            <Num>{match.data.keywords.coverage_pct}%</Num>
+                          </p>
+                          <Muted>JD coverage</Muted>
                         </div>
                       )}
                     </div>
@@ -303,11 +343,27 @@ function CVEditorPageInner() {
                       {match.data.ats.checks.map((c) => (
                         <li
                           key={c.key}
-                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${c.ok ? "bg-ember/12 text-ember-deep dark:text-ember-soft" : "bg-ink/8 text-foreground"}`}
+                          className={`flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                            c.ok
+                              ? "bg-ember/12 text-ember-deep dark:text-ember-soft"
+                              : c.severity === "critical"
+                                ? "bg-ink/8 text-destructive"
+                                : c.severity === "important"
+                                  ? "bg-ink/8 text-foreground"
+                                  : "bg-ink/5 text-muted-foreground"
+                          }`}
                           title={c.ok ? undefined : c.fix}
                         >
-                          {c.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                          {c.label}
+                          <span className="mt-0.5 shrink-0">
+                            {c.ok ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block leading-snug">{c.label}</span>
+                            <span className="block text-[10px] leading-snug opacity-70">{c.evidence}</span>
+                            {!c.ok && c.severity !== "polish" && (
+                              <span className="mt-0.5 block text-[10px] leading-snug opacity-80">{c.fix}</span>
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -341,9 +397,13 @@ function CVEditorPageInner() {
           </Card>
         </div>
 
-        {/* right: the sheet — sticky on large screens only, a modal below xl */}
+        {/* right: the sheet — sticky on large screens only, a modal below xl.
+            Unmounted while the fullscreen sheet is open: one document, one
+            measurement pass, so opening it cannot disturb the pane behind. */}
         <div className="hidden xl:sticky xl:top-20 xl:block xl:h-[calc(100vh-6rem)]">
-          <CvPreview html={preview} busy={previewQuery.isFetching} frameRef={frameRef} actions={previewActions} footer={previewFooter} className="h-full" />
+          {wideEnoughForPane && !previewOpen && (
+            <CvPreview html={preview} busy={previewQuery.isFetching} frameRef={frameRef} actions={previewActions} footer={previewFooter} className="h-full" />
+          )}
         </div>
       </div>
 
@@ -376,8 +436,17 @@ function CVEditorPageInner() {
       {/* fullscreen sheet: the phone/tablet preview */}
       {previewOpen && (
         <Portal>
-          <div className="scrim-in fixed inset-0 z-[120] flex flex-col bg-black/75 p-2 backdrop-blur-md sm:p-4" role="dialog" aria-modal="true" aria-label="A4 preview">
-            <div className="glass-panel sheet-in flex min-h-0 flex-1 flex-col rounded-2xl p-2.5">
+          <div
+            className="scrim-in fixed inset-0 z-[120] flex flex-col bg-black/75 p-2 backdrop-blur-md sm:p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="A4 preview"
+            onClick={() => setPreviewOpen(false)}
+          >
+            <div
+              className="glass-panel sheet-in flex min-h-0 flex-1 flex-col rounded-2xl p-2.5"
+              onClick={(e) => e.stopPropagation()}
+            >
               <CvPreview
                 html={preview}
                 busy={previewQuery.isFetching}

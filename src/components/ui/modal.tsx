@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMounted } from "@/hooks/use-mounted";
+import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { Button } from "./base";
 
 export function Modal({
@@ -30,18 +31,14 @@ export function Modal({
   className?: string;
 }) {
   const mounted = useMounted();
+  useScrollLock(open);
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open || !mounted) return null;

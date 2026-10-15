@@ -12,7 +12,8 @@ import type { AppStatus, Application, Paged } from "@/types";
 import { Badge, Button, Card, Input, Label, Pager, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Modal, InfoButton } from "@/components/ui/modal";
-import { Checkbox, SegmentedControl } from "@/components/ui/layout";
+import { SegmentedControl } from "@/components/ui/menu";
+import { Checkbox } from "@/components/ui/toggle";
 import { BOARD_COLUMNS, STATUS_META, cn, fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 

@@ -14,7 +14,8 @@ import { EmailJobs } from "@/features/jobs/email-jobs";
 import { Card, Button, Input, Skeleton, Kbd } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { InfoButton } from "@/components/ui/modal";
-import { Chip, SegmentedControl } from "@/components/ui/layout";
+import { Chip } from "@/components/ui/display";
+import { SegmentedControl } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 

@@ -274,6 +274,11 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    /* Reserve the scrollbar's width even when nothing is scrolling. Every
+       overlay in the app locks page scroll (useScrollLock), and without this
+       each open/close would reflow the page by the scrollbar's width — which the
+       A4 preview notices, because its zoom is fitted to the well's width. */
+    scrollbar-gutter: stable;
   }
   body {
     text-rendering: optimizeLegibility;

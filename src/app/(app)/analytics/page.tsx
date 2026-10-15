@@ -13,7 +13,8 @@ import { FunnelField } from "@/features/analytics/funnel-field";
 import { Heatmap } from "@/features/analytics/heatmap";
 import { BreakdownTable, ChartCard, Donut, DualSeries, Histogram } from "@/features/analytics/charts";
 import { Button, Card, Select, Skeleton } from "@/components/ui/base";
-import { PageHeader, SegmentedControl } from "@/components/ui/layout";
+import { PageHeader } from "@/components/ui/layout";
+import { SegmentedControl } from "@/components/ui/menu";
 import { InfoButton } from "@/components/ui/modal";
 import { toast } from "@/hooks/use-toast";
 

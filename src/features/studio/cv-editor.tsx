@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input, Label, Textarea } from "@/components/ui/base";
-import { Switch } from "@/components/ui/layout";
+import { Switch } from "@/components/ui/toggle";
 import type { CV, CVBlock } from "@/types";
 
 const TYPE_LABEL: Record<CVBlock["type"], string> = {

@@ -8,7 +8,7 @@
 import * as React from "react";
 import { cn, fmt } from "@/lib/utils";
 import { InfoButton } from "@/components/ui/modal";
-import { SegmentedControl } from "@/components/ui/layout";
+import { SegmentedControl } from "@/components/ui/menu";
 import type { Summary } from "@/types";
 
 type Band = { key: string; label: string; from: string; to: string; text: string };
