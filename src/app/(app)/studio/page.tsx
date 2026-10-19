@@ -1,6 +1,6 @@
 "use client";
 
-/** CV Studio (§24): versioned CVs per archetypes, forking, template library, print pipeline. */
+/** Resume Studio (§24): versioned resumes per archetype, forking, template library, print pipeline. */
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -59,7 +59,7 @@ export default function StudioPage() {
     },
     meta: { invalidates: [["cvs"]] },
     onSuccess: (cv) => {
-      toast("CV created, tailor it in the editor", "success");
+      toast("Resume created, tailor it in the editor", "success");
       router.push(`/studio/cvs/${cv.id}`);
     },
   });
@@ -113,16 +113,16 @@ export default function StudioPage() {
       <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
         eyebrow="Documents"
-        title="CV Studio"
-        description="One CV per archetype, forked per application. Your master CV is never mutated."
+        title="Resume Studio"
+        description="One resume per archetype, forked per application, reviewed by people you trust. Your master resume is never mutated."
       />
 
       {/* create */}
       <Card className="p-5">
-        <h2 className="eyebrow mb-3">New CV</h2>
+        <h2 className="eyebrow mb-3">New resume</h2>
         <div className="grid gap-3 sm:grid-cols-[1.5fr_1fr_1fr_auto] sm:items-end">
           <div>
-            <Label>Name</Label>
+            <Label>Resume name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Frontend, Series A SaaS" />
           </div>
           <div>
@@ -137,7 +137,7 @@ export default function StudioPage() {
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="frontend, data, pm…" />
           </div>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
-            <FilePlus2 className="h-4 w-4" /> Create
+            <FilePlus2 className="h-4 w-4" /> Create resume
           </Button>
         </div>
       </Card>
@@ -153,7 +153,7 @@ export default function StudioPage() {
       ) : null}
 
       {/* CV grid: every per-CV action, shelf sheets only open the editor */}
-      {(cvs.data?.items?.length ?? 0) > 0 ? <h2 className="eyebrow">All CVs</h2> : null}
+      {(cvs.data?.items?.length ?? 0) > 0 ? <h2 className="eyebrow">All resumes</h2> : null}
       {cvs.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -165,8 +165,8 @@ export default function StudioPage() {
       ) : (cvs.data?.items?.length ?? 0) === 0 ? (
         <EmptyState
           icon={<FileText className="h-6 w-6" />}
-          title="No CVs yet"
-          description="Create your first one, profile blocks stay linked to the Profile page, local blocks are yours to tailor."
+          title="No resumes yet"
+          description="Create your first one. Profile blocks stay linked to the Profile page; local blocks are yours to tailor."
           action={<Button onClick={() => create.mutate()}>Create from profile</Button>}
         />
       ) : (
@@ -218,7 +218,7 @@ export default function StudioPage() {
 
       {/* template library */}
       <Card className="p-5">
-        <h2 className="eyebrow mb-3">CV templates</h2>
+        <h2 className="eyebrow mb-3">Resume templates</h2>
         {templates.isPending ? (
           <Skeleton className="h-20 w-full" />
         ) : (templates.data?.items?.length ?? 0) === 0 ? (

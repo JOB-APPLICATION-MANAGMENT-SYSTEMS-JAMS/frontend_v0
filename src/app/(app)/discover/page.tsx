@@ -4,13 +4,14 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Briefcase, Building2, Mail, Radar, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { Briefcase, Building2, Mail, Radar, RefreshCw, Search, SlidersHorizontal, Users } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { SearchResponse } from "@/types";
 import { JobCard } from "@/features/jobs/job-card";
 import { PitchTargets } from "@/features/jobs/pitch-targets";
 import { EmailJobs } from "@/features/jobs/email-jobs";
+import { PeopleDirectory } from "@/features/network/people-directory";
 import { Card, Button, Input, Skeleton, Kbd } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { InfoButton } from "@/components/ui/modal";
@@ -79,7 +80,12 @@ function DiscoverPageInner() {
   const qParam = params.get("q") ?? "";
   const [text, setText] = React.useState(qParam);
   const [showFilters, setShowFilters] = React.useState(false);
-  const mode = ((params.get("mode") ?? "jobs") === "social" ? "email" : (params.get("mode") ?? "jobs")) as "jobs" | "pitch" | "email";
+  // `social` was the old name for apply-by-email; keep the deep links working
+  const rawMode = params.get("mode") ?? "jobs";
+  const requested = rawMode === "social" ? "email" : rawMode;
+  const mode: "jobs" | "pitch" | "email" | "people" = (["jobs", "pitch", "email", "people"] as const).includes(requested as never)
+    ? (requested as "jobs" | "pitch" | "email" | "people")
+    : "jobs";
 
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -204,6 +210,16 @@ function DiscoverPageInner() {
                 </>
               ),
             },
+            {
+              value: "people" as const,
+              label: (
+                <>
+                  <Users className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">People</span>
+                  <span className="sm:hidden">People</span>
+                </>
+              ),
+            },
           ]}
         />
         <InfoButton
@@ -220,6 +236,10 @@ function DiscoverPageInner() {
                 <b>Apply by email</b> lists only the postings that publish an address (including the HN “Who is hiring” thread), so you can send your
                 application straight to a person.
               </p>
+              <p>
+                <b>People</b> is the other direction: cards posted by people and companies on JAMS, with what they offer, how to reach them, and
+                public resumes other members can rate and review.
+              </p>
             </>
           }
         />
@@ -227,6 +247,7 @@ function DiscoverPageInner() {
 
       {mode === "pitch" && <PitchTargets />}
       {mode === "email" && <EmailJobs />}
+      {mode === "people" && <PeopleDirectory />}
       {mode === "jobs" && (
         <>
       {/* Query bar: only the input row sticks. The chip rows below used to travel with it and

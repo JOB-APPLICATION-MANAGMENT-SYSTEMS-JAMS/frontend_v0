@@ -2,7 +2,13 @@
 
 /**
  * Left rail, one toggle drawer at every breakpoint (opened/closed from the navbar).
- * Exactly seven destinations, no group labels; log out lives in the rail footer.
+ * Exactly eight destinations, no group labels; log out lives in the rail footer.
+ *
+ * The order is the product's story: pick a direction (Dashboard), meet the market
+ * (Discover), see who is hiring on JAMS (Hirers), write the document (Resume
+ * Studio), show up (Events), then run the pipeline (Tracker, Outreach). Settings
+ * closes the list. Autofill and Companies are still routes, but they are reached
+ * from Profile and from a company link instead of costing a rail slot.
  * Navigation only auto-closes the drawer below md, laptops keep it open until the
  * toggle button (or Esc) closes it. Collapse is parked at the bottom as a comment.
  */
@@ -11,13 +17,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Building2,
+  Briefcase,
+  CalendarDays,
   Columns3,
   Compass,
   FileText,
   LayoutDashboard,
   LogOut,
-  MousePointerClick,
   Send,
   Settings,
 } from "lucide-react";
@@ -29,11 +35,11 @@ import { ConfirmDialog } from "@/components/ui/feedback";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/discover", label: "Discover", icon: Compass, kbd: "g d" },
+  { href: "/hirers", label: "Hirers", icon: Briefcase },
+  { href: "/studio", label: "Resume Studio", icon: FileText },
+  { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/tracker", label: "Tracker", icon: Columns3 },
-  { href: "/studio", label: "CV Studio", icon: FileText },
   { href: "/outreach", label: "Outreach", icon: Send },
-  { href: "/autofill", label: "Autofill", icon: MousePointerClick },
-  { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

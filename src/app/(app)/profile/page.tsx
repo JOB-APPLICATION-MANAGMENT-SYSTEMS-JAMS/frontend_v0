@@ -2,8 +2,9 @@
 
 /** Profile (§19.3): the master form, one save feeds CVs, autofill, templates and scoring. */
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Award, GraduationCap, Link2, Plus, Save, Sparkles, Trash2, UserRound } from "lucide-react";
+import { Award, GraduationCap, Link2, MousePointerClick, Plus, Save, Sparkles, Trash2, UserRound } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import { Badge, Button, Card, Input, Label, Skeleton, Textarea } from "@/components/ui/base";
@@ -43,6 +44,7 @@ type Profile = {
 };
 
 export default function ProfilePage() {
+  const router = useRouter();
   const profile = useQuery<Profile>({ queryKey: qk.profile(), queryFn: () => appFetch("/profile", { _auth: true }) });
   const completeness = useQuery<{ score: number; checks: unknown[]; suggestions: { label: string; hint: string }[] }>({
     queryKey: qk.completeness(),
@@ -283,6 +285,21 @@ export default function ProfilePage() {
           <Button className="mt-3 w-full" onClick={() => save.mutate()} disabled={save.isPending}>
             <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save profile"}
           </Button>
+          {/* Autofill is no longer a rail destination: it is a tool that reads
+              this form, so it belongs next to the form it fills from. */}
+          <button
+            type="button"
+            onClick={() => router.push("/autofill")}
+            className="touch-slop mt-3 flex w-full items-center gap-2.5 rounded-xl border border-border px-3 py-2.5 text-left transition-colors hover:border-ember/50 hover:bg-ember/10"
+          >
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-ember/14 text-ember-deep dark:text-ember-soft">
+              <MousePointerClick className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-foreground">Autofill answers</span>
+              <span className="block text-[11px] leading-snug text-muted-foreground">Field aliases, guardrails and the browser extension.</span>
+            </span>
+          </button>
           <InlineBanner tone="info" className="mt-4" title="Field aliases">
             Autofill maps foreign form labels using stored aliases, e.g. “Current position” → headline. Edit aliases in JSON below.
           </InlineBanner>

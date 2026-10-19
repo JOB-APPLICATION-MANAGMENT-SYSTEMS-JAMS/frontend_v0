@@ -18,8 +18,10 @@ import type { Today } from "@/types";
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/discover": "Discover",
+  "/hirers": "Hirers",
+  "/events": "Events",
   "/tracker": "Tracker",
-  "/studio": "CV Studio",
+  "/studio": "Resume Studio",
   "/outreach": "Outreach",
   "/profile": "Profile",
   "/autofill": "Autofill",
@@ -59,7 +61,7 @@ export function Topbar({ railOpen, onToggleRail }: { railOpen: boolean; onToggle
       : pathname.startsWith("/companies")
         ? "Company"
         : pathname.startsWith("/studio/")
-          ? "CV editor"
+          ? "Resume editor"
           : "JAMS");
 
   return (

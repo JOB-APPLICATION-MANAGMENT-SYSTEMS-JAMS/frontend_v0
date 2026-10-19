@@ -149,6 +149,10 @@ export interface CV {
   design: CvDesign;
   lineage: { forked_from?: string; forked_at?: string };
   updated_at: string;
+  /** 1 once the owner lists it on the network for reviews */
+  public?: number;
+  /** the ownership line printed under a published CV */
+  copyright?: string | null;
 }
 
 /**
@@ -228,6 +232,162 @@ export interface Company {
   /** list endpoints return a contact *count*; the detail endpoint returns the rows (Contact[]) */
   contacts?: number;
   stack?: string[];
+}
+
+/* ── the network: people, platform jobs, events, reviews ───────────────── */
+
+export interface Match { score: number; reasons: string[]; }
+
+export interface PersonCv {
+  id: string;
+  name: string;
+  archetype: "opening" | "pitch";
+  updated_at: string;
+  public?: number;
+  copyright?: string | null;
+  rating: { avg: number; count: number } | null;
+}
+
+export interface Person {
+  id: string;
+  user_id: string;
+  name: string;
+  headline: string;
+  profession: string;
+  seniority: string;
+  location: string;
+  bio: string;
+  links: Record<string, string>;
+  offers: string[];
+  looking_for: string;
+  answers: { q: string; a: string }[];
+  open_to: string[];
+  visible: boolean;
+  updated_at: string;
+  is_me?: boolean;
+  cv?: PersonCv | null;
+  match?: Match;
+  cvs?: { id: string; name: string; archetype: string; updated_at: string; public: number; copyright: string | null; reviews: { count: number; avg: number | null } }[];
+  reviews?: CvReview[];
+}
+
+export interface PeopleResponse {
+  items: Person[];
+  total: number;
+  facets: { profession: Record<string, number>; location: Record<string, number> };
+  viewer: { name: string; headline: string; profession: string; profession_declared: boolean; city: string; seniority: string; skills: string[]; has_profile: boolean };
+  me: Person | null;
+  questions: { key: string; q: string; hint: string }[];
+}
+
+export interface PlatformJob {
+  id: string;
+  company: string;
+  title: string;
+  profession: string;
+  seniority: string | null;
+  location: string | null;
+  remote: boolean;
+  employment_type: string;
+  salary: { min: number; max: number | null; currency: string } | null;
+  description: string;
+  tags: string[];
+  contact_email: string | null;
+  demo: boolean;
+  posted_at: string;
+  mine: boolean;
+  match: Match;
+}
+
+export interface HirersResponse {
+  items: PlatformJob[];
+  total: number;
+  facets: { profession: Record<string, number>; seniority: Record<string, number> };
+  viewer: { name: string; headline: string; profession: string; profession_declared: boolean; city: string; skills: string[]; needs_profession: boolean };
+  professions: string[];
+  demo: boolean;
+}
+
+export type EventKind = "hiring" | "training" | "seminar" | "story" | "meetup" | "ad";
+
+export interface EventListing {
+  id: string;
+  title: string;
+  kind: EventKind;
+  host: string;
+  city: string;
+  country: string;
+  venue: string;
+  format: "in-person" | "virtual" | "hybrid";
+  starts_at: string;
+  ends_at: string | null;
+  description: string;
+  tags: string[];
+  url: string | null;
+  price: string;
+  seats: number | null;
+  featured: boolean;
+  demo: boolean;
+  match: Match;
+}
+
+export interface EventsResponse {
+  items: EventListing[];
+  total: number;
+  facets: { kind: Record<string, number>; city: Record<string, number>; format: Record<string, number> };
+  viewer: { city: string; profession: string };
+  kinds: EventKind[];
+  demo: boolean;
+}
+
+export interface CvReview {
+  id: string;
+  cv_id: string;
+  cv_name?: string;
+  reviewer_name: string;
+  reviewer_role: string | null;
+  relationship: "hirer" | "recruiter" | "mentor" | "peer";
+  rating: number;
+  body: string;
+  created_at: string;
+  mine?: boolean;
+}
+
+export interface CvReviews {
+  count: number;
+  avg: number | null;
+  distribution: { star: number; count: number }[];
+  items: CvReview[];
+}
+
+export type RedlineRule =
+  | "weak-verb"
+  | "passive"
+  | "first-person"
+  | "filler"
+  | "grammar"
+  | "duplicate"
+  | "no-figure"
+  | "too-long"
+  | "keyword";
+
+export interface RedlineEdit {
+  id: string;
+  section: string;
+  kind: "replace" | "add";
+  before: string;
+  after: string;
+  reason: string;
+  rule: RedlineRule;
+  severity: "important" | "polish";
+}
+
+export interface RedlineReport {
+  edits: RedlineEdit[];
+  counts: { replace: number; add: number; important: number; polish: number };
+  hygiene: number;
+  summary: string;
+  by_rule: { rule: RedlineRule; count: number; label: string }[];
 }
 
 export interface Badge {

@@ -14,10 +14,10 @@
 import * as React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Check, Copy, Download, Eye, Printer, RefreshCw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Download, Eye, EyeOff, MessageSquare, Printer, RefreshCw, Share2, Star, Trash2, Wand2, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { CV, CvDesign } from "@/types";
+import type { CV, CvDesign, CvReviews, RedlineReport } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton } from "@/components/ui/base";
 import { ConfirmDialog, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Portal } from "@/components/ui/modal";
@@ -26,6 +26,7 @@ import { Muted, Num } from "@/components/ui/text";
 import { CvEditor } from "@/features/studio/cv-editor";
 import { CvSettings } from "@/features/studio/cv-settings";
 import { CvPreview } from "@/features/studio/cv-preview";
+import { Stars } from "@/components/ui/stars";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
 import { toast } from "@/hooks/use-toast";
@@ -65,6 +66,8 @@ function CVEditorPageInner() {
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [showMatch, setShowMatch] = React.useState(false);
+  /** Render the working copy on the sheet: red strikethrough, green rewrite. */
+  const [showRedline, setShowRedline] = React.useState(false);
 
   const detail = useQuery<CV>({
     queryKey: qk.cv(id),
@@ -100,6 +103,10 @@ function CVEditorPageInner() {
     keywords: { matched: string[]; missing: string[]; coverage_pct: number | null; jd_total: number };
     jd_match: unknown;
     suggestions: string[];
+    /** score if every failing row turns green — a ceiling, not a promise */
+    potential_score: number;
+    advice: { key: string; title: string; detail: string; gain: number }[];
+    redline: RedlineReport;
   }>({
     // its own key (not `${id}-match` under the detail key) so the save below can
     // invalidate it: a prefix invalidation of ["cvs","detail",id] never matches
@@ -107,7 +114,9 @@ function CVEditorPageInner() {
     // the first time it was opened, however much the CV changed underneath it.
     queryKey: qk.cvMatch(id),
     queryFn: () => appFetch(`/cvs/${id}/match`, { _auth: true }),
-    enabled: !!detail.data && showMatch,
+    // the redline needs the same report (for the missing JD keywords), so opening
+    // either panel asks for it once
+    enabled: !!detail.data && (showMatch || showRedline),
   });
 
   /**
@@ -123,9 +132,16 @@ function CVEditorPageInner() {
     []
   );
 
+  const missingKeywords = (match.data?.keywords.missing ?? []).slice(0, 3).join(",");
   const previewQuery = useQuery<string>({
-    queryKey: qk.cv(`${id}-html-${designKey}`),
-    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { params: { frame: 1, design: designKey }, _auth: true }),
+    // the redline is part of the document's identity: a different mode is a
+    // different render, so it belongs in the key rather than in a refetch effect
+    queryKey: qk.cv(`${id}-html-${designKey}-${showRedline ? `redline-${missingKeywords}` : "clean"}`),
+    queryFn: () =>
+      appFetch<string>(`/cvs/${id}/html`, {
+        params: { frame: 1, design: designKey, redline: showRedline ? 1 : undefined, kw: showRedline ? missingKeywords : undefined },
+        _auth: true,
+      }),
     enabled: !!detail.data,
   });
   const preview = previewQuery.data ?? "";
@@ -256,7 +272,7 @@ function CVEditorPageInner() {
               onClick={() => router.push("/studio")}
               className="press touch-slop inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <ArrowLeft className="h-4 w-4" /> Studio
+              <ArrowLeft className="h-4 w-4" /> Resume Studio
             </button>
 
             <SaveState status={status} onSave={() => dirty && save.mutate(draft)} />
@@ -329,7 +345,7 @@ function CVEditorPageInner() {
                   </Badge>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => setShowMatch((v) => !v)}>
-                  {showMatch ? "Hide" : "Check this CV"}
+                  {showMatch ? "Hide" : "Check score & redline"}
                 </Button>
               </div>
             </div>
@@ -362,6 +378,31 @@ function CVEditorPageInner() {
                         </div>
                       )}
                     </div>
+
+                    {/* The score is the diagnosis; this is the treatment. Ordered by
+                        what moves it most, so a weak CV is never a dead end. */}
+                    {match.data.advice.length > 0 && (
+                      <div className="rounded-xl border border-border p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold">How to raise this</p>
+                          <span className="text-[10px] text-muted-foreground">
+                            ceiling <span className="tnum font-semibold text-foreground">{match.data.potential_score}%</span> if every row turns green
+                          </span>
+                        </div>
+                        <ol className="mt-2 space-y-1.5">
+                          {match.data.advice.map((a, i) => (
+                            <li key={a.key} className="flex items-start gap-2 text-xs">
+                              <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-muted font-mono text-[10px] font-bold">{i + 1}</span>
+                              <span className="min-w-0 flex-1 leading-snug">
+                                <span className="font-semibold text-foreground">{a.title}</span>
+                                <span className="block text-[11px] text-muted-foreground">{a.detail}</span>
+                              </span>
+                              {a.gain > 0 && <Badge tone="mint" className="shrink-0">+{a.gain}</Badge>}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
 
                     <ul className="grid gap-1.5 sm:grid-cols-2">
                       {match.data.ats.checks.map((c) => (
@@ -414,11 +455,68 @@ function CVEditorPageInner() {
                         </ul>
                       </InlineBanner>
                     )}
+
+                    {/* The redline: the same document, line by line. Red is what a
+                        recruiter would strike, green is the rewrite or the missing
+                        number/keyword. “Show on sheet” puts it on the A4 page itself. */}
+                    <div className="rounded-xl border border-border p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold inline-flex items-center gap-1.5">
+                          <Wand2 className="h-3.5 w-3.5 text-ember" /> Redline
+                          <Badge tone={match.data.redline.edits.length ? "rose" : "mint"}>
+                            {match.data.redline.edits.length} edit{match.data.redline.edits.length === 1 ? "" : "s"}
+                          </Badge>
+                        </p>
+                        <Button size="sm" variant={showRedline ? "azure" : "outline"} onClick={() => setShowRedline((v) => !v)}>
+                          <Eye className="h-3.5 w-3.5" /> {showRedline ? "Hide on sheet" : "Show on A4"}
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{match.data.redline.summary}</p>
+
+                      {match.data.redline.edits.length === 0 ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Nothing mechanical to strike — the wording is already tight.</p>
+                      ) : (
+                        <ul className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                          {match.data.redline.edits.map((e) => (
+                            <li key={e.id} className="rounded-lg border border-border/70 p-2">
+                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <span className="font-semibold text-foreground">{e.section}</span>
+                                <span>·</span>
+                                <span>{e.rule.replace("-", " ")}</span>
+                                {e.severity === "important" && <Badge tone="rose">important</Badge>}
+                              </div>
+                              <p className="mt-1 text-xs leading-relaxed">
+                                {e.kind === "replace" ? (
+                                  <>
+                                    <del className="bg-red-500/10 text-red-700 line-through decoration-red-600/70 dark:text-red-400">{e.before}</del>{" "}
+                                    <ins className="bg-emerald-500/10 text-emerald-700 no-underline dark:text-emerald-400">{e.after}</ins>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{e.before}</span>{" "}
+                                    <ins className="bg-emerald-500/10 text-emerald-700 no-underline dark:text-emerald-400">+ {e.after}</ins>
+                                  </>
+                                )}
+                              </p>
+                              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{e.reason}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {showRedline && (
+                        <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                          The sheet is showing the working copy. Printing accepts the edits: struck lines disappear, green rewrites print as normal text.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </div>
             )}
           </Card>
+
+          {/* publishing, ownership and the reviews it earns */}
+          <PublishReviews cvId={id} draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
         </div>
 
         {/* right: the sheet — sticky on large screens only, a modal below xl.
@@ -517,6 +615,165 @@ function CVEditorPageInner() {
         </Portal>
       )}
     </>
+  );
+}
+
+/* ───────────────────── publishing, copyright, reviews ─────────────────── */
+
+/**
+ * A resume is private until its owner publishes it. Publishing does three things:
+ * it lists the resume on Discover, it opens it for ratings and reviews, and it can
+ * print an ownership line under the page. Unpublishing keeps the reviews — they
+ * are feedback, not a public artefact — and removes it from the directory.
+ */
+function PublishReviews({ cvId, draft, onChange }: { cvId: string; draft: CV; onChange: (patch: Partial<CV>) => void }) {
+  const isPublic = !!draft.public;
+  const profile = useQuery<{ identity?: { name?: string } }>({ queryKey: qk.profile(), queryFn: () => appFetch("/profile", { _auth: true }), staleTime: 60_000 });
+  const reviews = useQuery<CvReviews>({
+    queryKey: qk.cvReviews(cvId),
+    queryFn: () => appFetch(`/cvs/${cvId}/reviews`, { _auth: true }),
+  });
+
+  const publish = useMutation({
+    mutationFn: (body: { public?: boolean; copyright?: string | null }) =>
+      appFetch(`/cvs/${cvId}/publish`, { method: "PUT", body, _auth: true }),
+    meta: { invalidates: [["cvs", "detail", cvId], ["cvs", "reviews", cvId], ["people"], ["cvs"]], errorFallback: "Could not update this resume" },
+    onSuccess: () => toast("Resume updated", "success"),
+  });
+
+  const owner = profile.data?.identity?.name ?? "Your Name";
+  const suggested = `© ${new Date().getFullYear()} ${owner}. All rights reserved.`;
+  const summary = reviews.data;
+
+  const share = async () => {
+    const url = `${window.location.origin}/discover?mode=people`;
+    try {
+      await navigator.clipboard.writeText(`Review my resume on JAMS: ${url}`);
+      toast("Invite copied — paste it wherever you want a review", "success");
+    } catch {
+      toast("Couldn't reach the clipboard", "error");
+    }
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="eyebrow flex items-center gap-1.5">
+          <MessageSquare className="h-3.5 w-3.5" /> Reviews &amp; publishing
+        </h2>
+        <Badge tone={isPublic ? "mint" : "neutral"}>{isPublic ? "Public" : "Private"}</Badge>
+      </div>
+
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+        {isPublic
+          ? "Listed on Discover. People and hirers can rate it and leave a review; you can unpublish at any time and keep the feedback."
+          : "Private. Publish it to list it on Discover and open it for ratings and written reviews from hirers and other members."}
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant={isPublic ? "outline" : "azure"}
+          disabled={publish.isPending}
+          onClick={() => {
+            const next = !isPublic;
+            onChange({ public: next ? 1 : 0 });
+            publish.mutate({ public: next });
+          }}
+        >
+          {isPublic ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {isPublic ? "Unpublish" : "Publish for reviews"}
+        </Button>
+        {isPublic && (
+          <Button size="sm" variant="outline" onClick={share}>
+            <Share2 className="h-3.5 w-3.5" /> Copy invite
+          </Button>
+        )}
+      </div>
+
+      {/* ownership line */}
+      <div className="mt-4 rounded-xl border border-border p-3">
+        <Label htmlFor="cv-copyright">Copyright line (prints under the page)</Label>
+        <Input
+          id="cv-copyright"
+          value={draft.copyright ?? ""}
+          onChange={(e) => onChange({ copyright: e.target.value })}
+          onBlur={() => publish.mutate({ copyright: draft.copyright?.trim() || null })}
+          placeholder={suggested}
+          maxLength={240}
+        />
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[10px] text-muted-foreground">Leave empty for no line. Saved when the field loses focus.</span>
+          <button
+            type="button"
+            onClick={() => {
+              onChange({ copyright: suggested });
+              publish.mutate({ copyright: suggested });
+            }}
+            className="text-[10px] font-semibold text-accent hover:underline"
+          >
+            Use “{suggested}”
+          </button>
+        </div>
+      </div>
+
+      {/* rating summary */}
+      <div className="mt-4 border-t border-border pt-3">
+        {reviews.isPending ? (
+          <Skeleton className="h-16 w-full" />
+        ) : reviews.error ? (
+          <ErrorState error={reviews.error} onRetry={() => reviews.refetch()} />
+        ) : summary && summary.count > 0 ? (
+          <>
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 text-center">
+                <p className="hero-num text-3xl leading-none">{summary.avg}</p>
+                <Stars value={summary.avg ?? 0} size={12} />
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  {summary.count} review{summary.count === 1 ? "" : "s"}
+                </p>
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                {summary.distribution.map((d) => (
+                  <div key={d.star} className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span className="w-3 text-right">{d.star}</span>
+                    <Star className="h-2.5 w-2.5 shrink-0 fill-ember text-ember" />
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-[image:var(--gradient-brand)]"
+                        style={{ width: `${summary.count ? (d.count / summary.count) * 100 : 0}%` }}
+                      />
+                    </span>
+                    <span className="tnum w-4">{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {summary.items.slice(0, 4).map((r) => (
+                <li key={r.id} className="rounded-xl border border-border p-2.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Stars value={r.rating} size={10} />
+                    <span className="text-[11px] font-semibold">{r.reviewer_name}</span>
+                    <Badge tone="neutral" className="capitalize">
+                      {r.relationship}
+                    </Badge>
+                    <span className="ml-auto text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed">{r.body}</p>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {isPublic
+              ? "Published, no reviews yet. Copy the invite and send it to someone whose judgement you trust."
+              : "No reviews yet. Publish the resume, then send the invite to a hirer or a peer."}
+          </p>
+        )}
+      </div>
+    </Card>
   );
 }
 

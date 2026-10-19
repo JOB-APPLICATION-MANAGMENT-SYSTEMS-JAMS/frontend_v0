@@ -7,6 +7,8 @@ export const publicRoutes = ["/", "/auth/login", "/auth/signup", "/auth/verify",
 export const authedRoutes = [
   "/dashboard",
   "/discover",
+  "/hirers",
+  "/events",
   "/tracker",
   "/jobs",
   "/applications",
