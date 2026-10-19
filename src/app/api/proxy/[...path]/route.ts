@@ -12,7 +12,8 @@ const MAX_REDIRECTS = 10;
 
 export const runtime = "nodejs";
 
-const isProd = process.env.NODE_ENV === "production";
+/** Secure is a property of the origin, not the build: see the note in /api/session. */
+const isSecure = (request: NextRequest) => request.nextUrl.protocol === "https:";
 
 /**
  * Silent refresh (§38.1): access tokens live 15 min, refresh tokens 30 days.
@@ -39,9 +40,9 @@ async function refreshSession(request: NextRequest): Promise<{ access: string; r
   }
 }
 
-function sessionCookies(res: NextResponse, tokens: { access: string; refresh?: string }) {
-  res.cookies.set(COOKIE_NAMES.ACCESS_TOKEN, tokens.access, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 12 });
-  if (tokens.refresh) res.cookies.set(COOKIE_NAMES.REFRESH_TOKEN, tokens.refresh, { httpOnly: true, sameSite: "lax", secure: isProd, path: "/", maxAge: 60 * 60 * 24 * 30 });
+function sessionCookies(res: NextResponse, tokens: { access: string; refresh?: string }, secure: boolean) {
+  res.cookies.set(COOKIE_NAMES.ACCESS_TOKEN, tokens.access, { httpOnly: true, sameSite: "lax", secure, path: "/", maxAge: 60 * 60 * 12 });
+  if (tokens.refresh) res.cookies.set(COOKIE_NAMES.REFRESH_TOKEN, tokens.refresh, { httpOnly: true, sameSite: "lax", secure, path: "/", maxAge: 60 * 60 * 24 * 30 });
 }
 
 async function forward(request: NextRequest, pathParts: string[], attempt = 0, refreshed: false | { access: string; refresh?: string } = false): Promise<NextResponse> {
@@ -128,7 +129,7 @@ async function forward(request: NextRequest, pathParts: string[], attempt = 0, r
 
   console.log(`[proxy] ${method} /api/v1/${path} → ${response.status} ${Date.now() - started}ms`);
   const res = new NextResponse(response.body, { status: response.status, headers: outHeaders });
-  if (refreshed) sessionCookies(res, refreshed);
+  if (refreshed) sessionCookies(res, refreshed, isSecure(request));
   return res;
 }
 

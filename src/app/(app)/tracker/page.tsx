@@ -107,7 +107,7 @@ function TrackerPageInner() {
 
         {/* status chips: one scrollable rail on phones, a wrap on desktop. Wrapped
             on a 390px screen they pushed the results below the fold. */}
-        <div className="no-scrollbar -mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0">
+        <div className="no-scrollbar fade-x -mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0">
           <InfoButton
             title="Status filters"
             body={

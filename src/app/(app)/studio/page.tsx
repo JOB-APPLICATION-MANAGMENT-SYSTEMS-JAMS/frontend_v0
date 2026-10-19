@@ -10,6 +10,7 @@ import { qk } from "@/lib/queries";
 import type { CV, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
+import { CvShelf } from "@/features/studio/cv-shelf";
 import { Portal } from "@/components/ui/modal";
 import { PageHeader } from "@/components/ui/layout";
 import { toast } from "@/hooks/use-toast";
@@ -32,23 +33,30 @@ export default function StudioPage() {
   });
 
   const create = useMutation({
-    mutationFn: () =>
-      appFetch<CV>("/cvs", {
+    // the shelf's folder menus create straight into their own archetype, so the
+    // archetype is an argument here rather than something the caller has to set first
+    mutationFn: (into?: "opening" | "pitch") => {
+      const arch = into ?? archetype;
+      return appFetch<CV>("/cvs", {
         method: "POST",
         body: {
-          name: name.trim() || `${archetype === "opening" ? "Opening" : "Pitch"} CV`,
-          archetype,
+          name: name.trim() || `${arch === "opening" ? "Opening" : "Pitch"} CV`,
+          archetype: arch,
           career_category: category.trim() || undefined,
-          // profile-sourced blocks stay in sync with the Profile page (§24.1)
+          // profile-sourced blocks stay in sync with the Profile page (§24.1).
+          // The summary is local on purpose: a profile has no summary field, so
+          // marking it "profile" was a promise the document could not keep — it
+          // printed nothing and still showed a PROFILE badge in the editor.
           blocks: [
-            { type: "summary", source: "profile" },
+            { type: "summary", source: "local" },
             { type: "experience", source: "profile" },
             { type: "skills", source: "profile" },
             { type: "education", source: "profile" },
           ],
         },
         _auth: true,
-      }),
+      });
+    },
     meta: { invalidates: [["cvs"]] },
     onSuccess: (cv) => {
       toast("CV created, tailor it in the editor", "success");
@@ -134,7 +142,18 @@ export default function StudioPage() {
         </div>
       </Card>
 
-      {/* CV grid */}
+      {/* the shelf: the same CVs as objects you can open, one folder per archetype */}
+      {cvs.data?.items?.length ? (
+        <CvShelf
+          cvs={cvs.data.items}
+          templates={templates.data?.items ?? []}
+          onCreate={(into) => create.mutate(into)}
+          onFork={(id) => duplicate.mutate(id)}
+        />
+      ) : null}
+
+      {/* CV grid: every per-CV action, shelf sheets only open the editor */}
+      {(cvs.data?.items?.length ?? 0) > 0 ? <h2 className="eyebrow">All CVs</h2> : null}
       {cvs.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -177,16 +196,18 @@ export default function StudioPage() {
                 <Button size="sm" className="flex-1" onClick={() => router.push(`/studio/cvs/${cv.id}`)}>
                   Edit
                 </Button>
-                <Button size="sm" variant="outline" title="A4 preview" onClick={() => openPreview(cv.id)}>
+                {/* icon-only actions: touch-slop keeps the 32px look on a cursor
+                    and a 44px target under a thumb */}
+                <Button size="sm" variant="outline" className="touch-slop" aria-label={`A4 preview of ${cv.name}`} title="A4 preview" onClick={() => openPreview(cv.id)}>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="outline" title="Open print view (Save as PDF)" onClick={() => router.push(`/studio/cvs/${cv.id}?print=1`)}>
+                <Button size="sm" variant="outline" className="touch-slop" aria-label={`Open print view of ${cv.name}`} title="Open print view (Save as PDF)" onClick={() => router.push(`/studio/cvs/${cv.id}?print=1`)}>
                   <Printer className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="outline" title="Fork this CV" onClick={() => duplicate.mutate(cv.id)} disabled={duplicate.isPending}>
+                <Button size="sm" variant="outline" className="touch-slop" aria-label={`Fork ${cv.name}`} title="Fork this CV" onClick={() => duplicate.mutate(cv.id)} disabled={duplicate.isPending}>
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" variant="outline" title="Delete" onClick={() => remove.mutate(cv.id)} disabled={remove.isPending}>
+                <Button size="sm" variant="outline" className="touch-slop" aria-label={`Delete ${cv.name}`} title="Delete" onClick={() => remove.mutate(cv.id)} disabled={remove.isPending}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>

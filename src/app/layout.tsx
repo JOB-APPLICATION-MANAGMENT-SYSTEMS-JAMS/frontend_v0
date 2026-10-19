@@ -20,8 +20,10 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // data-scroll-behavior tells Next's router we opted into the CSS smooth scroll,
+  // so it can suspend it during route transitions instead of warning about it
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrains.variable} min-h-dvh bg-background font-sans text-foreground antialiased`}>
         <div className="mesh-bg" aria-hidden />
         <Providers>{children}</Providers>

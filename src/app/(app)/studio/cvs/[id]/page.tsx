@@ -17,13 +17,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Check, Copy, Download, Eye, Printer, RefreshCw, Trash2, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { CV } from "@/types";
+import type { CV, CvDesign } from "@/types";
 import { Badge, Button, Card, Input, Label, ProgressBar, Select, Skeleton } from "@/components/ui/base";
 import { ConfirmDialog, ErrorState, InlineBanner } from "@/components/ui/feedback";
 import { Portal } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/menu";
 import { Muted, Num } from "@/components/ui/text";
 import { CvEditor } from "@/features/studio/cv-editor";
+import { CvSettings } from "@/features/studio/cv-settings";
 import { CvPreview } from "@/features/studio/cv-preview";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useScrollLock } from "@/hooks/use-scroll-lock";
@@ -63,7 +64,6 @@ function CVEditorPageInner() {
   const [baseline, setBaseline] = React.useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
-  const [accent, setAccent] = React.useState<Accent>("ink");
   const [showMatch, setShowMatch] = React.useState(false);
 
   const detail = useQuery<CV>({
@@ -101,14 +101,31 @@ function CVEditorPageInner() {
     jd_match: unknown;
     suggestions: string[];
   }>({
-    queryKey: qk.cv(`${id}-match`),
+    // its own key (not `${id}-match` under the detail key) so the save below can
+    // invalidate it: a prefix invalidation of ["cvs","detail",id] never matches
+    // ["cvs","detail",`${id}-match`], which left the panel showing the score from
+    // the first time it was opened, however much the CV changed underneath it.
+    queryKey: qk.cvMatch(id),
     queryFn: () => appFetch(`/cvs/${id}/match`, { _auth: true }),
     enabled: !!detail.data && showMatch,
   });
 
+  /**
+   * The document settings live on the CV, not in this component, so the design
+   * you see is the design that autosaves. The preview sends the *draft* design
+   * as a query override, which is what makes a setting land on the sheet
+   * immediately instead of half a second later, when the PUT resolves.
+   */
+  const design: CvDesign = draft?.design ?? {};
+  const designKey = JSON.stringify(design);
+  const setDesign = React.useCallback(
+    (next: CvDesign) => setDraft((cur) => (cur ? { ...cur, design: next } : cur)),
+    []
+  );
+
   const previewQuery = useQuery<string>({
-    queryKey: qk.cv(`${id}-html-${accent}`),
-    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { params: { frame: 1, accent }, _auth: true }),
+    queryKey: qk.cv(`${id}-html-${designKey}`),
+    queryFn: () => appFetch<string>(`/cvs/${id}/html`, { params: { frame: 1, design: designKey }, _auth: true }),
     enabled: !!detail.data,
   });
   const preview = previewQuery.data ?? "";
@@ -118,13 +135,15 @@ function CVEditorPageInner() {
     mutationFn: (body: CV) =>
       appFetch(`/cvs/${id}`, {
         method: "PUT",
-        body: { name: body.name, archetype: body.archetype, career_category: body.career_category, blocks: body.blocks },
+        body: { name: body.name, archetype: body.archetype, career_category: body.career_category, blocks: body.blocks, design: body.design ?? {} },
         _auth: true,
       }),
     // the detail is the saved state; the previews are re-rendered by the explicit
     // refresh below, which runs the moment the PUT resolves instead of after an
     // invalidation round-trip (that is what keeps the sheet feeling live)
-    meta: { invalidates: [["cvs", "detail", id]], silentError: true },
+    // the sheet re-renders via refreshPreview below; the ATS report is scored from
+    // the same document, so it has to be re-asked too
+    meta: { invalidates: [["cvs", "detail", id], ["cvs", "match", id]], silentError: true },
     onSuccess: (_data, body) => {
       setBaseline(serialise(body));
       refreshPreview();
@@ -235,19 +254,21 @@ function CVEditorPageInner() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => router.push("/studio")}
-              className="press inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="press touch-slop inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" /> Studio
             </button>
 
             <SaveState status={status} onSave={() => dirty && save.mutate(draft)} />
 
-            <div className="ml-auto flex flex-wrap items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:gap-1.5">
               <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)} className="xl:hidden">
                 <Eye className="h-3.5 w-3.5" /> Preview
               </Button>
               <Button size="sm" variant="outline" onClick={() => duplicate.mutate()} disabled={duplicate.isPending}>
-                <Copy className="h-3.5 w-3.5" /> Fork
+                <Copy className="h-3.5 w-3.5" />{/* under 400px the label is what pushes Delete onto a
+                    row of its own; the copy glyph plus its title still read */}
+                <span className="max-[400px]:sr-only">Fork</span>
               </Button>
               <Button size="sm" variant="azure" onClick={printCv} className="xl:hidden">
                 <Printer className="h-3.5 w-3.5" /> PDF
@@ -290,6 +311,9 @@ function CVEditorPageInner() {
               . Sections marked <span className="font-semibold text-foreground">profile</span> stay in sync with it; the rest belong to this CV only.
             </p>
           </Card>
+
+          {/* document settings: page, type, spacing, colour (§24.1) */}
+          <CvSettings design={design} onChange={setDesign} />
 
           {/* the editor */}
           <CvEditor draft={draft} onChange={setDraft} />
@@ -410,16 +434,28 @@ function CVEditorPageInner() {
       {/* accent + a persistent action bar only on phones, where the sheet is hidden */}
       <div className="glass-sheet mt-4 flex flex-wrap items-center gap-2 rounded-2xl p-2.5 xl:hidden">
         <span className="eyebrow px-1">Accent</span>
-        <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+        <SegmentedControl
+          ariaLabel="CV accent"
+          size="sm"
+          value={(design.accent as Accent) ?? "ink"}
+          onChange={(v) => setDesign({ ...design, accent: v })}
+          options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))}
+        />
         <Button size="sm" variant="outline" className="ml-auto" onClick={() => setPreviewOpen(true)}>
           <Eye className="h-3.5 w-3.5" /> Open A4
         </Button>
       </div>
 
-      {/* desktop accent switch, next to the sheet it controls */}
+      {/* desktop controls, under the sheet they govern */}
       <div className="mt-3 hidden items-center gap-2 xl:flex">
         <span className="eyebrow">Document accent</span>
-        <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+        <SegmentedControl
+          ariaLabel="CV accent"
+          size="sm"
+          value={(design.accent as Accent) ?? "ink"}
+          onChange={(v) => setDesign({ ...design, accent: v })}
+          options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))}
+        />
         <span className="text-[11px] text-muted-foreground">rules and skill markers only; the text stays paper black</span>
       </div>
 
@@ -465,7 +501,13 @@ function CVEditorPageInner() {
                 className="min-h-0 flex-1"
               />
               <div className="mt-2 flex shrink-0 flex-wrap items-center gap-2 border-t border-border px-1 pt-2">
-                <SegmentedControl ariaLabel="CV accent" size="sm" value={accent} onChange={setAccent} options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))} />
+                <SegmentedControl
+                  ariaLabel="CV accent"
+                  size="sm"
+                  value={(design.accent as Accent) ?? "ink"}
+                  onChange={(v) => setDesign({ ...design, accent: v })}
+                  options={ACCENTS.map((a) => ({ value: a.value, label: a.label }))}
+                />
                 <Button size="sm" variant="outline" className="ml-auto" onClick={() => setPreviewOpen(false)}>
                   <X className="h-3.5 w-3.5" /> Close
                 </Button>
@@ -480,7 +522,7 @@ function CVEditorPageInner() {
 
 /** The fields that make a CV a CV. `lineage` and `targeting` are preserved as-is. */
 function serialise(cv: CV) {
-  return JSON.stringify({ n: cv.name, a: cv.archetype, c: cv.career_category, b: cv.blocks });
+  return JSON.stringify({ n: cv.name, a: cv.archetype, c: cv.career_category, b: cv.blocks, d: cv.design ?? {} });
 }
 
 /** Save state + a manual escape hatch. Autosave is the default, this is the proof. */
@@ -497,7 +539,7 @@ function SaveState({ status, onSave }: { status: "saving" | "dirty" | "saved"; o
       onClick={onSave}
       disabled={status === "saved"}
       title={status === "saved" ? "Everything is saved" : "Save now (⌘S)"}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${tone} ${status === "saved" ? "cursor-default" : "cursor-pointer hover:border-ember/60"}`}
+      className={`touch-slop inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${tone} ${status === "saved" ? "cursor-default" : "cursor-pointer hover:border-ember/60"}`}
     >
       {status === "saving" ? (
         <>
@@ -505,7 +547,7 @@ function SaveState({ status, onSave }: { status: "saving" | "dirty" | "saved"; o
         </>
       ) : status === "dirty" ? (
         <>
-          <Download className="h-3 w-3" /> Save (⌘S)
+          <Download className="h-3 w-3" /> Save<span className="hidden sm:inline"> (⌘S)</span>
         </>
       ) : (
         <>

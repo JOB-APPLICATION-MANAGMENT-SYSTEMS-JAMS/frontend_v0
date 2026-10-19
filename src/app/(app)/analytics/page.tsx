@@ -10,7 +10,7 @@ import { qk } from "@/lib/queries";
 import type { BreakdownRow, HeatmapDay, Summary, TimeseriesPoint } from "@/types";
 import { KpiWall } from "@/features/analytics/kpi-wall";
 import { FunnelField } from "@/features/analytics/funnel-field";
-import { Heatmap } from "@/features/analytics/heatmap";
+import { ConsistencyCard } from "@/features/analytics/consistency-card";
 import { BreakdownTable, ChartCard, Donut, DualSeries, Histogram } from "@/features/analytics/charts";
 import { Button, Card, Select, Skeleton } from "@/components/ui/base";
 import { PageHeader } from "@/components/ui/layout";
@@ -219,7 +219,12 @@ function AnalyticsPageInner() {
           )}
         </ChartCard>
 
-        <Heatmap days={heatmap.data?.days} year={heatmap.data?.year ?? new Date().getFullYear()} onPick={() => router.push("/streaks")} />
+        <ConsistencyCard
+          days={heatmap.data?.days}
+          year={heatmap.data?.year ?? new Date().getFullYear()}
+          unit="application"
+          onPick={() => router.push("/streaks")}
+        />
       </div>
 
       <Card className="p-4">

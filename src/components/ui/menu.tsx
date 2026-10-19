@@ -179,7 +179,7 @@ export function SegmentedControl<T extends string>({
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative z-10 inline-flex flex-1 basis-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-semibold capitalize transition-colors duration-[var(--dur-2)]",
+              "touch-slop relative z-10 inline-flex flex-1 basis-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-semibold capitalize transition-colors duration-[var(--dur-2)]",
               size === "sm" ? "px-2 py-1 text-[11px]" : "px-2.5 py-1.5 text-xs sm:px-3.5",
               active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             )}

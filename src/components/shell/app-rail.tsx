@@ -54,6 +54,18 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
     () => false
   );
 
+  // Below md the rail is an overlay: freeze the page behind the scrim so a swipe
+  // scrolls the drawer, not the dashboard underneath it. Above md it is part of
+  // the layout and the page must keep scrolling.
+  React.useEffect(() => {
+    if (isDesktop || !open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isDesktop, open]);
+
   const logout = async () => {
     await clearSession();
     router.push("/auth/login");
@@ -71,23 +83,24 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
         }}
         data-active={active}
         className={cn(
-          "ember-edge group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-[var(--dur-2)] ease-[var(--ease-out)]",
-          active
-            ? "bg-ember/12 text-foreground shadow-[inset_0_1px_0_var(--glass-lip)] dark:bg-ember/10"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          "rail-edge group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-[var(--dur-2)] ease-[var(--ease-out)]",
+          // the rail carries no brand hue at all: the active state is the same
+          // glass, one step deeper, plus the dot on the right (see .rail-edge in
+          // globals.css). No left-edge marker — it read as a stray black line.
+          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         )}
       >
         <span
           className={cn(
             "grid h-6 w-6 shrink-0 place-items-center transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)] group-hover:scale-110",
-            active && "text-ember-deep dark:text-ember"
+            active && "text-foreground"
           )}
         >
           <Icon className="h-[18px] w-[18px]" />
         </span>
         <span className="flex-1 truncate">{label}</span>
         {kbd && <Kbd className="opacity-55 transition-opacity duration-200 group-hover:opacity-100">{kbd}</Kbd>}
-        {active && <span className="animate-ember h-1.5 w-1.5 shrink-0 rounded-full bg-ember" />}
+        {active && <span className="animate-ember h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />}
       </Link>
     );
   };
@@ -98,7 +111,9 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
       {open && <button type="button" aria-label="Close navigation" onClick={onClose} className="scrim-in fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" />}
 
       <aside
+        id="app-rail"
         inert={!open}
+        aria-label="Primary"
         className={cn(
           "glass-rail fixed inset-y-0 left-0 z-50 flex w-[276px] flex-col gap-1 overflow-y-auto px-3 py-4 custom-scrollbar md:w-[240px]",
           "transition-transform duration-300 ease-out",
@@ -106,9 +121,9 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
         )}
       >
         <div className="mb-4 flex items-center gap-2.5 px-2 py-1">
-          <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-8 w-auto shrink-0 drop-shadow-[0_4px_12px_hsl(30_100%_60%/0.35)]" />
+          <Image src="/jams-logo.png" alt="" width={403} height={322} className="h-8 w-auto shrink-0 drop-shadow-[0_6px_16px_rgb(12_12_12/0.2)] dark:drop-shadow-[0_6px_18px_rgb(0_0_0/0.55)]" />
           <span className="font-display text-lg font-extrabold tracking-tight">JAMS</span>
-          <span className="ml-auto rounded-full bg-ember/12 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-ember-deep dark:text-ember">v1</span>
+          <span className="glass-chip ml-auto rounded-full px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">v1</span>
         </div>
 
         <nav className="stagger-children mt-3 flex flex-col gap-1.5">

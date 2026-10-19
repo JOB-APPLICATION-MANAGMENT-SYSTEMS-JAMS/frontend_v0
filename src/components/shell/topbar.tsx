@@ -72,6 +72,7 @@ export function Topbar({ railOpen, onToggleRail }: { railOpen: boolean; onToggle
             onClick={onToggleRail}
             aria-label="Toggle navigation"
             aria-expanded={railOpen}
+            aria-controls="app-rail"
             className="press grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-ember-deep dark:hover:text-ember-soft"
           >
             <PanelLeft className="h-4.5 w-4.5" />

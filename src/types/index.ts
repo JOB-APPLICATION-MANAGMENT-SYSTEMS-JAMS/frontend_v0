@@ -145,8 +145,41 @@ export interface CV {
   career_category: string;
   targeting: { seniority?: string[]; keywords?: string[]; companies?: string[] };
   blocks: CVBlock[];
+  /** The document's own settings; mirrors the backend's `design` column. */
+  design: CvDesign;
   lineage: { forked_from?: string; forked_at?: string };
   updated_at: string;
+}
+
+/**
+ * Document settings (§24.1). Every field is optional and an absent field is the
+ * measured default, so `{}` is the reference sheet. Mirrors `CvDesign` in
+ * `backend/src/lib/cv-document.ts`, which is what actually resolves them.
+ */
+export interface CvDesign {
+  page?: "a4" | "letter";
+  /** `ink` | `ember` | `graphite`, or any hex. */
+  accent?: string;
+  font?: "serif" | "sans";
+  base?: number;
+  nameDelta?: number;
+  headDelta?: number;
+  entryDelta?: number;
+  lineHeight?: number;
+  sectionGap?: number;
+  entryGap?: number;
+  marginX?: number;
+  marginY?: number;
+  skillCols?: number;
+  caps?: "none" | "capitalize" | "upper";
+  rule?: boolean;
+  headTone?: "accent" | "ink";
+  datePos?: "left" | "right";
+  align?: "center" | "left";
+  icons?: "none" | "outline" | "circle" | "rounded" | "square" | "circle-fill" | "rounded-fill" | "square-fill";
+  headIcons?: "none" | "outline" | "filled";
+  links?: { underline?: boolean; colored?: boolean };
+  dates?: "keep" | "month" | "dots" | "hide";
 }
 
 export interface CVBlock {

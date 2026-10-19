@@ -11,7 +11,7 @@ import { qk } from "@/lib/queries";
 import type { Application, BreakdownRow, HeatmapDay, Paged, Summary, TimeseriesPoint } from "@/types";
 import { KpiWall } from "@/features/analytics/kpi-wall";
 import { FunnelField } from "@/features/analytics/funnel-field";
-import { Heatmap } from "@/features/analytics/heatmap";
+import { ConsistencyCard } from "@/features/analytics/consistency-card";
 import { ChartCard, BreakdownTable, DualSeries } from "@/features/analytics/charts";
 import { Button, Badge, Skeleton, ProgressBar } from "@/components/ui/base";
 import { EmptyState, InlineBanner } from "@/components/ui/feedback";
@@ -167,7 +167,12 @@ function DashboardPageInner() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Heatmap days={heatmap.data?.days} year={heatmap.data?.year ?? new Date().getFullYear()} onPick={() => router.push("/streaks")} />
+        <ConsistencyCard
+          days={heatmap.data?.days}
+          year={heatmap.data?.year ?? new Date().getFullYear()}
+          unit="application"
+          onPick={() => router.push("/streaks")}
+        />
 
         <ChartCard
           title="Ghost alerts"

@@ -103,9 +103,8 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
             <button
               key={i}
               type="button"
-              onClick={() => jump(i)}
-              className={cn(
-                "glass-chip shrink-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+              onClick={() => jump(i)}                className={cn(
+                  "glass-chip touch-slop shrink-0 cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                 hidden[i] ? "text-muted-foreground line-through" : "text-foreground hover:border-ember/50 hover:text-ember-deep dark:hover:text-ember-soft"
               )}
             >
@@ -119,7 +118,10 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
         const Icon = TYPE_ICON[b.type];
         const isOpen = open[i] ?? false;
         const bulletType = b.type === "experience" || b.type === "education" || b.type === "projects" || b.type === "awards";
-        const linked = b.source === "profile";
+        // only experience, education and skills can render live from the profile;
+        // a summary (or any other block) marked "profile" would wear the badge
+        // while printing nothing, so the badge follows what the document honours
+        const linked = b.source === "profile" && (b.type === "experience" || b.type === "education" || b.type === "skills");
         const count = b.type === "skills" ? (b.groups ?? []).filter(Boolean).length : lines(b.text).length;
 
         return (
@@ -134,12 +136,16 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
               hidden[i] && "opacity-55"
             )}
           >
-            <header className="flex items-center gap-2 p-3">
+            {/* On a phone the four section actions leave the title about 60px,
+                which truncated "Experience" to "Experi…" — the one label that
+                has to stay legible. The title takes its own row below `sm` and
+                the actions sit under it, right-aligned. */}
+            <header className="flex flex-wrap items-center gap-2 p-3">
               <button
                 type="button"
                 onClick={() => setOpen((o) => ({ ...o, [i]: !isOpen }))}
                 aria-expanded={isOpen}
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left"
+                className="flex min-w-0 flex-1 basis-full cursor-pointer items-center gap-2.5 text-left sm:basis-auto"
               >
                 <span
                   className={cn(
@@ -165,7 +171,7 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
                 <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-[var(--dur-3)]", isOpen && "rotate-180")} />
               </button>
 
-              <div className="flex shrink-0 items-center">
+              <div className="ml-auto flex shrink-0 items-center">
                 <IconAction label={hidden[i] ? "Show section" : "Hide section"} onClick={() => setHidden((h) => ({ ...h, [i]: !h[i] }))}>
                   {hidden[i] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </IconAction>
@@ -227,7 +233,7 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
                 key={t}
                 type="button"
                 onClick={() => add(t)}
-                className="glass-chip inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold text-foreground transition-all duration-[var(--dur-2)] hover:border-ember/50 hover:text-ember-deep dark:hover:text-ember-soft"
+                className="glass-chip touch-slop inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold text-foreground transition-all duration-[var(--dur-2)] hover:border-ember/50 hover:text-ember-deep dark:hover:text-ember-soft"
               >
                 <Icon className="h-3.5 w-3.5" />
                 {TYPE_LABEL[t]}
@@ -262,7 +268,8 @@ function IconAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-30",
+        // touch-slop keeps the 32px visual size but gives a thumb a 44px target
+        "touch-slop grid h-8 w-8 cursor-pointer place-items-center rounded-lg text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-30",
         danger ? "hover:bg-ink/10 hover:text-destructive" : "hover:bg-ember/10 hover:text-ember-deep dark:hover:text-ember-soft"
       )}
     >
@@ -321,7 +328,8 @@ function BulletEditor({ text, onChange, label }: { text: string; onChange: (t: s
     <div>
       <div className="mb-1.5 flex items-center justify-between">
         <Label className="mb-0">{label}</Label>
-        <span className="text-[10px] text-muted-foreground">Enter = new bullet · Alt+↑↓ = reorder</span>
+        {/* a keyboard hint is noise on a thumb-only screen */}
+        <span className="hidden text-[10px] text-muted-foreground sm:inline">Enter = new bullet · Alt+↑↓ = reorder</span>
       </div>
       <ul className="space-y-1.5">
         {rows.map((row, i) => (

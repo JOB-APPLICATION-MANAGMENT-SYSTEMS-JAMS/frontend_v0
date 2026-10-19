@@ -67,6 +67,8 @@ export const qk = {
   today: () => ["streaks", "today"] as const,
   cvs: () => ["cvs"] as const,
   cv: (id: string) => ["cvs", "detail", id] as const,
+  /** the ATS report is per CV, and its own key so a save can invalidate it */
+  cvMatch: (id: string) => ["cvs", "match", id] as const,
   templates: (filter?: unknown) => ["templates", filter ?? {}] as const,
   outreach: (filter?: unknown) => ["outreach", filter ?? {}] as const,
   companies: (filter?: unknown) => ["companies", filter ?? {}] as const,
