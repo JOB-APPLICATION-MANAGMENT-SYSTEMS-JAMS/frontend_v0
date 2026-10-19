@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Layout vocabulary — the structural half of the design system.
+ * Layout vocabulary - the structural half of the design system.
  *
  * Every page used to hand-roll its own heading, spacing and filter pills, which
  * is exactly why the app read as a collection of screens instead of one product.

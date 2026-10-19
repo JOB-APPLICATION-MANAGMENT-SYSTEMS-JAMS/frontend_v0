@@ -36,14 +36,14 @@ export const fmt = {
  * so the tracker reads as a temperature scale: cold grey for something you never
  * touched, hotter as you get closer to an offer. The two dead ends (rejected,
  * ghosted) and the one you pulled yourself (withdrawn) drop out of the ramp into
- * pure grey/ink — the only hue-free steps, which is what makes them read as "off".
+ * pure grey/ink - the only hue-free steps, which is what makes them read as "off".
  *
  * The steps are mid-range on purpose so they stay legible on white AND on black.
  * `color` is a plain CSS colour string, `borderColor`/`bgColor` bake in the alpha
  * (call sites used to do `${color}66`, which cannot work with a var() colour).
  */
 /* The rungs live in globals.css as `--st-*` so each theme can pick the lightness
-   that actually clears its background — a dark rung is readable on white and
+   that actually clears its background - a dark rung is readable on white and
    invisible on black, so a single literal cannot serve both. */
 const step = {
   saved: "--st-saved",

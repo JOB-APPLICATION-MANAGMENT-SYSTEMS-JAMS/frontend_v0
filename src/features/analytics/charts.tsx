@@ -7,8 +7,8 @@
  * Everything here is hand-drawn SVG, which means the palette can be a real ramp
  * instead of a library default: bars climb the ember ladder, the reply line is a
  * lighter rung of the same hue, and the only non-ember colours on the page are
- * greys. Every series animates in on mount — bars grow from the baseline, the
- * line draws itself, the donut arcs sweep — all transform/stroke only.
+ * greys. Every series animates in on mount - bars grow from the baseline, the
+ * line draws itself, the donut arcs sweep - all transform/stroke only.
  */
 import * as React from "react";
 import { Skeleton } from "@/components/ui/base";

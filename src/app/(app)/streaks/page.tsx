@@ -201,7 +201,7 @@ export default function StreaksPage() {
         )}
       </Card>
 
-      {/* freeze explainer — stacks on phones: a single row squeezed the icon to a
+      {/* freeze explainer - stacks on phones: a single row squeezed the icon to a
           sliver and clipped the button (flex children default to min-width:0) */}
       <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">

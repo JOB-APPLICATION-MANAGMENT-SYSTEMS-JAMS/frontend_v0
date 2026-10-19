@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Shutter (spec §15.1) — pre-painted panels + a five-bar equaliser.
+ * Shutter (spec §15.1) - pre-painted panels + a five-bar equaliser.
  * Transform-only, no colour show. The panels are the *background* colour of the
  * theme they are covering, so the wipe reads as the page closing rather than a
  * black flash in light mode.

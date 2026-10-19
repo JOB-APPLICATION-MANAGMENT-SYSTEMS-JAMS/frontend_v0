@@ -45,7 +45,7 @@ export default function StudioPage() {
           career_category: category.trim() || undefined,
           // profile-sourced blocks stay in sync with the Profile page (§24.1).
           // The summary is local on purpose: a profile has no summary field, so
-          // marking it "profile" was a promise the document could not keep — it
+          // marking it "profile" was a promise the document could not keep - it
           // printed nothing and still showed a PROFILE badge in the editor.
           blocks: [
             { type: "summary", source: "local" },

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * CV editor (§24.1) — two panes, the way FlowCV works: sections you open one at a
+ * CV editor (§24.1) - two panes, the way FlowCV works: sections you open one at a
  * time on the left, the printed sheet on the right.
  *
  * The preview is the *same HTML the print pipeline sends*, served with `?frame=1`
@@ -103,7 +103,7 @@ function CVEditorPageInner() {
     keywords: { matched: string[]; missing: string[]; coverage_pct: number | null; jd_total: number };
     jd_match: unknown;
     suggestions: string[];
-    /** score if every failing row turns green — a ceiling, not a promise */
+    /** score if every failing row turns green - a ceiling, not a promise */
     potential_score: number;
     advice: { key: string; title: string; detail: string; gain: number }[];
     redline: RedlineReport;
@@ -204,12 +204,12 @@ function CVEditorPageInner() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dirty, draft, save]);
 
-  // the page behind the fullscreen sheet must not scroll under it — and because
+  // the page behind the fullscreen sheet must not scroll under it - and because
   // the gutter is reserved in CSS, locking cannot reflow the sheet's well
   useScrollLock(previewOpen);
 
   /* Below xl the sheet pane is hidden by CSS, but a `display: none` iframe still
-     loads and lays out its document — i.e. the whole CV rendered a second time for
+     loads and lays out its document - i.e. the whole CV rendered a second time for
      nothing, on the devices least able to afford it. The pane is mounted for the
      breakpoint instead, and only one sheet exists at any moment. */
   const wideEnoughForPane = useMediaQuery("(min-width: 1280px)");
@@ -474,7 +474,7 @@ function CVEditorPageInner() {
                       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{match.data.redline.summary}</p>
 
                       {match.data.redline.edits.length === 0 ? (
-                        <p className="mt-2 text-xs text-muted-foreground">Nothing mechanical to strike — the wording is already tight.</p>
+                        <p className="mt-2 text-xs text-muted-foreground">Nothing mechanical to strike - the wording is already tight.</p>
                       ) : (
                         <ul className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                           {match.data.redline.edits.map((e) => (
@@ -519,7 +519,7 @@ function CVEditorPageInner() {
           <PublishReviews cvId={id} draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
         </div>
 
-        {/* right: the sheet — sticky on large screens only, a modal below xl.
+        {/* right: the sheet - sticky on large screens only, a modal below xl.
             Unmounted while the fullscreen sheet is open: one document, one
             measurement pass, so opening it cannot disturb the pane behind. */}
         <div className="hidden xl:sticky xl:top-20 xl:block xl:h-[calc(100vh-6rem)]">
@@ -623,8 +623,8 @@ function CVEditorPageInner() {
 /**
  * A resume is private until its owner publishes it. Publishing does three things:
  * it lists the resume on Discover, it opens it for ratings and reviews, and it can
- * print an ownership line under the page. Unpublishing keeps the reviews — they
- * are feedback, not a public artefact — and removes it from the directory.
+ * print an ownership line under the page. Unpublishing keeps the reviews - they
+ * are feedback, not a public artefact - and removes it from the directory.
  */
 function PublishReviews({ cvId, draft, onChange }: { cvId: string; draft: CV; onChange: (patch: Partial<CV>) => void }) {
   const isPublic = !!draft.public;
@@ -649,7 +649,7 @@ function PublishReviews({ cvId, draft, onChange }: { cvId: string; draft: CV; on
     const url = `${window.location.origin}/discover?mode=people`;
     try {
       await navigator.clipboard.writeText(`Review my resume on JAMS: ${url}`);
-      toast("Invite copied — paste it wherever you want a review", "success");
+      toast("Invite copied - paste it wherever you want a review", "success");
     } catch {
       toast("Couldn't reach the clipboard", "error");
     }

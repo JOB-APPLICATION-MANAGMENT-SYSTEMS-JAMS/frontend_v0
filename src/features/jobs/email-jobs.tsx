@@ -6,7 +6,7 @@
  * the HN “Who is hiring” thread, where founders print their inbox directly.
  *
  * This replaces the old social-search recipes: real jobs, a real address, one click
- * to send the application — SMTP when connected, Gmail compose hand-off otherwise.
+ * to send the application - SMTP when connected, Gmail compose hand-off otherwise.
  */
 import * as React from "react";
 import { useMutation, useQuery, keepPreviousData } from "@tanstack/react-query";

@@ -3,14 +3,14 @@
 import * as React from "react"
 
 /**
- * Contribution Skyline — a year of activity as a GitHub-style heat map that
+ * Contribution Skyline - a year of activity as a GitHub-style heat map that
  * folds up into an isometric skyline, and back down again.
  *
  * It is one scene, not two charts. Every day is a box on a grid; the 2D view
  * is that grid seen straight down, the 3D view is the same grid seen from the
  * corner. Switching views swings one camera between the two while each week's
  * bars rise (or settle) in a wave from the oldest week to the newest, so the
- * flat heat map visibly becomes the skyline — nothing is swapped or cut.
+ * flat heat map visibly becomes the skyline - nothing is swapped or cut.
  *
  * Hover or tap a day for its count, arrow keys walk the grid, hover a legend
  * swatch to isolate that level, and in 3D drag to orbit (double-click resets).
@@ -68,7 +68,7 @@ export const dayMs = (v: string | number | Date): number => {
   return Date.UTC(v.getFullYear(), v.getMonth(), v.getDate())
 }
 
-/** mulberry32 — small, fast, deterministic. */
+/** mulberry32 - small, fast, deterministic. */
 export const rng = (seed: number) => {
   let a = seed >>> 0
   return (): number => {
@@ -110,7 +110,7 @@ export const generateContributions = (endMs: number, seed = 7, days = 371): Cont
 /**
  * The grid: columns are weeks, rows are weekdays (row 0 = `weekStart`). It
  * ends on `endMs` and starts on the week containing the day one year earlier.
- * Levels 1–4 split the non-zero days by their share of a busy day — the 95th
+ * Levels 1–4 split the non-zero days by their share of a busy day - the 95th
  * percentile, so one freak day can't wash every other day out to level 1.
  */
 export const buildGrid = (data: ContributionDay[], endMs: number, weekStart = 0) => {
@@ -140,7 +140,7 @@ export const buildGrid = (data: ContributionDay[], endMs: number, weekStart = 0)
 export const levelOf = (count: number, busy: number): number =>
   count <= 0 ? 0 : busy <= 0 ? 4 : 1 + Math.min(3, Math.floor((count / busy) * 4))
 
-/** Total, busiest day, longest run, and the run that reaches today (or yesterday — today isn't over). */
+/** Total, busiest day, longest run, and the run that reaches today (or yesterday - today isn't over). */
 export const computeStats = (cells: Cell[]): ContributionStats => {
   let total = 0
   let best = 0
@@ -196,7 +196,7 @@ export const monthLabels = (cells: Cell[], weeks: number, locale = "en-US") => {
 export const barHeight = (count: number, max: number, scale = 1): number =>
   count > 0 && max > 0 ? 0.4 + Math.pow(count / max, 0.85) * 7.2 * scale : 0.2
 
-/** Share of the morph each bar spends waiting — the wave sweeps oldest week → newest. */
+/** Share of the morph each bar spends waiting - the wave sweeps oldest week → newest. */
 export const WAVE = 0.42
 
 /** 0 → 1 as a bar rises during the morph. Every bar is flat at t=0 and fully up at t=1. */
@@ -214,7 +214,7 @@ export type Cam = { cs: number; sn: number; se: number; ce: number }
 
 /**
  * e=0 looks straight down (yaw 0, elevation 90°): x across, y down, height
- * invisible — a plain heat map. e=1 is the isometric corner view. Orbit
+ * invisible - a plain heat map. e=1 is the isometric corner view. Orbit
  * offsets only apply in proportion to e, so the flat view never tilts.
  */
 export const camera = (e: number, dYaw = 0, dElev = 0): Cam => {
@@ -1161,16 +1161,16 @@ export default function ContributionSkyline({
 
   const { stats } = model
   const range = (a: string | null, b: string | null, withYear = false) => {
-    if (!a || !b) return "—"
+    if (!a || !b) return "-"
     const f = withYear ? dfy : df
-    return f.format(dayMs(a)) + " — " + f.format(dayMs(b))
+    return f.format(dayMs(a)) + " - " + f.format(dayMs(b))
   }
   const is3d = view === "3d"
   const corners = showStats && width >= 560
   const bigSize = Math.round(Math.max(30, Math.min(56, width * 0.058)))
   const statBlocks = [
     { label: "1 year total", value: nf.format(stats.total), unit: noun(stats.total), sub: range(stats.first, stats.last, true) },
-    { label: "Busiest day", value: nf.format(stats.busiest.count), unit: noun(stats.busiest.count), sub: stats.busiest.date ? df.format(dayMs(stats.busiest.date)) : "—" },
+    { label: "Busiest day", value: nf.format(stats.busiest.count), unit: noun(stats.busiest.count), sub: stats.busiest.date ? df.format(dayMs(stats.busiest.date)) : "-" },
     { label: "Longest streak", value: nf.format(stats.longest.days), unit: stats.longest.days === 1 ? "day" : "days", sub: range(stats.longest.start, stats.longest.end) },
     { label: "Current streak", value: nf.format(stats.current.days), unit: stats.current.days === 1 ? "day" : "days", sub: range(stats.current.start, stats.current.end) },
   ]

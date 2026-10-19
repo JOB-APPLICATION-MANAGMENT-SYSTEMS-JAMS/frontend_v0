@@ -4,7 +4,7 @@
  * A4 preview pane.
  *
  * The old preview dropped the document into a stretched iframe, so you were
- * looking at a fluid web page that happened to be a CV — never at the sheet that
+ * looking at a fluid web page that happened to be a CV - never at the sheet that
  * prints. Here the document is a real 210×297mm sheet, scaled with a transform,
  * which is what makes zoom, the paper shadow and the page markers possible. The
  * HTML is identical between preview and print, so the two cannot drift.
@@ -16,7 +16,7 @@
  *    own scrollbars (`no-scrollbar`) and the frame hides its document's, so the
  *    width "fit" depends on never moves because of the sheet inside it. A
  *    scrollbar taking 15px off the well used to shrink the sheet, which removed
- *    the scrollbar, which grew it again — the loop that made the zoom look like
+ *    the scrollbar, which grew it again - the loop that made the zoom look like
  *    it was breathing.
  * 2. Every measurement is quantised and only replaces the previous one when it
  *    really moved. Fit resolves to 0.5% steps so a 1px layout wobble cannot
@@ -30,7 +30,7 @@ import * as React from "react";
 import { Maximize, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** A4 at 96dpi — the CSS pixel size of 210mm × 297mm. */
+/** A4 at 96dpi - the CSS pixel size of 210mm × 297mm. */
 export const A4_W = 794;
 export const A4_H = 1123;
 
@@ -45,7 +45,7 @@ const quantise = (n: number) => Math.round(n * 200) / 200;
 const SETTLE_MS = 120;
 const SETTLE_TRIES = 10;
 
-/** The well's content box — padding excluded, because the sheet fills the box. */
+/** The well's content box - padding excluded, because the sheet fills the box. */
 function contentWidth(el: HTMLElement): number {
   const cs = getComputedStyle(el);
   return el.clientWidth - parseFloat(cs.paddingLeft || "0") - parseFloat(cs.paddingRight || "0");
@@ -75,7 +75,7 @@ export function CvPreview({
   const [sheetH, setSheetH] = React.useState(A4_H);
 
   // Width: the only input to "fit". Whatever this observer reports is what the
-  // first paint measured — same box, same units, whole pixels.
+  // first paint measured - same box, same units, whole pixels.
   React.useLayoutEffect(() => {
     const el = wellRef.current;
     if (!el) return;
@@ -197,7 +197,7 @@ export function CvPreview({
       </div>
 
       {/* the well: a recessed tray the sheet floats on. It scrolls by wheel,
-          touch and keyboard, and shows no scrollbar anywhere — a scrollbar here
+          touch and keyboard, and shows no scrollbar anywhere - a scrollbar here
           would change the width that "fit" is computed from. */}
       <div
         ref={wellRef}

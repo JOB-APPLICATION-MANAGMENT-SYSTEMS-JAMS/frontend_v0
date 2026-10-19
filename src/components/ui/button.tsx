@@ -9,7 +9,7 @@
  * colours.
  *
  * `buttonClass` is exported because navigation sometimes has to *look* like a
- * button without being one — a `<button>` nested inside an `<a>` is invalid HTML
+ * button without being one - a `<button>` nested inside an `<a>` is invalid HTML
  * and breaks middle-click.
  */
 import * as React from "react";

@@ -11,7 +11,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** The mono small-caps label above a section — one per region, never decorative. */
+/** The mono small-caps label above a section - one per region, never decorative. */
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
   return <p className={cn("eyebrow", className)}>{children}</p>;
 }
@@ -21,7 +21,7 @@ export function Muted({ children, className }: { children: React.ReactNode; clas
   return <p className={cn("text-[11px] leading-relaxed text-muted-foreground", className)}>{children}</p>;
 }
 
-/** A figure that ticks. Tabular figures so the width does not change as it counts —
+/** A figure that ticks. Tabular figures so the width does not change as it counts -
  *  without this, a rolling number makes everything beside it shift. */
 export function Num({ children, className }: { children: React.ReactNode; className?: string }) {
   return <span className={cn("tnum", className)}>{children}</span>;

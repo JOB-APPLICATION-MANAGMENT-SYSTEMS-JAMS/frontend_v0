@@ -65,8 +65,10 @@ export function KpiWall({
 
   const tiles = keys ? TILES.filter((t) => keys.includes(t.key)) : TILES;
 
+  // one column on a 320 phone (two 106px content boxes cannot hold an icon, a
+  // label and a number without colliding); two from 360 up, where they fit.
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {tiles.map((tile, i) => (
         <div key={tile.key} className="animate-stagger" style={{ "--i": i } as React.CSSProperties}>
           {isPending || !summary ? (
@@ -109,10 +111,10 @@ function StatTile({ tile, summary, onClick }: { tile: TileDef; summary: Summary;
       interactive
       className={cn("glass-card hairline-brand group overflow-hidden p-4 sm:p-5")}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-1.5 sm:gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-1.5">
-            <p className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-muted-foreground sm:text-[11px]">{tile.label}</p>
+          <div className="flex items-start gap-1">
+            <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground sm:text-[11px] sm:tracking-wider">{tile.label}</p>
             <InfoButton title={tile.label} body={TILE_INFO[tile.key] ?? "How this number is calculated."} />
           </div>
           {/* phones drop the wall to two columns: scale the hero number so 5-digit
@@ -130,8 +132,8 @@ function StatTile({ tile, summary, onClick }: { tile: TileDef; summary: Summary;
           </p>
         </div>
         <span className="transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)] group-hover:-translate-y-0.5 group-hover:scale-105">
-          <IconChip tone={tile.tone}>
-            <tile.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          <IconChip tone={tile.tone} className="h-8 w-8 rounded-lg min-[360px]:h-7 min-[360px]:w-7 sm:h-9 sm:w-9 sm:rounded-xl">
+            <tile.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </IconChip>
         </span>
       </div>
@@ -141,7 +143,7 @@ function StatTile({ tile, summary, onClick }: { tile: TileDef; summary: Summary;
             {fmt.delta(delta)}
           </Badge>
         )}
-        <span className="w-full truncate text-[11px] text-muted-foreground">{subtitle}</span>
+        <span className="text-[10px] leading-snug text-muted-foreground sm:text-[11px]">{subtitle}</span>
       </div>
     </Card>
   );

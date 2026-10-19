@@ -5,7 +5,7 @@
  *
  * Both are real form controls with real roles, so Space/Enter and screen readers
  * work without extra wiring, and both paint themselves from the palette instead of
- * letting the OS draw them — a raw `<input type="checkbox">` was the only
+ * letting the OS draw them - a raw `<input type="checkbox">` was the only
  * sharp-cornered, blue-ish thing on an otherwise warm glass page.
  */
 import * as React from "react";
@@ -58,7 +58,7 @@ export function Switch({
 
 /**
  * A checkbox that belongs to this design system. A raw `<input type="checkbox">`
- * paints an OS control that ignores the palette entirely — in the tracker's list
+ * paints an OS control that ignores the palette entirely - in the tracker's list
  * view it was the only blue-ish, sharp-cornered thing on a warm glass page.
  * Keyboard and screen-reader behaviour is unchanged: it is still a real input.
  */

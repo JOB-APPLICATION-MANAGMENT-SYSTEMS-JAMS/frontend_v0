@@ -4,7 +4,7 @@
  * Auth layout (§40.2): split panel, form + animated brand panel.
  *
  * The poster panel follows the theme now (white in light, black in dark) and its
- * only colour is the accent — two ember radials over the page background. The
+ * only colour is the accent - two ember radials over the page background. The
  * floating chips are real glass, so they pick up whatever is behind them.
  */
 import * as React from "react";

@@ -77,7 +77,7 @@ export default function CompanyDetailPage() {
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.name ?? p.email}</p>
-                  {/* the contacts table stores `role` — `title` never existed, so this line was always blank */}
+                  {/* the contacts table stores `role` - `title` never existed, so this line was always blank */}
                   {p.role && <p className="truncate text-xs text-muted-foreground">{p.role}</p>}
                 </div>
                 {p.email && (

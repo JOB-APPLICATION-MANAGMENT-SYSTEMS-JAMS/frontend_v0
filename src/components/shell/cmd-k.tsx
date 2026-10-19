@@ -48,7 +48,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { id: "dash", label: "Dashboard", hint: "g d", icon: LayoutDashboard, run: () => go("/dashboard"), group: "Go" },
     { id: "disc", label: "Discover jobs & people", icon: Compass, run: () => go("/discover"), group: "Go" },
     { id: "people", label: "People directory", icon: Users, run: () => go("/discover?mode=people"), group: "Go" },
-    { id: "hirers", label: "Hirers — jobs posted on JAMS", icon: Briefcase, run: () => go("/hirers"), group: "Go" },
+    { id: "hirers", label: "Hirers - jobs posted on JAMS", icon: Briefcase, run: () => go("/hirers"), group: "Go" },
     { id: "events", label: "Events & trainings", icon: CalendarDays, run: () => go("/events"), group: "Go" },
     { id: "track", label: "Tracker board", icon: Columns3, run: () => go("/tracker"), group: "Go" },
     { id: "streak", label: "Streaks & goals", icon: Flame, run: () => go("/streaks"), group: "Go" },

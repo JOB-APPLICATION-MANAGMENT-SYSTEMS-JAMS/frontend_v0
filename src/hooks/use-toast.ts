@@ -62,7 +62,7 @@ export function useToasts(): ToastItem[] {
       const title = detail.title;
 
       // Dedupe: one action often fires both the page handler and the global
-      // mutation cache (and impatient clicks fire twice) — the same live message
+      // mutation cache (and impatient clicks fire twice) - the same live message
       // restarts its timer instead of stacking a second card.
       const live = itemsRef.current.find((i) => !i.leaving && i.message === message && (i.title ?? "") === (title ?? ""));
       if (live) {

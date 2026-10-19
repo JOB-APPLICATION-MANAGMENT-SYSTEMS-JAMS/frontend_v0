@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   JAMS — EMBER MONO
+   JAMS - EMBER MONO
 
    One hue, two neutrals, nothing else.
 
@@ -10,7 +10,7 @@
 
    Every neutral below is hue 0 (a true grey, no warm drift) so that #ff9933 is
    the only chromatic thing on screen. Everything that is not the accent is
-   expressed as a *step of its lightness ladder* — intensity, not hue, carries
+   expressed as a *step of its lightness ladder* - intensity, not hue, carries
    meaning. That is why `--success`, `--warning`, `--azure` and `--amber` still
    exist as names: they are rungs of one ramp, not four different colours.
 
@@ -19,7 +19,7 @@
        60%  ember        THE brand colour, exactly #ff9933
        44%  ember-deep   accent text on white, heavier fills
        28%  ember-ink    the darkest orange, for tinted surfaces
-        0%  ink          black (light mode) / white (dark mode) — the "stop"
+        0%  ink          black (light mode) / white (dark mode) - the "stop"
    ══════════════════════════════════════════════════════════════════════════ */
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -122,7 +122,7 @@
   --dur-3: 320ms;
   --dur-4: 560ms;
 
-  /* Pipeline heat ramp — the one status palette, read everywhere (badges, board
+  /* Pipeline heat ramp - the one status palette, read everywhere (badges, board
      dots, timeline marks). Lightness rises with progress; the dead ends drop out
      of the hue into grey. Defined per theme because a dark rung on white and a
      dark rung on black cannot be the same value. */
@@ -141,7 +141,7 @@
 }
 
 .dark {
-  /* the accent does not change between themes — that is the whole point */
+  /* the accent does not change between themes - that is the whole point */
   --ember-soft: 30 100% 76%;
   --ember: 30 100% 60%;
   --ember-deep: 30 100% 48%;
@@ -295,7 +295,7 @@
     scroll-behavior: smooth;
     /* Reserve the scrollbar's width even when nothing is scrolling. Every
        overlay in the app locks page scroll (useScrollLock), and without this
-       each open/close would reflow the page by the scrollbar's width — which the
+       each open/close would reflow the page by the scrollbar's width - which the
        A4 preview notices, because its zoom is fitted to the well's width. */
     scrollbar-gutter: stable;
   }
@@ -396,7 +396,7 @@
 
 /* ── frost: the grain that makes glass read as material ──────────────────────
    A flat alpha slab looks like plastic at large sizes, however good the blur is.
-   One turbulence tile — a data URI, so no asset and no request — is blended into
+   One turbulence tile - a data URI, so no asset and no request - is blended into
    the body of the chrome surfaces at low strength, and a soft specular sweep runs
    across the panels. Both are background layers, so content sits above them.
    The gradient layers have to be restated here: a `background` shorthand earlier
@@ -470,7 +470,7 @@
   border: 1px solid hsl(var(--ember) / 0.32);
   backdrop-filter: blur(10px) saturate(180%);
 }
-/* alert: the hue-free end of the palette — a hard ink edge on glass */
+/* alert: the hue-free end of the palette - a hard ink edge on glass */
 .glass-rose {
   background: linear-gradient(180deg, hsl(var(--ink) / 0.1), hsl(var(--ink) / 0.05));
   border: 1px solid hsl(var(--ink) / 0.34);
@@ -479,7 +479,7 @@
 
 /* The recessed track every segmented control sits in. It has to be *darker* than
    the surface behind it, otherwise the raised indicator looks like it is floating
-   on nothing — which is exactly what made the old ad-hoc pill groups look wrong. */
+   on nothing - which is exactly what made the old ad-hoc pill groups look wrong. */
 .glass-track {
   background: linear-gradient(180deg, rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.025));
   border: 1px solid var(--glass-edge);
@@ -587,7 +587,7 @@
   transform: translateX(120%) skewX(-18deg);
 }
 
-/* safety net — solid fallback if backdrop-filter is unsupported */
+/* safety net - solid fallback if backdrop-filter is unsupported */
 @supports not (backdrop-filter: blur(1px)) {
   .glass-sheet,
   .glass-card,
@@ -600,7 +600,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Ambient backdrop — two ember clouds drifting behind a static base.
+   Ambient backdrop - two ember clouds drifting behind a static base.
    Transform-only, so the whole thing composites on the GPU (§13.3).
    ══════════════════════════════════════════════════════════════════════════ */
 .mesh-bg {
@@ -648,7 +648,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Animation suite — compositor-only unless noted
+   Animation suite - compositor-only unless noted
    ══════════════════════════════════════════════════════════════════════════ */
 @keyframes fadeInUp {
   from {
@@ -793,8 +793,8 @@
 .press:active {
   transform: scale(0.97);
 }
-/* hairline that goes ember on hover — used by list rows and nav items */
-/* Rail nav recipe. The sidebar carries no brand hue at all — the accent is for the
+/* hairline that goes ember on hover - used by list rows and nav items */
+/* Rail nav recipe. The sidebar carries no brand hue at all - the accent is for the
    work, not the chrome. There is deliberately no left-edge marker: the active state
    is the deeper pill plus its dot, and hover is a faint wash of the same glass. */
 .rail-edge {
@@ -868,7 +868,7 @@
   }
 }
 
-/* Shutter (spec 1) — pre-painted ink panels, transform only, no colour show */
+/* Shutter (spec 1) - pre-painted ink panels, transform only, no colour show */
 .prism-top {
   animation: prismUp 0.9s var(--ease-in-out) forwards;
 }
@@ -1067,7 +1067,7 @@
   animation: particleRise 1.5s var(--ease-out) both;
 }
 
-/* radar sweep (spec 4) — only while a request is in flight */
+/* radar sweep (spec 4) - only while a request is in flight */
 @keyframes radarSweep {
   to {
     transform: rotate(360deg);
@@ -1230,7 +1230,7 @@
 }
 
 /* scroll-driven entrance: progressive enhancement, Chromium only.
-   Nothing depends on it — the content is visible without support. */
+   Nothing depends on it - the content is visible without support. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .reveal {
@@ -1242,7 +1242,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Theme swap — a circular reveal out of the toggle button (View Transitions).
+   Theme swap - a circular reveal out of the toggle button (View Transitions).
    Falls back to an instant class swap where unsupported.
    ══════════════════════════════════════════════════════════════════════════ */
 @keyframes themeReveal {
@@ -1267,7 +1267,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Touch ergonomics — coarse pointers only, so mouse layouts keep their exact
+   Touch ergonomics - coarse pointers only, so mouse layouts keep their exact
    geometry (a 20px (i) badge and 32px buttons are fine with a cursor, and a
    miss with a thumb).
    ══════════════════════════════════════════════════════════════════════════ */
@@ -1291,9 +1291,17 @@
     min-height: 44px;
     min-width: 44px;
   }
+  /* the folder key (add / more) is a small glyph by design; grow only the hit
+     box, so the desk's geometry stays exactly as drawn */
+  .gf-key::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 999px;
+  }
 }
 
-/* reduced motion — three layers (§16.2): this is layer 1 */
+/* reduced motion - three layers (§16.2): this is layer 1 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

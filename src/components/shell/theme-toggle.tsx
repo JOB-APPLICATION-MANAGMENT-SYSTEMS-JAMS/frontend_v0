@@ -42,7 +42,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     root.style.setProperty("--vt-x", `${x}px`);
     root.style.setProperty("--vt-y", `${y}px`);
     // flushSync so next-themes has actually written the class to <html> before the
-    // API snapshots the "new" frame — otherwise the reveal animates a stale page
+    // API snapshots the "new" frame - otherwise the reveal animates a stale page
     const transition = doc.startViewTransition(() => {
       flushSync(() => setTheme(next));
     });

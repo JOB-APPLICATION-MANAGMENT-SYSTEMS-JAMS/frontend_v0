@@ -68,7 +68,7 @@ export function ProgressBar({ value, className, gradient = true }: { value: numb
 }
 
 /* ------------------------------ IconChip -------------------------------- */
-export function IconChip({ children, tone = "mint" }: { children: React.ReactNode; tone?: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate" }) {
+export function IconChip({ children, tone = "mint", className }: { children: React.ReactNode; tone?: "mint" | "azure" | "orchid" | "amber" | "rose" | "slate"; className?: string }) {
   const tones = {
     mint: "bg-ember/16 text-ember-ink dark:text-ember-soft",
     azure: "bg-ember/20 text-ember-deep dark:text-ember",
@@ -77,7 +77,7 @@ export function IconChip({ children, tone = "mint" }: { children: React.ReactNod
     rose: "bg-ink/8 text-foreground",
     slate: "bg-muted text-muted-foreground",
   };
-  return <span className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)]", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-[var(--dur-3)] ease-[var(--ease-spring)]", tones[tone], className)}>{children}</span>;
 }
 
 /* -------------------------------- Chip ---------------------------------- */
@@ -86,7 +86,7 @@ export function IconChip({ children, tone = "mint" }: { children: React.ReactNod
  * that charges with the accent when `active`, and is announced as pressed.
  *
  * Replaces the hand-rolled chips that used to differ per page (bordered boxes in
- * one place, tinted rounds in another, `glass-tab` groups in a third) — on the
+ * one place, tinted rounds in another, `glass-tab` groups in a third) - on the
  * Discover screen alone four idioms sat within 200px of each other.
  */
 export function Chip({
@@ -109,7 +109,9 @@ export function Chip({
       onClick={onClick}
       title={title}
       className={cn(
-        "glass-chip inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize",
+        // 36px on a phone, compact on a mouse: a filter pill is a primary control
+        // on touch, and a 27px pill is a coin toss with a thumb.
+        "glass-chip inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold capitalize sm:min-h-0 sm:px-2.5 sm:py-1",
         "transition-all duration-[var(--dur-2)] ease-[var(--ease-out)] active:scale-[0.97]",
         !active && "text-muted-foreground hover:border-ember/45 hover:text-foreground",
         className

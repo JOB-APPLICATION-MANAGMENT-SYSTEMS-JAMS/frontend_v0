@@ -31,11 +31,11 @@ function VerifyEmailInner() {
 
   const verify = useMutation({
     mutationFn: () => appFetch<{ email: string }>("/auth/verify-email", { method: "POST", body: { token }, _auth: false }),
-    // this page renders its own state machine — a toast would duplicate it
+    // this page renders its own state machine - a toast would duplicate it
     meta: { silentError: true },
     onSuccess: () => {
       setDone(true);
-      toast("Email verified — you can sign in now", "success");
+      toast("Email verified - you can sign in now", "success");
     },
     onError: (err) => {
       setError(
@@ -82,7 +82,7 @@ function VerifyEmailInner() {
 
       {token && done && (
         <InlineBanner tone="success" title="Email verified">
-          <p className="mb-3">Your address is confirmed — everything is ready.</p>
+          <p className="mb-3">Your address is confirmed - everything is ready.</p>
           <Link href="/auth/login">
             <Button variant="azure" size="sm">
               <MailCheck className="h-4 w-4" /> Continue to sign in
@@ -96,7 +96,7 @@ function VerifyEmailInner() {
           <p className="mb-3 flex items-start gap-2">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              {error} Verification links stop working as soon as a newer one is requested — ask for a new email and use the
+              {error} Verification links stop working as soon as a newer one is requested - ask for a new email and use the
               latest link.
             </span>
           </p>

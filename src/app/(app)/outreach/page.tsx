@@ -287,7 +287,7 @@ function OutreachPageInner() {
             </li>
             <li>
               <b className="text-foreground">2 · You press Send.</b> With no mailbox connected, a prefilled Gmail tab opens
-              and you press Send there — nothing ever leaves your account without you. Connect Gmail once in{" "}
+              and you press Send there - nothing ever leaves your account without you. Connect Gmail once in{" "}
               <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
                 Inbox sync
               </Link>{" "}
@@ -298,13 +298,13 @@ function OutreachPageInner() {
               <Link href="/inbox-sync" className="font-semibold text-accent hover:underline">
                 Inbox sync
               </Link>{" "}
-              and classified deterministically — interview invite, rejection, OOO, bounce — which updates each application’s
+              and classified deterministically - interview invite, rejection, OOO, bounce - which updates each application’s
               status and your funnel.
             </li>
           </ol>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             Nothing is ever auto-submitted or auto-sent without you. Gmail only accepts a 16-character app password for
-            direct sending — the Inbox sync page walks you through getting one.
+            direct sending - the Inbox sync page walks you through getting one.
           </p>
         </Card>
       </div>

@@ -90,7 +90,7 @@ function DiscoverPageInner() {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // The URL is the source of truth: quick-filter chips, reset and history navigation all
-  // change `q` without going through the input. Sync back down unless the user is typing —
+  // change `q` without going through the input. Sync back down unless the user is typing -
   // otherwise a chip click leaves the box showing the old query.
   React.useEffect(() => {
     if (document.activeElement === inputRef.current) return;
@@ -172,7 +172,7 @@ function DiscoverPageInner() {
   return (
     <div className="space-y-5">
       {/* mode tabs: jobs (free boards) · pitch targets (companies with no opening) ·
-          apply by email. Labels shorten under sm — three equal segments carrying
+          apply by email. Labels shorten under sm - three equal segments carrying
           "Pitch targets" and "Apply by email" overflow a 342px track and push the
           travelling indicator off its own label. */}
       <div className="flex flex-wrap items-center gap-2">
@@ -340,7 +340,7 @@ function DiscoverPageInner() {
 
       {/* facets + quick filters: scrolls away so the sticky bar stays one row tall */}
       <div className="glass-sheet rounded-2xl p-3">
-        {/* source chips (progressive rendering signal, §25.1) — one row, facet counts folded in */}
+        {/* source chips (progressive rendering signal, §25.1) - one row, facet counts folded in */}
         <div className="flex flex-wrap items-center gap-1.5">
           {sourceChips.map(({ name, meta, label }) => (
             <Chip

@@ -137,7 +137,7 @@ export function CvEditor({ draft, onChange }: { draft: CV; onChange: (next: CV) 
             )}
           >
             {/* On a phone the four section actions leave the title about 60px,
-                which truncated "Experience" to "Experi…" — the one label that
+                which truncated "Experience" to "Experi…" - the one label that
                 has to stay legible. The title takes its own row below `sm` and
                 the actions sit under it, right-aligned. */}
             <header className="flex flex-wrap items-center gap-2 p-3">
@@ -478,7 +478,7 @@ function ProseEditor({ text, onChange }: { text: string; onChange: (t: string) =
 
 /**
  * The profile link. A section either renders live from the master Profile or is
- * local to this CV — that distinction was a badge before, now it is the control.
+ * local to this CV - that distinction was a badge before, now it is the control.
  */
 function LinkToggle({ linked, onChange }: { linked: boolean; onChange: (v: boolean) => void }) {
   return (

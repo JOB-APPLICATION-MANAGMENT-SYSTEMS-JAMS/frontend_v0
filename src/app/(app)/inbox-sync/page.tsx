@@ -214,7 +214,7 @@ export default function InboxSyncPage() {
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
                   {mailbox.data?.connected ? "Leave the app password empty to keep the one already saved. " : ""}
-                  Your normal Gmail password will not work — Gmail needs the 16-character app password, and saving replaces the old one.
+                  Your normal Gmail password will not work - Gmail needs the 16-character app password, and saving replaces the old one.
                 </p>
                 <AppPasswordHelp />
               </div>

@@ -136,7 +136,7 @@ export function CvShelf({
       if (!t) return;
       void navigator.clipboard
         ?.writeText(t.body)
-        .then(() => toast(`“${t.name}” copied — paste it into a new CV`, "success"))
+        .then(() => toast(`“${t.name}” copied - paste it into a new CV`, "success"))
         .catch(() => toast("Couldn't reach the clipboard", "error"));
       return;
     }
@@ -149,10 +149,13 @@ export function CvShelf({
         <h2 className="eyebrow">Shelf</h2>
         {/* a phone has no hover: say what the gesture actually is instead of
             instructing a thumb to hover. Two spans, switched by the pointer. */}
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        {/* tracking shrinks on a phone so the whole hint fits the card instead of
+            being sliced at the right edge, and the actions suffix only shows where
+            there is room for it */}
+        <p className="font-mono text-[9px] uppercase leading-relaxed tracking-[0.12em] text-muted-foreground sm:text-[10px] sm:tracking-[0.18em]">
           <span className="hidden [@media(hover:hover)]:inline">hover to turn the pages · click a name to open</span>
           <span className="[@media(hover:hover)]:hidden">tap a folder to fan it · tap a name to open</span>
-          <span> · ··· for actions</span>
+          <span className="hidden sm:inline"> · ··· for actions</span>
         </p>
       </div>
       <div ref={rowRef} className="flex flex-wrap items-start justify-center gap-x-8 gap-y-1">

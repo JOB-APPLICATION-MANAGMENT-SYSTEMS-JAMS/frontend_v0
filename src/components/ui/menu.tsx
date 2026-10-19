@@ -4,7 +4,7 @@
  * The two controls that let someone choose from a set: a filtering combobox for
  * long lists and the sliding segmented control for short ones.
  *
- * Both are keyboard-first — the combobox keeps focus on its input while the list
+ * Both are keyboard-first - the combobox keeps focus on its input while the list
  * is open (so the blur handler cannot race the click) and the segmented control is
  * a real `role="tablist"` whose segments are buttons.
  */

@@ -68,7 +68,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <div className={cn("flex min-w-0 flex-1 flex-col transition-[padding] duration-300", navOpen && "md:pl-[240px]")}>
         <Topbar railOpen={navOpen} onToggleRail={() => setNavOpen(!navOpen)} />
-        <main data-dashboard-scroll-container className="route-fade flex-1 px-4 py-6 md:px-6 lg:px-8">
+        <main
+          data-dashboard-scroll-container
+          className="route-fade flex-1 px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:px-6 lg:px-8"
+        >
           {children}
         </main>
       </div>

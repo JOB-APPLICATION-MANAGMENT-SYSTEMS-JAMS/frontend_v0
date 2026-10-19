@@ -16,7 +16,7 @@ type MutationMeta = {
   invalidates?: string[][];
   /** message used when the error carries none of its own */
   errorFallback?: string;
-  /** the page renders its own inline error UI — stay quiet in the toast host */
+  /** the page renders its own inline error UI - stay quiet in the toast host */
   silentError?: boolean;
 };
 

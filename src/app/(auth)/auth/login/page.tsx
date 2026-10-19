@@ -32,7 +32,7 @@ function LoginPageInner() {
 
   const login = useMutation({
     mutationFn: () => appFetch<AuthSessionResponse>("/auth/login", { method: "POST", body: { email, password }, _auth: false }),
-    // the page renders its own banners (verify / suspended) and its own toast — stay quiet centrally
+    // the page renders its own banners (verify / suspended) and its own toast - stay quiet centrally
     meta: { silentError: true },
     onSuccess: async (data) => {
       await setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
@@ -67,7 +67,7 @@ function LoginPageInner() {
       // local mode: the API returns the fresh token, so pre-fill it for a one-click verify
       if (data?.verification_token) setVerifyToken(data.verification_token);
       toast(
-        data?.verification_token ? "New token ready — paste it below" : "New verification link sent, check your inbox",
+        data?.verification_token ? "New token ready - paste it below" : "New verification link sent, check your inbox",
         "success"
       );
     },
@@ -85,7 +85,7 @@ function LoginPageInner() {
         <InlineBanner tone="warn" title="Email not verified yet">
           <p className="mb-2">
             Enter the verification token for <span className="font-mono">{email}</span>. It arrives in the verification
-            email — or, when this deployment has no inbox, the API hands it straight back:{" "}
+            email - or, when this deployment has no inbox, the API hands it straight back:{" "}
             <button className="underline" onClick={() => resend.mutate()} disabled={resend.isPending}>
               {resend.isPending ? "sending…" : "get a new token"}
             </button>{" "}

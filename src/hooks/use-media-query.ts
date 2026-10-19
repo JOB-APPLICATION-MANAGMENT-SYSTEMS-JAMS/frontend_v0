@@ -6,7 +6,7 @@
  * Used to render a layout for the breakpoint instead of hiding it with CSS.
  * Hiding is not enough for anything expensive: a `display: none` iframe still
  * loads and lays out its document, so the editor was rendering the A4 sheet
- * twice on phones — once hidden, once in the modal — for no reason.
+ * twice on phones - once hidden, once in the modal - for no reason.
  *
  * The server snapshot is always `false`, so the markup the server sends matches
  * the first client render and the real answer arrives in the same paint.

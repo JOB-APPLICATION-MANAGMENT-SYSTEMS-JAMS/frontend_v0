@@ -40,7 +40,7 @@ export function AppPasswordHelp({
       <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
         <li>
           <b className="text-foreground">Turn on 2-Step Verification</b> for the Google account you send from. Google hides app
-          passwords until this is on (a passkey counts — SMS is not required).
+          passwords until this is on (a passkey counts - SMS is not required).
         </li>
         <li>
           Open{" "}
@@ -54,7 +54,7 @@ export function AppPasswordHelp({
           <b className="text-foreground">Create</b> again.
         </li>
         <li>
-          Copy the <b className="text-foreground">16-character password</b> Google shows — it looks like{" "}
+          Copy the <b className="text-foreground">16-character password</b> Google shows - it looks like{" "}
           <span className="font-mono text-foreground">abcd efgh ijkl mnop</span> and is displayed only once.
         </li>
         <li>
@@ -64,7 +64,7 @@ export function AppPasswordHelp({
       <p className="mt-2 border-t border-border pt-2 text-[11px] leading-relaxed text-muted-foreground">
         <KeyRound className="mr-1 inline h-3 w-3" />
         <b className="text-foreground">Why not my normal password?</b> Gmail rejects regular passwords for apps with error{" "}
-        <span className="font-mono">534</span> — only an app password works. If the page above says you have no app passwords, step 1
+        <span className="font-mono">534</span> - only an app password works. If the page above says you have no app passwords, step 1
         is not finished yet.
       </p>
     </details>

@@ -4,7 +4,7 @@
  * Discover → People.
  *
  * The other half of Discover: jobs are things you apply to, people are things you
- * join. This is a directory with a point of view — every card carries the reasons
+ * join. This is a directory with a point of view - every card carries the reasons
  * it ranked where it did (same profession, shared skills, same city), because a
  * feed that cannot explain itself is just a list.
  *
@@ -68,7 +68,7 @@ export function PeopleDirectory() {
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState(false);
 
-  // 300ms, same as the job search — one debounce rhythm in the product
+  // 300ms, same as the job search - one debounce rhythm in the product
   React.useEffect(() => {
     const t = setTimeout(() => setQ(text.trim()), 300);
     return () => clearTimeout(t);
@@ -83,11 +83,11 @@ export function PeopleDirectory() {
 
   const me = people.data?.me ?? null;
   const professions = Object.entries(people.data?.facets.profession ?? {})
-    .filter(([k]) => k && k !== "—")
+    .filter(([k]) => k && k !== "-")
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
   const cities = Object.entries(people.data?.facets.location ?? {})
-    .filter(([k]) => k && k !== "—")
+    .filter(([k]) => k && k !== "-")
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
   const filtered = !!(profession || city || q);
@@ -124,7 +124,7 @@ export function PeopleDirectory() {
             className="pl-9"
           />
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="fade-x -mx-1 flex snap-x items-center gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar sm:mx-0 sm:px-0">
           <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Field</span>
           {professions.length === 0 && <span className="text-[11px] text-muted-foreground">no roles yet</span>}
           {professions.map(([name, n]) => (
@@ -133,7 +133,7 @@ export function PeopleDirectory() {
             </Chip>
           ))}
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="fade-x -mx-1 flex snap-x items-center gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar sm:mx-0 sm:px-0">
           <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">City</span>
           {cities.map(([name, n]) => (
             <Chip key={name} active={city === name} onClick={() => setCity(city === name ? "" : name)}>
@@ -322,7 +322,7 @@ function PersonBody({ person, onClose }: { person: Person; onClose: () => void }
       }),
     meta: { invalidates: [["people"], ["cvs", "reviews", cvId], ["people", "public-cvs"]], errorFallback: "Review not saved" },
     onSuccess: () => {
-      toast("Review posted — thanks for being specific", "success");
+      toast("Review posted - thanks for being specific", "success");
       setRating(0);
       setBody("");
     },
@@ -444,7 +444,7 @@ function PersonBody({ person, onClose }: { person: Person; onClose: () => void }
                   <p className="mt-1 text-[10px] text-muted-foreground">on “{r.cv_name}”</p>
                 </li>
               ))}
-              {(person.reviews ?? []).length === 0 && <li className="text-xs text-muted-foreground">No reviews yet — yours would be the first.</li>}
+              {(person.reviews ?? []).length === 0 && <li className="text-xs text-muted-foreground">No reviews yet - yours would be the first.</li>}
             </ul>
 
             {!person.is_me && (

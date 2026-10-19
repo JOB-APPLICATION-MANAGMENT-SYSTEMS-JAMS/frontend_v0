@@ -53,7 +53,7 @@ export default function ProfilePage() {
 
   const [draft, setDraft] = React.useState<Profile | null>(null);
   const [seeded, setSeeded] = React.useState(false);
-  // seed the editable draft once the query lands (adjust-during-render pattern —
+  // seed the editable draft once the query lands (adjust-during-render pattern -
   // no effect round-trip, so the first paint after data arrives is a single render)
   if (!seeded && profile.data) {
     setSeeded(true);
@@ -150,7 +150,7 @@ export default function ProfilePage() {
             <Field label="Seniority"><Input value={pref.seniority ?? ""} onChange={(e) => setPref("seniority", e.target.value)} placeholder="junior | mid | senior | staff" /></Field>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            First / middle / last fill their own form fields — leave them blank and they’re derived from Full name. Education selects (school, degree, discipline) come from the Education card below.
+            First / middle / last fill their own form fields - leave them blank and they’re derived from Full name. Education selects (school, degree, discipline) come from the Education card below.
           </p>
           <Field label="Pitch paragraph (templates merge this)">
             <Textarea rows={3} value={id.pitch ?? ""} onChange={(e) => setId("pitch", e.target.value)} placeholder="I build typed, well-tested product surfaces end-to-end…" />

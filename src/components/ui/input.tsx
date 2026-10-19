@@ -4,7 +4,7 @@
  * Text-entry primitives: the surface (`glass-input`), the label shape, and the one
  * composite field.
  *
- * All of them are the same height and the same radius on purpose — a row that mixes
+ * All of them are the same height and the same radius on purpose - a row that mixes
  * an `Input`, a `Select` and a `Button` should look like one row. Anything that
  * needs a different shape is a different control, not an override.
  */

@@ -262,7 +262,7 @@ function TrackerPageInner() {
 /**
  * Two presentations of the same rows: a table from md up, a card list below it.
  * The 840px table inside a 342px scroller meant every phone row had to be dragged
- * sideways to reach its status — correct data, unusable shape.
+ * sideways to reach its status - correct data, unusable shape.
  */
 function ListView({ items, selected, onToggle }: { items: Application[]; selected: string[]; onToggle: (id: string) => void }) {
   return (

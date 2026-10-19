@@ -2,8 +2,8 @@
 
 /**
  * Autofill control centre (§35 / §19.3): the single editable home for what the
- * extension fills — application answers, pre-written replies for recurring exam
- * questions, and label aliases — plus the guardrails in plain words.
+ * extension fills - application answers, pre-written replies for recurring exam
+ * questions, and label aliases - plus the guardrails in plain words.
  */
 import * as React from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ type Schema = {
 };
 type Answer = { match: string; answer: string };
 
-/** The exact questions job forms keep asking — grouped the way application forms lay them out. */
+/** The exact questions job forms keep asking - grouped the way application forms lay them out. */
 const ANSWER_GROUPS: { title: string; keys: [string, string][] }[] = [
   {
     title: "Basic info",
@@ -102,14 +102,14 @@ const ANSWER_GROUPS: { title: string; keys: [string, string][] }[] = [
   {
     title: "References",
     keys: [
-      ["referee1_name", "Referee 1 — name"],
-      ["referee1_email", "Referee 1 — email"],
-      ["referee1_phone", "Referee 1 — phone"],
-      ["referee1_address", "Referee 1 — address"],
-      ["referee2_name", "Referee 2 — name"],
-      ["referee2_email", "Referee 2 — email"],
-      ["referee2_phone", "Referee 2 — phone"],
-      ["referee2_address", "Referee 2 — address"],
+      ["referee1_name", "Referee 1 - name"],
+      ["referee1_email", "Referee 1 - email"],
+      ["referee1_phone", "Referee 1 - phone"],
+      ["referee1_address", "Referee 1 - address"],
+      ["referee2_name", "Referee 2 - name"],
+      ["referee2_email", "Referee 2 - email"],
+      ["referee2_phone", "Referee 2 - phone"],
+      ["referee2_address", "Referee 2 - address"],
     ],
   },
 ];
@@ -141,7 +141,7 @@ export default function AutofillPage() {
   // a single render with data beats effect → setState → second render)
   if (profile.data && !ready) {
     const id = profile.data.identity ?? {};
-    // education lives in its own table — show the saved row when identity has no answer yet
+    // education lives in its own table - show the saved row when identity has no answer yet
     const e0 = (profile.data.education ?? [])[0];
     const a: Record<string, string> = {};
     for (const [k] of ANSWER_KEYS) {
@@ -175,7 +175,7 @@ export default function AutofillPage() {
       return appFetch("/profile", { method: "PUT", body: { identity, aliases }, _auth: true });
     },
     meta: { invalidates: [["profile"], ["autofill", "schema"], ["cvs"], ["jobs"], ["analytics"]], errorFallback: "Save failed" },
-    onSuccess: () => toast("Autofill details saved — the extension uses them on the next fill", "success"),
+    onSuccess: () => toast("Autofill details saved - the extension uses them on the next fill", "success"),
   });
 
   /* Resume → answers: parse on the server, fill the DRAFT here, human saves. */
@@ -198,7 +198,7 @@ export default function AutofillPage() {
       setAnswers((a) => ({ ...a, ...rest }));
       if (importedLinks) setLinks((l) => ({ ...l, ...importedLinks }));
       const n = [...Object.values(rest), ...Object.values(importedLinks ?? {})].filter((v) => v && String(v).trim()).length;
-      toast(`Pulled ${n} detail(s) from ${file.name} — review below, then press Save.`, "success");
+      toast(`Pulled ${n} detail(s) from ${file.name} - review below, then press Save.`, "success");
       const notes = (data.warnings ?? []).join(" ");
       if (notes) toast(notes, "info");
     },
@@ -210,10 +210,10 @@ export default function AutofillPage() {
     e.target.value = ""; // allow re-picking the same file after a fix
     if (!file) return;
     if (!/\.(pdf|txt|md|rtf)$/i.test(file.name)) {
-      return toast("DOCX isn’t supported yet — export your resume as PDF or .txt and try again.", "error");
+      return toast("DOCX isn’t supported yet - export your resume as PDF or .txt and try again.", "error");
     }
     if (file.size > 4 * 1024 * 1024) {
-      return toast("That resume is over 4 MB — export a smaller PDF and try again.", "error");
+      return toast("That resume is over 4 MB - export a smaller PDF and try again.", "error");
     }
     upload.mutate(file);
   };
@@ -232,7 +232,7 @@ export default function AutofillPage() {
         <div className="space-y-5">
         {/* header explainer */}
         <Card className="p-5">
-          <h2 className="font-display text-lg font-bold">What the extension fills — and what it refuses to</h2>
+          <h2 className="font-display text-lg font-bold">What the extension fills - and what it refuses to</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Everything below flows straight into <strong>Fill this page</strong> in the JAMS Autofill extension. Edit it here, press Save, and the
             next fill on any job form uses the new values.
@@ -242,16 +242,16 @@ export default function AutofillPage() {
             <Badge tone="amber">
               {Math.round((policy?.fill_flagged ?? 0.55) * 100)}–{Math.round((policy?.auto_fill ?? 0.85) * 100)}% fills amber, flagged to review
             </Badge>
-            <Badge>below that stays empty — never guessed</Badge>
+            <Badge>below that stays empty - never guessed</Badge>
             <Badge tone="rose">never: {guardrails.join(", ")}</Badge>
           </div>
         </Card>
 
         {/* resume import */}
         <Card className="p-5">
-          <Section icon={<Upload className="h-4 w-4" />} title="Resume / CV — import into these answers" />
+          <Section icon={<Upload className="h-4 w-4" />} title="Resume / CV - import into these answers" />
           <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-            Upload your resume and we’ll read the details out of it — name, contact, links, education. Nothing is saved until you press
+            Upload your resume and we’ll read the details out of it - name, contact, links, education. Nothing is saved until you press
             <strong> Save autofill details</strong> below, so you can review every field first.
           </p>
           <Label htmlFor="resume-file">Choose your resume (PDF or .txt, up to 4 MB)</Label>
@@ -270,7 +270,7 @@ export default function AutofillPage() {
         <Card className="p-5">
           <Section icon={<Sparkles className="h-4 w-4" />} title="Application answers" />
           <p className="-mt-2 mb-4 text-sm text-muted-foreground">
-            Fill what you want the extension to answer. Voluntary self-ID questions (e.g. gender) fill <em>only</em> from an answer you save here —
+            Fill what you want the extension to answer. Voluntary self-ID questions (e.g. gender) fill <em>only</em> from an answer you save here -
             never inferred; anything left empty stays empty on the form.
           </p>
           {ANSWER_GROUPS.map((g) => (
@@ -298,7 +298,7 @@ export default function AutofillPage() {
         <Card className="p-5">
           <Section icon={<Plus className="h-4 w-4" />} title="Custom answers for recurring questions" />
           <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-            Tired of typing the same reply? Write it once: if a form question <em>contains</em> your snippet, your answer is filled — verbatim, at
+            Tired of typing the same reply? Write it once: if a form question <em>contains</em> your snippet, your answer is filled - verbatim, at
             90% confidence. Example: contains <code className="rounded bg-muted px-1">how did you hear about this job</code> → answer{" "}
             <code className="rounded bg-muted px-1">LinkedIn</code>.
           </p>
@@ -339,7 +339,7 @@ export default function AutofillPage() {
         <Card className="p-5">
           <Section icon={<ShieldCheck className="h-4 w-4" />} title="Label aliases (teach the matcher your wording)" />
           <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-            Some forms use phrasing the matcher doesn’t know. Add comma-separated alternatives per key — they join the built-in aliases.
+            Some forms use phrasing the matcher doesn’t know. Add comma-separated alternatives per key - they join the built-in aliases.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {aliasKeys.map((k) => (
@@ -351,7 +351,7 @@ export default function AutofillPage() {
                 />
               </Field>
             ))}
-            {aliasKeys.length === 0 && <p className="text-sm text-muted-foreground">Schema unavailable — save still works, aliases will attach later.</p>}
+            {aliasKeys.length === 0 && <p className="text-sm text-muted-foreground">Schema unavailable - save still works, aliases will attach later.</p>}
           </div>
         </Card>
       </div>
@@ -363,10 +363,10 @@ export default function AutofillPage() {
             <Save className="h-4 w-4" /> {save.isPending ? "Saving…" : "Save autofill details"}
           </Button>
           <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
-            <li>· Voluntary self-ID questions are answered only from your own saved answer — never guessed.</li>
+            <li>· Voluntary self-ID questions are answered only from your own saved answer - never guessed.</li>
             <li>· Passwords, card numbers, SSN and CVV are never touched.</li>
             <li>· Resume, transcript and cover-letter files attach by hand.</li>
-            <li>· Nothing ever submits — you press Submit yourself.</li>
+            <li>· Nothing ever submits - you press Submit yourself.</li>
           </ul>
         </Card>
         </div>

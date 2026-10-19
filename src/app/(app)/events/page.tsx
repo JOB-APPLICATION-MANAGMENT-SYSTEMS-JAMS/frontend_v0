@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Events — hiring fairs, trainings, seminars, community stories, programme ads.
+ * Events - hiring fairs, trainings, seminars, community stories, programme ads.
  *
  * Three things make this page different from a noticeboard:
  *  1. It starts where you are: the ranking gives a large weight to the city in
@@ -166,7 +166,7 @@ export default function EventsPage() {
         eyebrow="Events"
         icon={<CalendarDays className="h-3.5 w-3.5" />}
         title="What's happening near you"
-        description="Hiring fairs, trainings, seminars, community stories and programme ads — ranked by your city, your field and what you said you are looking for."
+        description="Hiring fairs, trainings, seminars, community stories and programme ads - ranked by your city, your field and what you said you are looking for."
         actions={
           <>
             <Badge tone="mint" className="h-8 px-3">
@@ -180,7 +180,9 @@ export default function EventsPage() {
       />
 
       {/* search */}
-      <div className="glass-sheet sticky top-[68px] z-20 rounded-2xl p-3">
+      {/* pinned under the topbar from tablet up; on a phone the panel is tall
+          enough that pinning it would eat half the screen, so it scrolls away */}
+      <div className="glass-sheet z-20 rounded-2xl p-3 sm:sticky sm:top-[68px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -193,7 +195,7 @@ export default function EventsPage() {
         </div>
 
         {/* kinds: one scrolling row on every width */}
-        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="fade-x -mx-1 mt-2 flex snap-x gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar sm:mx-0 sm:px-0">
           <Chip active={!kind} onClick={() => setKind("")}>
             All
           </Chip>
@@ -206,7 +208,7 @@ export default function EventsPage() {
         </div>
 
         {/* cities, with “near you” first */}
-        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="fade-x -mx-1 mt-2 flex snap-x items-center gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar sm:mx-0 sm:px-0">
           <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">City</span>
           <Chip active={!cityChoice} onClick={() => setCityChoice("")}>
             All

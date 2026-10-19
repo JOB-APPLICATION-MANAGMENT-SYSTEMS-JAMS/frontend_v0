@@ -1,7 +1,7 @@
 /**
  * Error normalisation (§12.2), every backend failure dialect collapses into one
  * APIRequestError(message, status, data) with a machine-readable `code`.
- * Bodies arrive as `unknown` JSON — nothing is trusted until narrowed.
+ * Bodies arrive as `unknown` JSON - nothing is trusted until narrowed.
  */
 
 export type ErrorShape = {
@@ -127,8 +127,8 @@ export function handleMutationError(err: unknown, fallback = "Something went wro
     // ("…paste the app password from myaccount.google.com/…"); message is the short headline
     return err.detail || err.message || fallback;
   }
-  // fetch() failures surface as TypeError — say what to do, never "Something went wrong"
-  if (err instanceof TypeError) return "Network error — check your connection and try again";
+  // fetch() failures surface as TypeError - say what to do, never "Something went wrong"
+  if (err instanceof TypeError) return "Network error - check your connection and try again";
   if (err instanceof Error) return err.message || fallback;
   return fallback;
 }

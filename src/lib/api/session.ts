@@ -1,6 +1,6 @@
 /**
  * Browser session helpers (§38.1): tokens from a login/signup response go straight into
- * the cookie jar via POST /api/session — app JS never keeps them. One implementation for
+ * the cookie jar via POST /api/session - app JS never keeps them. One implementation for
  * every page so the cookie contract (names, role flag, method) cannot drift between
  * login, signup, the rail's sign-out and Settings.
  */

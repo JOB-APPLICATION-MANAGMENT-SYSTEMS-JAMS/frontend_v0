@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Document settings — the panel behind the sheet.
+ * Document settings - the panel behind the sheet.
  *
  * A CV is not one fixed sheet: the same words are set differently for a one-page
  * ATS read than for a two-page executive one. This panel is the whole of that
@@ -125,7 +125,7 @@ const DEFAULTS: Required<Pick<CvDesign, "page" | "font" | "base" | "lineHeight" 
 /**
  * The presets speak only to these keys. "Is this preset already applied?" is a
  * question about the whole sheet, so it is asked over exactly the settings a
- * preset writes — every one of them against its measured default, since a design
+ * preset writes - every one of them against its measured default, since a design
  * that says `{ font: "sans" }` and one that says nothing but `sans` everywhere
  * else are the same sheet.
  */
@@ -156,7 +156,7 @@ const ACCENT_HEX: Record<string, string> = { ink: "#000000", ember: "#b35f00", g
 type Preset = { name: string; note: string; design: CvDesign };
 
 /**
- * Whole-sheet presets — the "update the entire design with one click" idea from
+ * Whole-sheet presets - the "update the entire design with one click" idea from
  * the reference editor, without the remote gallery: a preset is nothing but a
  * `CvDesign`, and applying one replaces the current design with it, so what the
  * tile shows is exactly what the renderer reads. No fetch, no template ids to
@@ -271,7 +271,7 @@ const PRESETS: Preset[] = [
   },
 ];
 
-/** The preset's own values, read through the defaults — see `PRESET_KEYS`. */
+/** The preset's own values, read through the defaults - see `PRESET_KEYS`. */
 const signature = (d: CvDesign) => JSON.stringify(PRESET_KEYS.map((k) => d[k] ?? DEFAULTS[k]));
 
 export function CvSettings({
@@ -315,10 +315,10 @@ export function CvSettings({
       <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
         {open
           ? "Every control here changes the printed sheet and the page count beside it."
-          : "Page size, type, spacing, headings and colour for this CV alone — the sheet updates as you change it."}
+          : "Page size, type, spacing, headings and colour for this CV alone - the sheet updates as you change it."}
       </p>
 
-      {/* presets stay visible when the panel is closed — the point of one click is
+      {/* presets stay visible when the panel is closed - the point of one click is
           that it never needed the panel in the first place */}
       <div className="mt-3">
         <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3">
@@ -348,7 +348,7 @@ export function CvSettings({
                 type="button"
                 onClick={() => onChange({ ...p.design })}
                 aria-pressed={active}
-                title={`${p.name} — ${p.note}`}
+                title={`${p.name} - ${p.note}`}
                 className={cn(
                   // 150px tiles two-up from 390 down; on a 320 phone the card's
                   // inner width is 256px, so they split it instead of stacking five

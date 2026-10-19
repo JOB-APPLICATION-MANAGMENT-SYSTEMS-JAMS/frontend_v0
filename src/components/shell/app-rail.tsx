@@ -92,7 +92,7 @@ export function AppRail({ open, onClose }: { open: boolean; onClose: () => void 
           "rail-edge group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[15px] font-medium transition-all duration-[var(--dur-2)] ease-[var(--ease-out)]",
           // the rail carries no brand hue at all: the active state is the same
           // glass, one step deeper, plus the dot on the right (see .rail-edge in
-          // globals.css). No left-edge marker — it read as a stray black line.
+          // globals.css). No left-edge marker - it read as a stray black line.
           active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         )}
       >

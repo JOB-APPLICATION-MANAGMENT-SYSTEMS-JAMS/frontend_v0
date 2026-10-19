@@ -3,7 +3,7 @@
 import * as React from "react"
 
 /**
- * Glass Folder Cards — a folder you can actually use, drawn as an object.
+ * Glass Folder Cards - a folder you can actually use, drawn as an object.
  *
  * Three layers, back to front: a back panel holding a piece of artwork, the
  * files the folder contains, and a frosted-glass front panel that blurs
@@ -14,8 +14,8 @@ import * as React from "react"
  * - **Hover / focus**: the front panel leans toward you on its bottom hinge
  *   and one *page* of files lifts clear of the glass, each a white tab with
  *   its name on it (five by default). A stack bigger than one page turns
- *   itself over every few seconds — the page deals back in, bottom sheet
- *   first — so every name gets its turn without a click.
+ *   itself over every few seconds - the page deals back in, bottom sheet
+ *   first - so every name gets its turn without a click.
  * - **Open** (click, Enter, Space): the panel falls further forward and the
  *   page splays out sideways, each file still a button with its name on it.
  * - **Add** (`+`): a new file drops into the folder, the pocket gives a little
@@ -104,7 +104,7 @@ export type GlassFolderProps = {
   width?: number
   /** Assemble itself the first time it scrolls into view. */
   appear?: boolean
-  /** Delay before that entrance, in ms — for staggering a row of folders. */
+  /** Delay before that entrance, in ms - for staggering a row of folders. */
   appearDelay?: number
   className?: string
   style?: React.CSSProperties
@@ -529,7 +529,7 @@ const FRONT_PATH =
   "Z"
 
 const SAMPLE_FILES: FolderFile[] = [
-  { name: "Cover — final", meta: "PNG · 4.8 MB", art: "ember" },
+  { name: "Cover - final", meta: "PNG · 4.8 MB", art: "ember" },
   { name: "Moodboard", meta: "24 images", art: "dusk" },
   { name: "Brief.pdf", meta: "PDF · 1.2 MB" },
 ]
@@ -1003,7 +1003,7 @@ const GF_CSS = `
 }
 .gf-root[data-tone="dark"] { --gf-ink: #f5f5f7; --gf-ink-soft: rgba(245, 245, 247, .58); }
 .gf-root:hover, .gf-root:focus-within { --gf-hinge: -11deg; --gf-lift: -52px; --gf-spread: 12px; --gf-fan: .9deg; --gf-stack: 24px; }
-/* opened: the same five names, but the stack splays like a hand of cards —
+/* opened: the same five names, but the stack splays like a hand of cards -
    held to 30px so the outer tab still lands inside a phone's width */
 .gf-root[data-open] { --gf-hinge: -27deg; --gf-lift: -56px; --gf-spread: 30px; --gf-fan: 1.3deg; --gf-stack: 24px; }
 

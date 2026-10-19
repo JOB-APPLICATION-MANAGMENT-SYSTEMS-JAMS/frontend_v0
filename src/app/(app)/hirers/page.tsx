@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Hirers — jobs posted *on JAMS*, not aggregated from boards.
+ * Hirers - jobs posted *on JAMS*, not aggregated from boards.
  *
  * The difference is the whole page. An aggregated listing is something you apply
  * to elsewhere; a platform listing was written by a person or company here, so it
@@ -9,8 +9,8 @@
  * an email address that actually exists.
  *
  * Two product rules live here:
- *   1. Without a profession the page cannot rank anything, so it asks once — right
- *      at the top, with chips — instead of showing a generic wall of jobs.
+ *   1. Without a profession the page cannot rank anything, so it asks once - right
+ *      at the top, with chips - instead of showing a generic wall of jobs.
  *   2. Anyone can post. The form is the same one a company would use; the posting
  *      is marked "by a JAMS member" and sorts above the demo rows.
  */
@@ -51,7 +51,7 @@ function compact(n: number) {
 function salary(job: PlatformJob) {
   if (!job.salary) return "Salary not stated";
   const sym = CURRENCY[job.salary.currency] ?? `${job.salary.currency} `;
-  return `${sym}${compact(job.salary.min)}${job.salary.max ? ` – ${sym}${compact(job.salary.max)}` : "+"} / year`;
+  return `${sym}${compact(job.salary.min)}${job.salary.max ? ` - ${sym}${compact(job.salary.max)}` : "+"} / year`;
 }
 
 export default function HirersPage() {
@@ -146,14 +146,14 @@ function HirersPageInner() {
       )}
 
       {/* search + filters */}
-      <div className="glass-sheet sticky top-[68px] z-20 rounded-2xl p-3">
+      <div className="glass-sheet z-20 rounded-2xl p-3 sm:sticky sm:top-[68px]">
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`Search ${profession || "roles"} — company, title, skill…`}
+              placeholder={`Search ${profession || "roles"} - company, title, skill…`}
               aria-label="Search platform jobs"
               className="pl-9"
             />
@@ -171,7 +171,7 @@ function HirersPageInner() {
           </Button>
         </div>
 
-        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="fade-x -mx-1 mt-2 flex snap-x items-center gap-1.5 overflow-x-auto px-1 pb-0.5 no-scrollbar sm:mx-0 sm:px-0">
           <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {profession || "field"}
           </span>
@@ -404,7 +404,7 @@ function PostJobDialog({ open, onClose, profession }: { open: boolean; onClose: 
       }),
     meta: { invalidates: [["hirers"]], errorFallback: "Job not posted" },
     onSuccess: () => {
-      toast("Role posted — it is live on Hirers now", "success");
+      toast("Role posted - it is live on Hirers now", "success");
       setCompany("");
       setTitle("");
       setDescription("");
@@ -552,7 +552,7 @@ function ProfessionDialog({
     mutationFn: () => appFetch("/hirers/profession", { method: "POST", body: { profession: shown }, _auth: true }),
     meta: { invalidates: [["hirers"], ["people"], ["profile"]], errorFallback: "Could not save your field" },
     onSuccess: () => {
-      toast("Field saved — the list is ranked for you now", "success");
+      toast("Field saved - the list is ranked for you now", "success");
       onClose();
     },
   });
