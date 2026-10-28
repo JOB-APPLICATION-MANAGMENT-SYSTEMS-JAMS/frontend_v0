@@ -272,6 +272,7 @@
   --font-display: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --font-nav: var(--font-newsreader), "Newsreader", "Iowan Old Style", Georgia, serif;
 
   --ease-out: var(--ease-out);
   --ease-spring: var(--ease-spring);
@@ -1340,4 +1341,24 @@
   ::view-transition-new(root) {
     animation: none;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Primary navigation voice
+
+   The four destinations are words, not icons: an italic serif with calligraphic
+   roots. It is the one place in the product where a face other than Inter or
+   JetBrains Mono appears, which is what makes the hierarchy legible at a glance.
+   Sized to stay readable at 320px and never used for body copy or numbers.
+   ══════════════════════════════════════════════════════════════════════════ */
+.nav-script {
+  /* read the loader's variable directly: @theme inline tokens are utility
+     definitions, not guaranteed globals, and an undefined family silently falls
+     back to the body face */
+  font-family: var(--font-newsreader), "Newsreader", "Iowan Old Style", Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variation-settings: "opsz" 24;
+  text-rendering: optimizeLegibility;
 }

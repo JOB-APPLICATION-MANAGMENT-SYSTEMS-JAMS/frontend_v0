@@ -5,17 +5,32 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Columns3, List, Plus, X, CalendarClock, ExternalLink } from "lucide-react";
+import { BarChart3, Columns3, List, Plus, X, CalendarClock, ExternalLink } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
 import type { AppStatus, Application, Paged } from "@/types";
 import { Badge, Button, Card, Input, Label, Pager, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState, InlineBanner } from "@/components/ui/feedback";
+import { PageHeader } from "@/components/ui/layout";
 import { Modal, InfoButton } from "@/components/ui/modal";
 import { SegmentedControl } from "@/components/ui/menu";
 import { Checkbox } from "@/components/ui/toggle";
 import { BOARD_COLUMNS, STATUS_META, cn, fmt } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+
+type Pipeline = {
+  total: number;
+  counts: Record<string, number>;
+  drafts: number;
+  sent: number;
+  waiting: number;
+  interviewing: number;
+  offers: number;
+  rejections: number;
+  ghosted: number;
+  follow_ups_due: number;
+  last_activity: string | null;
+};
 
 export default function TrackerPage() {
   return (
@@ -36,6 +51,12 @@ function TrackerPageInner() {
   const [selected, setSelected] = React.useState<string[]>([]);
   const [dragId, setDragId] = React.useState<string | null>(null);
   const [dropCol, setDropCol] = React.useState<string | null>(null);
+
+  const pipeline = useQuery<Pipeline>({
+    queryKey: ["analytics", "pipeline"],
+    queryFn: () => appFetch("/analytics/pipeline", { _auth: true }),
+    staleTime: 15_000,
+  });
 
   const listParams = { status: statusFilter ?? undefined, page, page_size: pageSize, sort: "recent" };
   const list = useQuery<Paged<Application>>({
@@ -84,6 +105,19 @@ function TrackerPageInner() {
 
   return (
     <div className="space-y-4">
+      <PageHeader
+        eyebrow="Pipeline"
+        title="Tracker"
+        description="One record per application, from draft to offer, with the analytics that follow the same rows. Nothing here is a second copy of a dashboard."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => router.push("/analytics")}>
+            <BarChart3 className="h-3.5 w-3.5" /> Analytics
+          </Button>
+        }
+      />
+
+      <PipelineStrip data={pipeline.data} isPending={pipeline.isPending} onStatus={setStatus} active={statusFilter} />
+
       {/* toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <SegmentedControl
@@ -254,6 +288,69 @@ function TrackerPageInner() {
       )}
 
       {newOpen && <NewApplicationModal onClose={() => setParam("new", undefined)} />}
+    </div>
+  );
+}
+
+/* --------------------------- pipeline headline --------------------------- */
+/**
+ * Seven figures, each a filter into the board below. Counts come from the whole
+ * pipeline (not the current page), so "Drafts 4" opens exactly those four.
+ */
+function PipelineStrip({
+  data,
+  isPending,
+  onStatus,
+  active,
+}: {
+  data?: Pipeline;
+  isPending: boolean;
+  onStatus: (status?: string) => void;
+  active: string | null;
+}) {
+  if (isPending || !data) {
+    return (
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={i} className="h-[68px] w-full" />
+        ))}
+      </div>
+    );
+  }
+  const cells: { label: string; value: number; status?: string; hint?: string }[] = [
+    { label: "Total", value: data.total },
+    { label: "Drafts", value: data.drafts, status: "saved" },
+    { label: "Sent", value: data.sent },
+    { label: "Waiting", value: data.waiting, status: "applied", hint: "applied, viewed, screening" },
+    { label: "Interviews", value: data.interviewing, status: "interview" },
+    { label: "Offers", value: data.offers, status: "offer" },
+    { label: "Follow-ups due", value: data.follow_ups_due },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+      {cells.map((c) => {
+        const isActive = !!c.status && active === c.status;
+        const body = (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{c.label}</p>
+            <p className="tnum mt-1 font-display text-xl font-extrabold text-foreground">{c.value}</p>
+            {c.hint && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{c.hint}</p>}
+          </>
+        );
+        const cls = cn(
+          "rounded-xl border px-3 py-2.5 text-left transition-colors",
+          isActive ? "border-ember/50 bg-ember/10" : "border-border bg-muted/40"
+        );
+        return c.status ? (
+          <button key={c.label} type="button" onClick={() => onStatus(isActive ? undefined : c.status)} aria-pressed={isActive} className={cn(cls, "hover:border-ember/40")}>
+            {body}
+          </button>
+        ) : (
+          <div key={c.label} className={cls}>
+            {body}
+          </div>
+        );
+      })}
     </div>
   );
 }

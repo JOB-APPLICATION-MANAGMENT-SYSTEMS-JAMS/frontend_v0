@@ -7,7 +7,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Command as CommandIcon, Bookmark, Briefcase, CalendarDays, Compass, Crosshair, FilePlus2, Flame, LayoutDashboard, Mail, MousePointerClick, Send, UserRound, Columns3, ChartLine, Trophy, Users } from "lucide-react";
+import { Command as CommandIcon, Bookmark, Briefcase, CalendarDays, Compass, Crosshair, FilePlus2, Flame, HardHat, Mail, MousePointerClick, Send, UserRound, Columns3, ChartLine, Trophy, Users } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import type { Application, Paged } from "@/types";
 import { Kbd } from "@/components/ui/base";
@@ -45,14 +45,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   );
 
   const commands: Cmd[] = [
-    { id: "dash", label: "Dashboard", hint: "g d", icon: LayoutDashboard, run: () => go("/dashboard"), group: "Go" },
-    { id: "disc", label: "Discover jobs & people", icon: Compass, run: () => go("/discover"), group: "Go" },
+    { id: "disc", label: "Discover jobs & people", hint: "g d", icon: Compass, run: () => go("/discover"), group: "Go" },
     { id: "people", label: "People directory", icon: Users, run: () => go("/discover?mode=people"), group: "Go" },
+    { id: "higher", label: "Higher As - skilled professionals", hint: "g h", icon: HardHat, run: () => go("/higher-as"), group: "Go" },
     { id: "hirers", label: "Hirers - jobs posted on JAMS", icon: Briefcase, run: () => go("/hirers"), group: "Go" },
-    { id: "events", label: "Events & trainings", icon: CalendarDays, run: () => go("/events"), group: "Go" },
-    { id: "track", label: "Tracker board", icon: Columns3, run: () => go("/tracker"), group: "Go" },
+    { id: "events", label: "Events & trainings", hint: "g e", icon: CalendarDays, run: () => go("/events"), group: "Go" },
+    { id: "studio", label: "Resume Studio", hint: "g s", icon: FilePlus2, run: () => go("/studio"), group: "Go" },
+    { id: "track", label: "Tracker", hint: "g t", icon: Columns3, run: () => go("/tracker"), group: "Go" },
     { id: "streak", label: "Streaks & goals", icon: Flame, run: () => go("/streaks"), group: "Go" },
-    { id: "analyt", label: "Analytics", icon: ChartLine, run: () => go("/analytics"), group: "Go" },
+    { id: "analyt", label: "Tracker analytics", hint: "g a", icon: ChartLine, run: () => go("/analytics"), group: "Go" },
     { id: "prof", label: "Profile (master form)", icon: UserRound, run: () => go("/profile"), group: "Go" },
     { id: "autofill", label: "Autofill answers & guardrails (from Profile)", icon: MousePointerClick, run: () => go("/autofill"), group: "Go" },
     { id: "victory", label: "I got a job 🎉", icon: Trophy, run: () => go("/victory"), group: "Go" },
@@ -60,6 +61,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { id: "capture", label: "Quick capture (paste URL)", icon: Crosshair, run: () => go("/capture"), group: "Actions" },
     { id: "newcv", label: "New resume", icon: FilePlus2, run: () => go("/studio?new=1"), group: "Actions" },
     { id: "postjob", label: "Post a job (Hirers)", icon: Bookmark, run: () => go("/hirers?post=1"), group: "Actions" },
+    { id: "pro", label: "My Higher As profile", icon: HardHat, run: () => go("/higher-as/me"), group: "Actions" },
     { id: "compose", label: "Compose cold email", icon: Send, run: () => go("/outreach?compose=1"), group: "Actions" },
     { id: "inbox", label: "Connect mailbox", icon: Mail, run: () => go("/inbox-sync"), group: "Actions" },
   ];

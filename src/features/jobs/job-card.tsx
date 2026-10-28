@@ -3,14 +3,25 @@
 /** Result card (§25.1): title · company · salary · posted-ago · source badge · explainable score. */
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Check, ExternalLink, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { Check, ExternalLink, FileText, Send, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { Badge, Button } from "@/components/ui/base";
 import { cn, fmt } from "@/lib/utils";
 import type { JobPosting } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
-export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpen?: () => void; dense?: boolean }) {
+export function JobCard({
+  job,
+  onOpen,
+  onPrepare,
+  dense = false,
+}: {
+  job: JobPosting;
+  onOpen?: () => void;
+  /** hand this posting to Resume Studio; never marks it as applied */
+  onPrepare?: () => void;
+  dense?: boolean;
+}) {
   const [explaining, setExplaining] = React.useState(false);
 
   const vote = useMutation({
@@ -135,9 +146,14 @@ export function JobCard({ job, onOpen, dense = false }: { job: JobPosting; onOpe
       {!dense && job.description_snippet && <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{job.description_snippet}</p>}
 
       <div className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
-        <Button size="sm" variant={job.applied ? "success" : "azure"} onClick={() => capture.mutate()} disabled={capture.isPending || job.applied}>
+        <Button size="sm" variant={job.applied ? "success" : "outline"} onClick={() => capture.mutate()} disabled={capture.isPending || job.applied}>
           <Check className="h-3.5 w-3.5" /> {job.applied ? "In tracker" : "Track this"}
         </Button>
+        {onPrepare && (
+          <Button size="sm" variant="azure" onClick={onPrepare} title="Open this role in Resume Studio to tailor and send">
+            <FileText className="h-3.5 w-3.5" /> Prepare
+          </Button>
+        )}
         <Button size="sm" variant="outline" onClick={() => autoApply.mutate()} disabled={autoApply.isPending || job.applied} title="Track it and send my application by email (opens the posting when no email is known)">
           <Send className="h-3.5 w-3.5" /> {autoApply.isPending ? "Sending…" : "Auto-apply"}
         </Button>

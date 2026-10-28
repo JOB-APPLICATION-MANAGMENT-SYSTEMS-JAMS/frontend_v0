@@ -2,12 +2,12 @@
 
 /** Resume Studio (§24): versioned resumes per archetype, forking, template library, print pipeline. */
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Copy, Eye, FilePlus2, FileText, Printer, RefreshCw, Trash2, X } from "lucide-react";
+import { Briefcase, Copy, Eye, FilePlus2, FileText, HardHat, Printer, RefreshCw, Send, Trash2, X } from "lucide-react";
 import { appFetch } from "@/lib/api";
 import { qk } from "@/lib/queries";
-import type { CV, Template } from "@/types";
+import type { CV, JobPosting, Template } from "@/types";
 import { Badge, Button, Card, Input, Label, Select, Skeleton } from "@/components/ui/base";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { CvShelf } from "@/features/studio/cv-shelf";
@@ -17,10 +17,28 @@ import { toast } from "@/hooks/use-toast";
 import { fmt } from "@/lib/utils";
 
 export default function StudioPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <StudioPageInner />
+    </React.Suspense>
+  );
+}
+
+function StudioPageInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const jobId = search.get("job");
   const [name, setName] = React.useState("");
   const [archetype, setArchetype] = React.useState<"opening" | "pitch">("opening");
   const [category, setCategory] = React.useState("");
+
+  // A role handed over from Discover. Studio prepares, it does not mark anything
+  // as applied: that only happens when the user actually sends.
+  const job = useQuery<JobPosting>({
+    queryKey: qk.job(jobId ?? ""),
+    queryFn: () => appFetch(`/jobs/${jobId}`, { _auth: true }),
+    enabled: !!jobId,
+  });
 
   const cvs = useQuery<{ items: CV[] }>({
     queryKey: qk.cvs(),
@@ -115,7 +133,57 @@ export default function StudioPage() {
         eyebrow="Documents"
         title="Resume Studio"
         description="One resume per archetype, forked per application, reviewed by people you trust. Your master resume is never mutated."
+        actions={
+          <Button size="sm" variant="outline" onClick={() => router.push("/outreach")}>
+            <Send className="h-3.5 w-3.5" /> Outreach
+          </Button>
+        }
       />
+
+      {jobId && (
+        <Card className="border-ember/35 bg-ember/8 p-4">
+          {job.isPending ? (
+            <p className="text-sm text-muted-foreground">Loading the role…</p>
+          ) : job.data ? (
+            <div className="flex flex-wrap items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-background">
+                <Briefcase className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="eyebrow">Tailoring for</p>
+                <p className="truncate font-display text-base font-bold">{job.data.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {job.data.company?.name}
+                  {job.data.location ? ` · ${job.data.location}` : ""}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Pick or create the resume below, then send it from Outreach. Opening this role never marks it as sent.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Button size="sm" variant="azure" onClick={() => router.push(`/outreach?compose=1&job=${job.data!.id}`)}>
+                  <Send className="h-3.5 w-3.5" /> Prepare email
+                </Button>
+                {job.data.url && (
+                  <a
+                    href={job.data.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-8 items-center rounded-full border border-border px-3 text-[13px] font-medium hover:bg-muted"
+                  >
+                    Open posting
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-muted-foreground">That role is no longer available.</p>
+              <Button size="sm" variant="outline" onClick={() => router.push("/discover")}>Back to Discover</Button>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* create */}
       <Card className="p-5">
@@ -140,6 +208,22 @@ export default function StudioPage() {
             <FilePlus2 className="h-4 w-4" /> Create resume
           </Button>
         </div>
+      </Card>
+
+      {/* the other workflow that lives in Studio: a trade profile, not a resume */}
+      <Card className="flex flex-wrap items-center gap-3 border-dashed p-4">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-ember/14 text-ember-ink dark:text-ember-soft">
+          <HardHat className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">Work a trade?</p>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            You do not need a corporate resume to be found. Publish a Higher As profile with your work and credentials; the two workflows stay separate.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => router.push("/higher-as/me")}>
+          Higher As profile
+        </Button>
       </Card>
 
       {/* the shelf: the same CVs as objects you can open, one folder per archetype */}

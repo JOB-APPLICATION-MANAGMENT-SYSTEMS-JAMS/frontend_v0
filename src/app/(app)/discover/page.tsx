@@ -376,6 +376,14 @@ function DiscoverPageInner() {
               </Chip>
             );
           })}
+          <button
+            type="button"
+            onClick={() => router.push("/hirers")}
+            className="glass-chip ml-1 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-ember/45 hover:text-foreground sm:min-h-0"
+            title="Roles posted directly on JAMS, ranked against your field"
+          >
+            <Briefcase className="h-3 w-3" /> On JAMS
+          </button>
           <span className="ml-1 shrink-0 text-[11px] text-muted-foreground">role:</span>
           {["software engineer", "frontend", "backend", "full stack", "devops"].map((term) => {
             const active = (queryParams.q ?? "").toLowerCase() === term;
@@ -430,7 +438,11 @@ function DiscoverPageInner() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {search.data!.items.map((job, i) => (
               <div key={job.id} className="animate-stagger" style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
-                <JobCard job={job} onOpen={() => router.push(`/jobs/${job.id}`)} />
+                <JobCard
+                  job={job}
+                  onOpen={() => router.push(`/jobs/${job.id}`)}
+                  onPrepare={() => router.push(`/studio?job=${job.id}`)}
+                />
               </div>
             ))}
           </div>

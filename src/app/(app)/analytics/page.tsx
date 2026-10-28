@@ -97,11 +97,14 @@ function AnalyticsPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Analytics"
-        title="Every number, honest"
+        eyebrow="Tracker · Analytics"
+        title="Pipeline analytics"
         description="Each tile and chart compares the selected window against the one directly before it, so a dip can never hide behind a longer timeframe. Click a tile to open the tracker filtered by that stat."
         actions={
           <>
+            <Button size="sm" variant="ghost" onClick={() => router.push("/tracker")}>
+              Back to tracker
+            </Button>
             <SegmentedControl
               ariaLabel="Analytics period"
               value={period}

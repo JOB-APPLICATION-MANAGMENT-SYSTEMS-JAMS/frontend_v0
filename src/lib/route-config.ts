@@ -8,6 +8,7 @@ export const authedRoutes = [
   "/dashboard",
   "/discover",
   "/hirers",
+  "/higher-as",
   "/events",
   "/tracker",
   "/jobs",

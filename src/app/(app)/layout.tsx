@@ -1,29 +1,16 @@
 "use client";
 
-/** App shell (§40.2): navbar (toggle · title · goal ring · avatar) + rail (7 items + log out) + main + ⌘K. */
+/**
+ * App shell: one navigation surface, one content column, one command palette.
+ * The header is sticky and the content simply follows it, so nothing has to be
+ * offset by a measured rail width.
+ */
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AppRail } from "@/components/shell/app-rail";
 import { Topbar } from "@/components/shell/topbar";
 import { CommandPalette } from "@/components/shell/cmd-k";
-import { cn } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  // the rail starts open on laptop widths, closed on phones, tracked as an external store
-  // so hydration stays identical on both sides (no setState-in-effect)
-  const isDesktop = React.useSyncExternalStore(
-    (cb) => {
-      const mq = window.matchMedia("(min-width: 768px)");
-      mq.addEventListener("change", cb);
-      return () => mq.removeEventListener("change", cb);
-    },
-    () => window.matchMedia("(min-width: 768px)").matches,
-    () => false
-  );
-  const [navChoice, setNavChoice] = React.useState<boolean | null>(null); // null = follow the viewport
-  const navOpen = navChoice ?? isDesktop;
-  const setNavOpen = React.useCallback((v: boolean) => setNavChoice(v), []);
-
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const router = useRouter();
 
@@ -36,22 +23,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setPaletteOpen((v) => !v);
         return;
       }
-      if (e.key === "Escape") {
-        setNavOpen(false);
-        return;
-      }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "/") {
         e.preventDefault();
         router.push("/discover");
       }
       if (e.key === "c") router.push("/tracker?new=1");
-      // g-then-d chord
       if (e.key === "g") {
         const once = (e2: KeyboardEvent) => {
-          if (e2.key === "d") router.push("/dashboard");
-          if (e2.key === "t") router.push("/tracker");
-          if (e2.key === "a") router.push("/analytics");
+          const map: Record<string, string> = {
+            d: "/discover",
+            h: "/higher-as",
+            s: "/studio",
+            e: "/events",
+            t: "/tracker",
+            a: "/analytics",
+          };
+          if (map[e2.key]) router.push(map[e2.key]);
           window.removeEventListener("keydown", once);
         };
         window.addEventListener("keydown", once);
@@ -60,22 +48,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router, setNavOpen]);
+  }, [router]);
 
   return (
-    <div className="flex min-h-dvh">
-      <AppRail open={navOpen} onClose={() => setNavOpen(false)} />
-
-      <div className={cn("flex min-w-0 flex-1 flex-col transition-[padding] duration-300", navOpen && "md:pl-[240px]")}>
-        <Topbar railOpen={navOpen} onToggleRail={() => setNavOpen(!navOpen)} />
-        <main
-          data-dashboard-scroll-container
-          className="route-fade flex-1 px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:px-6 lg:px-8"
-        >
-          {children}
-        </main>
-      </div>
-
+    <div className="flex min-h-dvh flex-col">
+      <Topbar />
+      <main
+        data-dashboard-scroll-container
+        className="route-fade flex-1 px-3 py-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-6 lg:px-8"
+      >
+        {children}
+      </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );

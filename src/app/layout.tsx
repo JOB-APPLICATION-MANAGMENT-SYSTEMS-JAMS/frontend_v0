@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
+// Navigation voice: an italic text serif with calligraphic roots. Readable at 17px,
+// distinct from the mono display face, and never used for body copy or data.
+const newsreader = Newsreader({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "JAMS", template: "%s | JAMS" },
@@ -24,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   // so it can suspend it during route transitions instead of warning about it
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrains.variable} min-h-dvh bg-background font-sans text-foreground antialiased`}>
+      <body className={`${inter.variable} ${jetbrains.variable} ${newsreader.variable} min-h-dvh bg-background font-sans text-foreground antialiased`}>
         <div className="mesh-bg" aria-hidden />
         <Providers>{children}</Providers>
       </body>
